@@ -1,0 +1,86 @@
+{
+  "manifest_version": 1,
+  "id": "mangadex-wasm",
+  "name": "MangaDex (WASM)",
+  "version": "1.0.0",
+  "description": "MangaDex manga source - the largest free manga library with multi-language support. Compiled to WebAssembly for high performance.",
+  "author": {
+    "name": "Tsubaki Team",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "scraper",
+  "icon_path": "icon.png",
+
+  "technology": "wasm",
+  "entry_point": {
+    "file": "mangadex.wasm",
+    "source": "src/lib.rs"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["api.mangadex.org", "mangadex.org", "uploads.mangadex.org"],
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
+  },
+
+  "authentication": {
+    "type": "none"
+  },
+
+  "source_info": {
+    "base_url": "https://api.mangadex.org",
+    "language": "en",
+    "supported_languages": ["en", "ja", "ko", "zh", "es", "fr", "de", "it", "pt-br", "ru"],
+    "content_rating": "all",
+    "tags": ["official-api", "multi-language", "community", "free", "high-performance"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 40,
+    "burst_limit": 5
+  },
+
+  "settings_schema": {
+    "content_rating": {
+      "type": "select",
+      "label": "Content Rating Filter",
+      "description": "Filter manga by content rating",
+      "default": "all",
+      "options": [
+        {"value": "all", "label": "All Ratings"},
+        {"value": "safe", "label": "Safe Only"},
+        {"value": "suggestive", "label": "Safe + Suggestive"},
+        {"value": "erotica", "label": "Safe + Suggestive + Erotica"}
+      ]
+    },
+    "preferred_language": {
+      "type": "select",
+      "label": "Preferred Language",
+      "description": "Preferred language for titles and chapters",
+      "default": "en",
+      "options": [
+        {"value": "en", "label": "English"},
+        {"value": "ja", "label": "Japanese"},
+        {"value": "ko", "label": "Korean"},
+        {"value": "zh", "label": "Chinese"},
+        {"value": "es", "label": "Spanish"},
+        {"value": "fr", "label": "French"}
+      ]
+    }
+  },
+
+  "build": {
+    "command": "cargo build --release --target wasm32-unknown-unknown",
+    "output": "target/wasm32-unknown-unknown/release/mangadex.wasm"
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/mangadex-wasm/manifest.json",
+    "auto_update": true
+  }
+}
