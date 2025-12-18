@@ -1,20 +1,156 @@
 // MangaDex Scraper Add-on (Rhai)
 // Uses the official MangaDex API v5
-//
-// Available APIs:
-//   http_get(url) -> string
-//   http_get_with_headers(url, headers) -> string
-//   json_parse(text) -> Dynamic
-//   json_stringify(value) -> string
 
 const BASE_URL = "https://api.mangadex.org";
 const COVERS_URL = "https://uploads.mangadex.org/covers";
 
-/// Returns metadata about this source
+// --- Helper Functions ---
+
+/// Checks if an array contains a given value.
+fn array_contains(array, value) {
+    for item in array {
+        if item == value {
+            return true;
+        }
+    }
+    return false;
+}
+
+/// Extract title from MangaDex title object, preferring specified language.
+fn extract_title(title_obj, preferred_lang) {
+    if title_obj == () { return ""; }
+    // Try preferred language first
+    if title_obj.contains(preferred_lang) { return title_obj[preferred_lang]; }
+    // Fall back to English
+    if title_obj.contains("en") { return title_obj["en"]; }
+    // Fall back to Japanese
+    if title_obj.contains("ja") { return title_obj["ja"]; }
+    // Return first available by iterating over keys
+    let keys = title_obj.keys();
+    if keys.len() > 0 { return title_obj[keys[0]]; }
+    return "";
+}
+
+/// Extract cover URL from relationships.
+fn extract_cover_url(manga_id, relationships) {
+    if relationships == () { return ""; }
+    for rel in relationships {
+        if rel.type == "cover_art" {
+            let attrs = rel.attributes;
+            if attrs != () && attrs.fileName != () {
+                return `${COVERS_URL}/${manga_id}/${attrs.fileName}`;
+            }
+        }
+    }
+    return "";
+}
+
+/// Extract authors and artists from relationships.
+fn extract_people(relationships) {
+    let people = [];
+    let seen = [];
+    if relationships == () { return people; }
+    for rel in relationships {
+        if rel.type == "author" || rel.type == "artist" {
+            let attrs = rel.attributes;
+            if attrs != () && attrs.name != () {
+                if !array_contains(seen, attrs.name) {
+                    people.push(attrs.name);
+                    seen.push(attrs.name);
+                }
+            }
+        }
+    }
+    return people;
+}
+
+/// Extract tags from manga data.
+fn extract_tags(tags, lang) {
+    let result = [];
+    if tags == () { return result; }
+    for tag in tags {
+        let attrs = tag.attributes;
+        if attrs != () && attrs.name != () {
+            let tag_name = extract_title(attrs.name, lang);
+            if tag_name != "" {
+                result.push(tag_name);
+            }
+        }
+    }
+    return result;
+}
+
+/// Map status string to standard format.
+fn map_status(status) {
+    let status_map = #{
+        "ongoing": "Ongoing",
+        "completed": "Completed",
+        "hiatus": "Hiatus",
+        "cancelled": "Cancelled"
+    };
+    if status_map.contains(status) {
+        return status_map[status];
+    }
+    return status;
+}
+
+/// Builds a series object from MangaDex manga data.
+fn build_series_result(manga, preferred_lang) {
+    let id = manga.id;
+    let attrs = manga.attributes;
+    let rels = manga.relationships;
+    let title = extract_title(attrs.title, preferred_lang);
+
+    // Extract alternate titles
+    let alt_titles = [];
+    if attrs.altTitles != () {
+        for alt in attrs.altTitles {
+            for key in alt.keys() {
+                let alt_title = alt[key];
+                if alt_title != title && !array_contains(alt_titles, alt_title) {
+                    alt_titles.push(alt_title);
+                }
+            }
+        }
+    }
+
+    // Extract description
+    let description = "";
+    if attrs.description != () {
+        description = extract_title(attrs.description, preferred_lang);
+    }
+    
+    return #{
+        id: id,
+        title: title,
+        alternate_titles: alt_titles,
+        description: description,
+        cover_url: extract_cover_url(id, rels),
+        authors: extract_people(rels),
+        artists: [], // MangaDex API combines authors and artists
+        status: map_status(attrs.status),
+        genres: extract_tags(attrs.tags, preferred_lang),
+        tags: [],
+        year: attrs.year,
+        content_rating: attrs.contentRating,
+        url: `https://mangadex.org/title/${id}`,
+        extra: #{
+            original_language: attrs.originalLanguage,
+            last_chapter: attrs.lastChapter,
+            last_volume: attrs.lastVolume,
+            demographic: attrs.publicationDemographic
+        }
+    };
+}
+
+
+// --- Addon Interface Functions ---
+
+/// Returns metadata about this source.
 fn get_source_info() {
     #{
         id: "mangadex-rhai",
-        name: "MangaDex (Rhai)",
+        name: "MangaDex",
         base_url: BASE_URL,
         language: "en",
         supported_languages: ["en", "ja", "ko", "zh", "es", "fr", "de", "it", "pt-br", "ru"],
@@ -23,345 +159,171 @@ fn get_source_info() {
     }
 }
 
-/// Extract title from MangaDex title object, preferring specified language
-fn extract_title(title_obj, preferred_lang) {
-    // Try preferred language first
-    if title_obj.contains(preferred_lang) {
-        return title_obj[preferred_lang];
-    }
-    // Fall back to English
-    if title_obj.contains("en") {
-        return title_obj["en"];
-    }
-    // Fall back to Japanese
-    if title_obj.contains("ja") {
-        return title_obj["ja"];
-    }
-    // Return first available
-    for key in title_obj.keys() {
-        return title_obj[key];
-    }
-    ""
-}
-
-/// Extract cover URL from relationships
-fn extract_cover_url(manga_id, relationships) {
-    for rel in relationships {
-        if rel["type"] == "cover_art" {
-            let attrs = rel["attributes"];
-            if attrs != () && attrs.contains("fileName") {
-                return `${COVERS_URL}/${manga_id}/${attrs["fileName"]}`;
-            }
-        }
-    }
-    ()
-}
-
-/// Extract authors from relationships
-fn extract_authors(relationships) {
-    let authors = [];
-    for rel in relationships {
-        if rel["type"] == "author" || rel["type"] == "artist" {
-            let attrs = rel["attributes"];
-            if attrs != () && attrs.contains("name") {
-                let name = attrs["name"];
-                if !authors.contains(name) {
-                    authors.push(name);
-                }
-            }
-        }
-    }
-    authors
-}
-
-/// Extract tags from manga data
-fn extract_tags(tags, lang) {
-    let result = [];
-    for tag in tags {
-        let attrs = tag["attributes"];
-        if attrs != () && attrs.contains("name") {
-            let name_obj = attrs["name"];
-            let tag_name = extract_title(name_obj, lang);
-            if tag_name != "" {
-                result.push(tag_name);
-            }
-        }
-    }
-    result
-}
-
-/// Map status string to standard format
-fn map_status(status) {
-    switch status {
-        "ongoing" => "Ongoing",
-        "completed" => "Completed",
-        "hiatus" => "Hiatus",
-        "cancelled" => "Cancelled",
-        _ => status
-    }
-}
-
-/// Search for series matching query
-fn search_series(query, page, auth) {
+/// Search for series matching a query.
+fn search_series(query, page, settings, auth) {
     let offset = (page - 1) * 25;
-    let url = `${BASE_URL}/manga?title=${query}&limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist`;
+    let preferred_lang = settings.preferred_language || "en";
+    let rating = settings.content_rating || "safe";
+
+    let url = `${BASE_URL}/manga?title=${url_encode(query)}&limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&contentRating[]=${rating}`;
 
     let response_text = http_get(url);
     let response = json_parse(response_text);
 
-    if response["result"] != "ok" {
+    if response.result != "ok" {
         return #{ series: [], has_more: false, total: 0 };
     }
 
-    let data = response["data"];
-    let total = response["total"];
     let series = [];
-
-    for manga in data {
-        let id = manga["id"];
-        let attrs = manga["attributes"];
-        let rels = manga["relationships"];
-
-        // Extract title
-        let title = extract_title(attrs["title"], "en");
-
-        // Extract alternate titles
-        let alt_titles = [];
-        for alt in attrs["altTitles"] {
-            for lang in alt.keys() {
-                let alt_title = alt[lang];
-                if alt_title != title && !alt_titles.contains(alt_title) {
-                    alt_titles.push(alt_title);
-                }
-            }
-        }
-
-        // Extract description
-        let description = ();
-        if attrs.contains("description") && attrs["description"].contains("en") {
-            description = attrs["description"]["en"];
-        }
-
-        series.push(#{
-            id: id,
-            title: title,
-            url: `https://mangadex.org/title/${id}`,
-            cover_url: extract_cover_url(id, rels),
-            alternate_titles: alt_titles,
-            authors: extract_authors(rels),
-            artists: [],
-            status: map_status(attrs["status"]),
-            genres: extract_tags(attrs["tags"], "en"),
-            tags: [],
-            description: description
-        });
+    for manga in response.data {
+        series.push(build_series_result(manga, preferred_lang));
     }
 
+    let total = response.total;
     let has_more = offset + 25 < total;
 
-    #{ series: series, has_more: has_more, total: total }
+    return #{ series: series, has_more: has_more, total: total };
 }
 
-/// Get detailed series information
-fn get_series(id_or_url, auth) {
-    // Extract ID from URL if needed
+/// Get detailed series information.
+fn get_series_details(id_or_url, settings, auth) {
     let id = id_or_url;
-    if id_or_url.contains("mangadex.org") {
-        let parts = id_or_url.split("/");
-        for i in 0..parts.len() {
-            if parts[i] == "title" && i + 1 < parts.len() {
-                id = parts[i + 1];
-                break;
-            }
-        }
+    // Basic URL extraction
+    if id_or_url.contains("mangadex.org/title/") {
+        id = id_or_url.split("/")[4];
     }
-
+    
+    let preferred_lang = settings.preferred_language || "en";
     let url = `${BASE_URL}/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
 
     let response_text = http_get(url);
     let response = json_parse(response_text);
 
-    if response["result"] != "ok" {
-        return #{
-            id: id,
-            title: "",
-            error: "Failed to fetch manga"
-        };
+    if response.result != "ok" {
+        throw `Failed to fetch manga with ID: ${id}`;
     }
 
-    let manga = response["data"];
-    let attrs = manga["attributes"];
-    let rels = manga["relationships"];
-
-    let title = extract_title(attrs["title"], "en");
-
-    // Extract alternate titles
-    let alt_titles = [];
-    for alt in attrs["altTitles"] {
-        for lang in alt.keys() {
-            let alt_title = alt[lang];
-            if alt_title != title && !alt_titles.contains(alt_title) {
-                alt_titles.push(alt_title);
-            }
-        }
-    }
-
-    // Extract description
-    let description = ();
-    if attrs.contains("description") && attrs["description"].contains("en") {
-        description = attrs["description"]["en"];
-    }
-
-    #{
-        id: id,
-        title: title,
-        alternate_titles: alt_titles,
-        description: description,
-        cover_url: extract_cover_url(id, rels),
-        authors: extract_authors(rels),
-        artists: [],
-        status: map_status(attrs["status"]),
-        genres: extract_tags(attrs["tags"], "en"),
-        tags: [],
-        year: attrs["year"],
-        content_rating: attrs["contentRating"],
-        url: `https://mangadex.org/title/${id}`,
-        extra: #{
-            original_language: attrs["originalLanguage"],
-            last_chapter: attrs["lastChapter"],
-            last_volume: attrs["lastVolume"],
-            demographic: attrs["publicationDemographic"]
-        }
-    }
+    return build_series_result(response.data, preferred_lang);
 }
 
-/// Get all chapters for a series
-fn get_chapters(series_id, auth) {
+/// Get all chapters for a series.
+fn get_chapters(series_id, settings, auth) {
     let chapters = [];
     let offset = 0;
-    let limit = 100;
+    let limit = 500; // Max limit for this endpoint
+    let lang = settings.preferred_language || "en";
 
-    loop {
-        let url = `${BASE_URL}/manga/${series_id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=en&order[chapter]=desc&includes[]=scanlation_group`;
+    while true {
+        let url = `${BASE_URL}/manga/${series_id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=${lang}&order[chapter]=desc&includes[]=scanlation_group`;
 
         let response_text = http_get(url);
         let response = json_parse(response_text);
 
-        if response["result"] != "ok" {
+        if response.result != "ok" || response.data.len() == 0 {
             break;
         }
 
-        let data = response["data"];
-        if data.len() == 0 {
-            break;
-        }
+        for chapter_data in response.data {
+            let attrs = chapter_data.attributes;
+            let rels = chapter_data.relationships;
 
-        for chapter in data {
-            let id = chapter["id"];
-            let attrs = chapter["attributes"];
-            let rels = chapter["relationships"];
-
-            // Extract scanlation group
-            let scanlator = ();
-            for rel in rels {
-                if rel["type"] == "scanlation_group" {
-                    let rel_attrs = rel["attributes"];
-                    if rel_attrs != () && rel_attrs.contains("name") {
-                        scanlator = rel_attrs["name"];
-                        break;
+            let scanlator = "";
+            if rels != () {
+                for rel in rels {
+                    if rel.type == "scanlation_group" {
+                        if rel.attributes != () && rel.attributes.name != () {
+                            scanlator = rel.attributes.name;
+                            break;
+                        }
                     }
                 }
             }
 
             chapters.push(#{
-                id: id,
+                id: chapter_data.id,
                 series_id: series_id,
-                number: attrs["chapter"],
-                title: attrs["title"],
-                volume: attrs["volume"],
-                language: attrs["translatedLanguage"],
+                number: attrs.chapter,
+                title: attrs.title,
+                volume: attrs.volume,
+                language: attrs.translatedLanguage,
                 scanlator: scanlator,
-                url: `https://mangadex.org/chapter/${id}`,
-                published_at: attrs["publishAt"],
-                page_count: attrs["pages"],
+                url: `https://mangadex.org/chapter/${chapter_data.id}`,
+                published_at: attrs.publishAt,
+                page_count: attrs.pages,
                 extra: #{
-                    external_url: attrs["externalUrl"]
+                    external_url: attrs.externalUrl
                 }
             });
         }
 
         offset += limit;
-
-        // Prevent infinite loops
-        if offset >= 10000 {
+        if offset >= response.total {
             break;
         }
+        // Safety break for unexpected API behavior
+        if offset >= 10000 { 
+            break; 
+        }
     }
-
-    chapters
+    return chapters;
 }
 
-/// Get page URLs for a chapter
-fn get_chapter_pages(chapter_id, auth) {
+/// Get page URLs for a chapter.
+fn get_chapter_pages(chapter_id, settings, auth) {
     let url = `${BASE_URL}/at-home/server/${chapter_id}`;
 
     let response_text = http_get(url);
     let response = json_parse(response_text);
 
-    if response["result"] != "ok" {
+    if response.result != "ok" {
         return [];
     }
 
-    let base_url = response["baseUrl"];
-    let chapter_data = response["chapter"];
-    let hash = chapter_data["hash"];
-    let data_pages = chapter_data["data"];
-
+    let server_base_url = response.baseUrl;
+    let chapter_data = response.chapter;
+    let hash = chapter_data.hash;
+    
     let pages = [];
-    let idx = 0;
-
-    for filename in data_pages {
+    let i = 0;
+    for filename in chapter_data.data {
         pages.push(#{
-            index: idx,
-            url: `${base_url}/data/${hash}/${filename}`,
+            index: i,
+            url: `${server_base_url}/data/${hash}/${filename}`,
             headers: #{},
             referer: "https://mangadex.org/"
         });
-        idx += 1;
+        i += 1;
     }
-
-    pages
+    return pages;
 }
 
-/// Get latest updates
-fn get_latest_updates(page, auth) {
+/// Get latest updates.
+fn get_latest_updates(page, settings, auth) {
     let offset = (page - 1) * 25;
-    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&order[updatedAt]=desc`;
+    let preferred_lang = settings.preferred_language || "en";
+    let rating = settings.content_rating || "safe";
+
+    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&order[updatedAt]=desc&contentRating[]=${rating}`;
 
     let response_text = http_get(url);
     let response = json_parse(response_text);
 
-    if response["result"] != "ok" {
+    if response.result != "ok" {
         return #{ series: [], has_more: false };
     }
-
-    let data = response["data"];
-    let total = response["total"];
+    
     let series = [];
-
-    for manga in data {
-        let id = manga["id"];
-        let attrs = manga["attributes"];
-        let rels = manga["relationships"];
-
+    for manga in response.data {
+        let attrs = manga.attributes;
         series.push(#{
-            id: id,
-            title: extract_title(attrs["title"], "en"),
-            url: `https://mangadex.org/title/${id}`,
-            cover_url: extract_cover_url(id, rels),
-            updated_at: attrs["updatedAt"]
+            id: manga.id,
+            title: extract_title(attrs.title, preferred_lang),
+            url: `https://mangadex.org/title/${manga.id}`,
+            cover_url: extract_cover_url(manga.id, manga.relationships),
+            updated_at: attrs.updatedAt
         });
     }
 
-    #{ series: series, has_more: offset + 25 < total }
+    let has_more = offset + 25 < response.total;
+    return #{ series: series, has_more: has_more };
 }

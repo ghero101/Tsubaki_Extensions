@@ -1,9 +1,9 @@
 {
   "manifest_version": 1,
   "id": "mangadex-rhai",
-  "name": "MangaDex (Rhai)",
-  "version": "1.0.0",
-  "description": "MangaDex manga source - the largest free manga library with multi-language support",
+  "name": "MangaDex",
+  "version": "1.1.0",
+  "description": "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
   "author": {
     "name": "Tsubaki Team",
     "url": "https://github.com/tsubaki"
@@ -13,6 +13,7 @@
 
   "addon_type": "scraper",
   "icon_path": "icon.png",
+  "nsfw": false,
 
   "technology": "rhai",
   "entry_point": {
@@ -48,13 +49,13 @@
     "content_rating": {
       "type": "select",
       "label": "Content Rating Filter",
-      "description": "Filter manga by content rating",
-      "default": "all",
+      "description": "Filter manga by content rating. Note: 'erotica' and 'pornographic' require being logged in on the website.",
+      "default": "safe",
       "options": [
-        {"value": "all", "label": "All Ratings"},
-        {"value": "safe", "label": "Safe Only"},
-        {"value": "suggestive", "label": "Safe + Suggestive"},
-        {"value": "erotica", "label": "Safe + Suggestive + Erotica"}
+        {"value": "safe", "label": "Safe"},
+        {"value": "suggestive", "label": "Suggestive"},
+        {"value": "erotica", "label": "Erotica"},
+        {"value": "pornographic", "label": "Pornographic"}
       ]
     },
     "preferred_language": {
