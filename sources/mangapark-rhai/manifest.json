@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangapark-rhai",
   "name": "MangaPark",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Scraper for MangaPark (mangapark.net), featuring a large manga library with multiple versions and scanlation groups.",
   "author": {
     "name": "Tsubaki Community",
@@ -21,10 +21,10 @@
   },
 
   "capabilities": {
-    "level": "http_only",
+    "level": "browser_automation",
     "allowed_domains": ["mangapark.net", "mangapark.com", "mangapark.org", "mangapark.io", "v2.mangapark.net"],
-    "requires_cookies": false,
-    "requires_javascript": false,
+    "requires_cookies": true,
+    "requires_javascript": true,
     "cloudflare_protected": true
   },
 

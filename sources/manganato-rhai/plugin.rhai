@@ -1,17 +1,31 @@
 // MangaNato Scraper Add-on (Rhai)
-// HTML-based scraper for manganato.com
+// Browser-based scraper for manganato.com (Cloudflare protected)
 //
 // Available APIs:
-//   http_get(url) -> string
-//   http_get_with_headers(url, headers) -> string
-//   html_parse(html) -> Document
-//   html_select(html, selector) -> array
-//   element_text(element) -> string
-//   element_attr(element, name) -> string
+//   HTTP (fallback): http_get(url), http_get_with_headers(url, headers)
+//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_cloudflare(id, timeout)
+//            browser_get_html(id), browser_close(id), browser_is_available()
+//   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
 //   url_encode(text) -> string
 
 const BASE_URL = "https://manganato.com";
 const CHAPTER_BASE = "https://chapmanganato.to";
+
+/// Fetch HTML using browser automation (bypasses Cloudflare)
+/// Falls back to HTTP if browser not available
+fn fetch_html(url) {
+    if browser_is_available() {
+        let browser_id = browser_launch();
+        browser_goto(browser_id, url);
+        browser_wait_for_cloudflare(browser_id, 15000);
+        let html = browser_get_html(browser_id);
+        browser_close(browser_id);
+        return html;
+    }
+
+    // Fallback to HTTP
+    http_get_with_headers(url, get_headers())
+}
 
 /// Returns metadata about this source
 fn get_source_info() {
@@ -22,11 +36,11 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only"
+        capability_level: "browser_automation"
     }
 }
 
-/// Get headers for requests
+/// Get headers for requests (used for HTTP fallback)
 fn get_headers() {
     #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -40,7 +54,7 @@ fn search_series(query, page, auth) {
     let encoded_query = query.replace(" ", "_");
     let url = `${BASE_URL}/search/story/${encoded_query}?page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
     let doc = html_parse(html);
 
     let series = [];
@@ -144,12 +158,12 @@ fn get_series(id_or_url, auth) {
         id = extract_manga_id(id_or_url);
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     // If chapmanganato fails, try manganato
     if html.len() < 1000 || html.contains("404") {
         url = `${BASE_URL}/${id}`;
-        html = http_get_with_headers(url, get_headers());
+        html = fetch_html(url);
     }
 
     let doc = html_parse(html);
@@ -254,13 +268,13 @@ fn get_chapters(series_id, auth) {
         url = `${CHAPTER_BASE}/${series_id}`;
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     // If chapmanganato fails, try manganato
     if html.len() < 1000 || html.contains("404") {
         let id = extract_manga_id(series_id);
         url = `${BASE_URL}/${id}`;
-        html = http_get_with_headers(url, get_headers());
+        html = fetch_html(url);
     }
 
     let chapters = [];
@@ -303,13 +317,7 @@ fn get_chapters(series_id, auth) {
 /// Get page URLs for a chapter
 fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
-
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": CHAPTER_BASE
-    };
-
-    let html = http_get_with_headers(url, headers);
+    let html = fetch_html(url);
 
     let pages = [];
     let idx = 0;
@@ -343,7 +351,7 @@ fn get_chapter_pages(chapter_id, auth) {
 fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/?page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let series = [];
 
@@ -402,7 +410,7 @@ fn get_latest_updates(page, auth) {
 fn get_popular(page, auth) {
     let url = `${BASE_URL}/genre-all?page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let series = [];
 

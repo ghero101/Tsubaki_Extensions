@@ -24,34 +24,70 @@ fn get_source_info() {
 
 /// Helper to build result from post data
 fn build_result(post) {
-    let post_id = post["id"].to_string();
-    let directory = post["directory"];
-    let image = post["image"];
-    let tags_str = post["tags"];
+    // Get values from post - handle potential missing fields
+    let post_id = "";
+    if post.contains("id") {
+        post_id = post["id"].to_string();
+    }
+
+    let tags_str = "";
+    if post.contains("tags") {
+        tags_str = post["tags"];
+    }
 
     // Parse tags - split by space
     let tags = [];
-    if tags_str != () {
+    if tags_str != "" && tags_str != () {
         tags = tags_str.split(" ");
     }
 
-    // Build title from first 5 tags
-    let title_tags = [];
-    let count = 0;
-    for tag in tags {
-        if count < 5 {
-            title_tags.push(tag);
-            count += 1;
-        }
+    // Build title from first few tags manually
+    let title = "Untitled";
+    if tags.len() > 0 {
+        title = tags[0];
+        if tags.len() > 1 { title = title + ", " + tags[1]; }
+        if tags.len() > 2 { title = title + ", " + tags[2]; }
+        if tags.len() > 3 { title = title + ", " + tags[3]; }
+        if tags.len() > 4 { title = title + ", " + tags[4]; }
     }
-    let title = title_tags.join(", ");
+
+    // Get URLs - use direct URLs from response
+    let preview_url = "";
+    if post.contains("preview_url") {
+        preview_url = post["preview_url"];
+    }
+
+    let file_url = "";
+    if post.contains("file_url") {
+        file_url = post["file_url"];
+    }
+
+    let sample_url = "";
+    if post.contains("sample_url") {
+        sample_url = post["sample_url"];
+    }
+
+    let width = 0;
+    if post.contains("width") {
+        width = post["width"];
+    }
+
+    let height = 0;
+    if post.contains("height") {
+        height = post["height"];
+    }
+
+    let source = "";
+    if post.contains("source") {
+        source = post["source"];
+    }
 
     #{
         id: post_id,
         title: title,
         alternate_titles: [],
         description: "Tags: " + tags_str,
-        cover_url: `https://safebooru.org/thumbnails/${directory}/thumbnail_${image}`,
+        cover_url: preview_url,
         authors: [],
         artists: [],
         status: (),
@@ -61,10 +97,11 @@ fn build_result(post) {
         content_rating: "safe",
         url: `${BASE_URL}/index.php?page=post&s=view&id=${post_id}`,
         extra: #{
-            file_url: `https://safebooru.org/images/${directory}/${image}`,
-            width: post["width"],
-            height: post["height"],
-            source: post["source"]
+            file_url: file_url,
+            sample_url: sample_url,
+            width: width,
+            height: height,
+            source: source
         }
     }
 }
@@ -80,7 +117,8 @@ fn search(query, page) {
     let body = http_get(url);
     let data = json_parse(body);
 
-    if data == () || data.len == () || data.len() == 0 {
+    // Empty check
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return #{
             series: [],
             has_more: false,
@@ -101,14 +139,15 @@ fn search(query, page) {
 }
 
 /// Get latest updates (used for browse)
-fn get_latest_updates(page) {
+fn get_latest_updates(page, auth) {
     let limit = 40;
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=rating:safe`;
 
     let body = http_get(url);
     let data = json_parse(body);
 
-    if data == () || data.len == () || data.len() == 0 {
+    // Empty check
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return #{
             series: [],
             has_more: false,
@@ -136,7 +175,8 @@ fn get_popular(page) {
     let body = http_get(url);
     let data = json_parse(body);
 
-    if data == () || data.len == () || data.len() == 0 {
+    // Empty check
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return #{
             series: [],
             has_more: false,
@@ -163,7 +203,8 @@ fn get_series_details(id) {
     let body = http_get(url);
     let data = json_parse(body);
 
-    if data == () || data.len == () || data.len() == 0 {
+    // Empty check
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return ();
     }
 
@@ -184,18 +225,21 @@ fn get_chapter_pages(chapter_id) {
     let body = http_get(url);
     let data = json_parse(body);
 
-    if data == () || data.len == () || data.len() == 0 {
+    // Empty check
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return [];
     }
 
     let post = data[0];
-    let directory = post["directory"];
-    let image = post["image"];
+    let file_url = "";
+    if post.contains("file_url") {
+        file_url = post["file_url"];
+    }
 
     [
         #{
             index: 0,
-            url: `https://safebooru.org/images/${directory}/${image}`,
+            url: file_url,
             headers: #{},
             referer: ()
         }

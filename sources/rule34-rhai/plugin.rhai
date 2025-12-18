@@ -1,4 +1,4 @@
-// Adult Content Provider Add-on (Rhai)
+// Rule34 Add-on (Rhai)
 // Provides Rule34 search and fan art management
 //
 // WARNING: This addon provides access to explicit adult content.
@@ -9,195 +9,223 @@
 //   http_get_with_headers(url, headers) -> string
 //   json_parse(text) -> Dynamic
 //   json_stringify(value) -> string
+//   url_encode(text) -> string
 
 const RULE34_API = "https://api.rule34.xxx/index.php";
-const GELBOORU_API = "https://gelbooru.com/index.php";
 
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
-        id: "adult-content-rhai",
-        name: "Adult Content Provider",
+        id: "rule34-rhai",
+        name: "Rule34",
         base_url: RULE34_API,
         language: "en",
-        requires_authentication: false,
+        supported_languages: ["en"],
+        requires_authentication: true,
         capability_level: "http_only",
         nsfw: true,
         content_types: ["rule34", "fanart"]
     }
 }
 
+/// Helper to build auth query string from credentials
+fn build_auth_params(auth) {
+    if auth == () {
+        return "";
+    }
+    let user_id = auth["user_id"];
+    let api_key = auth["api_key"];
+    if user_id == () || api_key == () {
+        return "";
+    }
+    `&user_id=${user_id}&api_key=${api_key}`
+}
+
+/// Helper to build series result from Rule34 post
+fn build_result(post) {
+    let post_id = post["id"].to_string();
+
+    let is_video = false;
+    let file_url = post["file_url"];
+
+    if file_url != () {
+        let lower_url = file_url.to_lower();
+        is_video = lower_url.ends_with(".webm") || lower_url.ends_with(".mp4");
+    }
+
+    // Parse tags into array
+    let tag_string = post["tags"];
+    let tag_list = [];
+    if tag_string != () {
+        tag_list = tag_string.split(" ");
+    }
+
+    // Build title from first 5 tags
+    let title_tags = [];
+    let count = 0;
+    for tag in tag_list {
+        if count < 5 {
+            title_tags.push(tag);
+            count += 1;
+        }
+    }
+    let title = title_tags.join(", ");
+
+    #{
+        id: post_id,
+        title: title,
+        alternate_titles: [],
+        description: "Tags: " + tag_string,
+        cover_url: post["preview_url"],
+        authors: [],
+        artists: [],
+        status: (),
+        genres: [],
+        tags: tag_list,
+        year: (),
+        content_rating: post["rating"],
+        url: `https://rule34.xxx/index.php?page=post&s=view&id=${post_id}`,
+        extra: #{
+            file_url: file_url,
+            sample_url: post["sample_url"],
+            width: post["width"],
+            height: post["height"],
+            score: post["score"],
+            is_video: is_video,
+            source: post["source"],
+            source_site: "rule34"
+        }
+    }
+}
+
 /// Search Rule34 for content matching tags
-/// tags: space-separated tags (use underscores for multi-word tags)
-/// page: page number (0-indexed)
-/// limit: results per page (max 100)
-fn search_rule34(tags, page, limit, settings) {
-    // Build the API URL
+/// auth parameter contains user_id and api_key from credentials
+fn search_series(query, page, auth) {
+    let limit = 40;
+
+    // Build the API URL - pid is 0-indexed in Rule34 API
     let pid = page;
-    let safe_limit = if limit > 100 { 100 } else { limit };
+    let search_tags = url_encode(query);
+    let auth_params = build_auth_params(auth);
 
-    // Exclude extreme content if safe_mode is enabled
-    let search_tags = tags;
-    if settings.contains("safe_mode") && settings["safe_mode"] == true {
-        search_tags = `${tags} -gore -scat -guro -vore`;
-    }
-
-    // Exclude videos if disabled
-    if settings.contains("video_enabled") && settings["video_enabled"] == false {
-        search_tags = `${search_tags} -video -animated -webm -mp4`;
-    }
-
-    let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${safe_limit}`;
+    let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${limit}${auth_params}`;
 
     let response_text = http_get(url);
 
     // Handle empty results
     if response_text == "" || response_text == "[]" {
-        return #{ results: [], has_more: false, total: 0, page: page, query: tags };
+        return #{ series: [], has_more: false, total: () };
     }
 
     let posts = json_parse(response_text);
 
-    if posts == () || posts.len() == 0 {
-        return #{ results: [], has_more: false, total: 0, page: page, query: tags };
+    if posts == () || posts.len == () || posts.len() == 0 {
+        return #{ series: [], has_more: false, total: () };
     }
 
     let results = [];
-
     for post in posts {
-        let is_video = false;
-        let file_url = post["file_url"];
-
-        if file_url != () {
-            let lower_url = file_url.to_lower();
-            is_video = lower_url.ends_with(".webm") || lower_url.ends_with(".mp4");
-        }
-
-        // Parse tags into array
-        let tag_string = post["tags"];
-        let tag_list = [];
-        if tag_string != () {
-            tag_list = tag_string.split(" ");
-        }
-
-        results.push(#{
-            id: post["id"],
-            preview_url: post["preview_url"],
-            sample_url: post["sample_url"],
-            file_url: file_url,
-            width: post["width"],
-            height: post["height"],
-            tags: tag_list,
-            source: post["source"],
-            rating: post["rating"],
-            score: post["score"],
-            is_video: is_video,
-            created_at: post["created_at"],
-            source_site: "rule34"
-        });
+        results.push(build_result(post));
     }
 
-    // Determine if there are more results
-    let has_more = results.len() >= safe_limit;
-
     #{
-        results: results,
-        has_more: has_more,
-        total: -1,  // Rule34 API doesn't provide total count easily
-        page: page,
-        query: tags
+        series: results,
+        has_more: results.len() >= limit,
+        total: ()
     }
 }
 
-/// Search Gelbooru for content (alternative source)
-fn search_gelbooru(tags, page, limit, settings) {
+/// Get latest updates (used for browse)
+fn get_latest_updates(page, auth) {
+    let limit = 40;
     let pid = page;
-    let safe_limit = if limit > 100 { 100 } else { limit };
+    let auth_params = build_auth_params(auth);
 
-    let search_tags = tags;
-    if settings.contains("safe_mode") && settings["safe_mode"] == true {
-        search_tags = `${tags} -gore -scat -guro -vore`;
-    }
-
-    let url = `${GELBOORU_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${safe_limit}`;
+    let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&pid=${pid}&limit=${limit}${auth_params}`;
 
     let response_text = http_get(url);
 
     if response_text == "" || response_text == "[]" {
-        return #{ results: [], has_more: false, total: 0, page: page, query: tags };
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    let posts = json_parse(response_text);
+
+    if posts == () || posts.len == () || posts.len() == 0 {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    let results = [];
+    for post in posts {
+        results.push(build_result(post));
+    }
+
+    #{
+        series: results,
+        has_more: results.len() >= limit,
+        total: ()
+    }
+}
+
+/// Get image details by ID
+fn get_series_details(post_id, auth) {
+    let auth_params = build_auth_params(auth);
+    let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&id=${post_id}${auth_params}`;
+
+    let response_text = http_get(url);
+
+    if response_text == "" || response_text == "[]" {
+        return ();
     }
 
     let data = json_parse(response_text);
 
-    // Gelbooru returns { post: [...], @attributes: {...} }
-    let posts = [];
-    if data.contains("post") {
-        posts = data["post"];
-    } else if data.is_array() {
-        posts = data;
+    if data == () || data.len == () || data.len() == 0 {
+        return ();
     }
 
-    if posts.len() == 0 {
-        return #{ results: [], has_more: false, total: 0, page: page, query: tags };
-    }
-
-    let results = [];
-
-    for post in posts {
-        let is_video = false;
-        let file_url = post["file_url"];
-
-        if file_url != () {
-            let lower_url = file_url.to_lower();
-            is_video = lower_url.ends_with(".webm") || lower_url.ends_with(".mp4");
-        }
-
-        let tag_string = post["tags"];
-        let tag_list = [];
-        if tag_string != () {
-            tag_list = tag_string.split(" ");
-        }
-
-        results.push(#{
-            id: post["id"],
-            preview_url: post["preview_url"],
-            sample_url: post["sample_url"],
-            file_url: file_url,
-            width: post["width"],
-            height: post["height"],
-            tags: tag_list,
-            source: post["source"],
-            rating: post["rating"],
-            score: post["score"],
-            is_video: is_video,
-            created_at: post["created_at"],
-            source_site: "gelbooru"
-        });
-    }
-
-    let has_more = results.len() >= safe_limit;
-    let total = -1;
-
-    if data.contains("@attributes") {
-        let attrs = data["@attributes"];
-        if attrs.contains("count") {
-            total = attrs["count"];
-        }
-    }
-
-    #{
-        results: results,
-        has_more: has_more,
-        total: total,
-        page: page,
-        query: tags
-    }
+    let post = data[0];
+    build_result(post)
 }
 
-/// Get popular/trending tags
-fn get_popular_tags(limit, settings) {
-    // Rule34 doesn't have a direct trending API
-    // Return commonly used character/series tags
+/// Get chapters (not applicable for image posts, returns empty)
+fn get_chapters(series_id, auth) {
+    []
+}
+
+/// Get pages for a "chapter" (the single image/video)
+fn get_chapter_pages(chapter_id, auth) {
+    let auth_params = build_auth_params(auth);
+    // For image posts, chapter_id is the post ID
+    let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&id=${chapter_id}${auth_params}`;
+
+    let response_text = http_get(url);
+
+    if response_text == "" || response_text == "[]" {
+        return [];
+    }
+
+    let data = json_parse(response_text);
+
+    if data == () || data.len == () || data.len() == 0 {
+        return [];
+    }
+
+    let post = data[0];
+    let file_url = post["file_url"];
+
+    [
+        #{
+            index: 0,
+            url: file_url,
+            headers: #{},
+            referer: ()
+        }
+    ]
+}
+
+/// Get popular tags (commonly used tags)
+fn get_popular_tags() {
     [
         "solo",
         "1girl",
@@ -212,67 +240,6 @@ fn get_popular_tags(limit, settings) {
     ]
 }
 
-/// Get image details by ID
-fn get_post_details(post_id, source_site, settings) {
-    let url = "";
-
-    if source_site == "gelbooru" {
-        url = `${GELBOORU_API}?page=dapi&s=post&q=index&json=1&id=${post_id}`;
-    } else {
-        // Default to rule34
-        url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&id=${post_id}`;
-    }
-
-    let response_text = http_get(url);
-
-    if response_text == "" || response_text == "[]" {
-        return ();
-    }
-
-    let data = json_parse(response_text);
-    let post = ();
-
-    if data.is_array() && data.len() > 0 {
-        post = data[0];
-    } else if data.contains("post") && data["post"].len() > 0 {
-        post = data["post"][0];
-    }
-
-    if post == () {
-        return ();
-    }
-
-    let is_video = false;
-    let file_url = post["file_url"];
-
-    if file_url != () {
-        let lower_url = file_url.to_lower();
-        is_video = lower_url.ends_with(".webm") || lower_url.ends_with(".mp4");
-    }
-
-    let tag_string = post["tags"];
-    let tag_list = [];
-    if tag_string != () {
-        tag_list = tag_string.split(" ");
-    }
-
-    #{
-        id: post["id"],
-        preview_url: post["preview_url"],
-        sample_url: post["sample_url"],
-        file_url: file_url,
-        width: post["width"],
-        height: post["height"],
-        tags: tag_list,
-        source: post["source"],
-        rating: post["rating"],
-        score: post["score"],
-        is_video: is_video,
-        created_at: post["created_at"],
-        source_site: source_site
-    }
-}
-
 /// Convert series name to Rule34 tag format
 fn series_to_tag(series_name) {
     // Rule34 tags use underscores and lowercase
@@ -282,34 +249,4 @@ fn series_to_tag(series_name) {
     tag = tag.replace("'", "");
     tag = tag.replace(":", "");
     tag
-}
-
-/// Search for content related to a manga/comic series
-fn search_series_content(series_name, page, limit, settings) {
-    let tag = series_to_tag(series_name);
-    search_rule34(tag, page, limit, settings)
-}
-
-/// Main search function - dispatches to appropriate source
-fn search(query, page, settings) {
-    let limit = 40;
-    if settings.contains("default_limit") {
-        limit = settings["default_limit"];
-    }
-
-    let source = "rule34";
-    if settings.contains("source") {
-        source = settings["source"];
-    }
-
-    if source == "gelbooru" {
-        search_gelbooru(query, page, limit, settings)
-    } else {
-        search_rule34(query, page, limit, settings)
-    }
-}
-
-/// Browse latest content
-fn browse(page, settings) {
-    search("", page, settings)
 }

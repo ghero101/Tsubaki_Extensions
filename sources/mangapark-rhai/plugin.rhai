@@ -1,18 +1,37 @@
 // MangaPark Scraper Add-on (Rhai)
-// Scrapes mangapark.net - features multiple versions per manga
+// Browser-based scraper for mangapark.net (Qwik/JS framework, needs browser)
 // Uses HTML parsing with some embedded JSON data
 //
 // Available APIs:
-//   http_get(url) -> string
-//   http_get_with_headers(url, headers) -> string
-//   html_select(html, selector) -> array
-//   element_text(element) -> string
-//   element_attr(element, name) -> string
-//   json_parse(text) -> Dynamic
-//   regex_find(pattern, text) -> string
+//   HTTP (fallback): http_get(url), http_get_with_headers(url, headers)
+//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_cloudflare(id, timeout)
+//            browser_get_html(id), browser_close(id), browser_is_available()
+//   HTML: html_select(html, selector), element_text(el), element_attr(el, attr)
+//   JSON: json_parse(text)
+//   Regex: regex_find(pattern, text)
 //   url_encode(text) -> string
 
 const BASE_URL = "https://mangapark.net";
+
+/// Fetch HTML using browser automation (bypasses Cloudflare and renders JS)
+/// Falls back to HTTP if browser not available
+fn fetch_html(url) {
+    if browser_is_available() {
+        let browser_id = browser_launch();
+        browser_goto(browser_id, url);
+        browser_wait_for_cloudflare(browser_id, 15000);
+
+        // Wait for Qwik to render content
+        browser_wait_for_selector(browser_id, ".item, .manga-item, h1", 10000);
+
+        let html = browser_get_html(browser_id);
+        browser_close(browser_id);
+        return html;
+    }
+
+    // Fallback to HTTP
+    http_get_with_headers(url, get_headers())
+}
 
 /// Returns metadata about this source
 fn get_source_info() {
@@ -23,11 +42,11 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only"
+        capability_level: "browser_automation"
     }
 }
 
-/// Get headers for requests
+/// Get headers for requests (used for HTTP fallback)
 fn get_headers() {
     #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -42,7 +61,7 @@ fn search_series(query, page, auth) {
     let encoded_query = url_encode(query);
     let url = `${BASE_URL}/search?word=${encoded_query}&page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let series = [];
 
@@ -165,7 +184,7 @@ fn get_series(id_or_url, auth) {
         manga_id = extract_manga_id(id_or_url);
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     // Extract title
     let title = "";
@@ -324,7 +343,7 @@ fn get_chapters(series_id, auth) {
         url = `${BASE_URL}/title/${series_id}`;
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let chapters = [];
     let seen = #{};
@@ -422,7 +441,7 @@ fn get_chapter_pages(chapter_id, auth) {
         url = `${BASE_URL}${chapter_id}`;
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let pages = [];
     let idx = 0;
@@ -528,7 +547,7 @@ fn get_chapter_pages(chapter_id, auth) {
 fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/latest/${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let series = [];
 
@@ -607,7 +626,7 @@ fn get_latest_updates(page, auth) {
 fn get_popular(page, auth) {
     let url = `${BASE_URL}/popular/${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = fetch_html(url);
 
     let series = [];
 

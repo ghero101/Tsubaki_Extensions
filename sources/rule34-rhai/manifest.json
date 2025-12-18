@@ -12,7 +12,7 @@
   "repository": "https://github.com/tsubaki/tsubaki-addons",
 
   "addon_type": "scraper",
-  "icon_path": "icon.png",
+  "icon_path": "logo-r34.jpg,
   "nsfw": true,
 
   "technology": "rhai",
@@ -29,7 +29,26 @@
   },
 
   "authentication": {
-    "type": "none"
+    "type": "api_key",
+    "credentials_schema": {
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "label": "User ID",
+          "required": true,
+          "placeholder": "Your Rule34 user ID"
+        },
+        {
+          "name": "api_key",
+          "type": "password",
+          "label": "API Key",
+          "required": true,
+          "placeholder": "Your Rule34 API key"
+        }
+      ]
+    },
+    "help_url": "https://rule34.xxx/index.php?page=account&s=options"
   },
 
   "source_info": {

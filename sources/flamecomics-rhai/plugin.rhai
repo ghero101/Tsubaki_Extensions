@@ -1,14 +1,34 @@
 // Flame Comics Scraper Add-on (Rhai)
-// Next.js based site with __NEXT_DATA__ JSON
+// Browser-based scraper for Next.js site with __NEXT_DATA__ JSON
 //
 // Available APIs:
-//   http_get(url) -> string
-//   http_get_with_headers(url, headers) -> string
-//   html_parse(html) -> Document
-//   json_parse(text) -> Dynamic
-//   regex_find(pattern, text) -> string | ()
+//   HTTP (fallback): http_get(url), http_get_with_headers(url, headers)
+//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_cloudflare(id, timeout)
+//            browser_get_html(id), browser_close(id), browser_is_available()
+//   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
+//   JSON: json_parse(text)
 
 const BASE_URL = "https://flamecomics.xyz";
+
+/// Fetch HTML using browser automation (bypasses Cloudflare)
+/// Falls back to HTTP if browser not available
+fn fetch_html(url) {
+    if browser_is_available() {
+        let browser_id = browser_launch();
+        browser_goto(browser_id, url);
+        browser_wait_for_cloudflare(browser_id, 15000);
+
+        // Wait for Next.js content to render
+        browser_wait_for_selector(browser_id, "#__NEXT_DATA__", 10000);
+
+        let html = browser_get_html(browser_id);
+        browser_close(browser_id);
+        return html;
+    }
+
+    // Fallback to HTTP
+    http_get(url)
+}
 
 /// Returns metadata about this source
 fn get_source_info() {
@@ -19,13 +39,12 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only"
+        capability_level: "browser_automation"
     }
 }
 
 /// Extract __NEXT_DATA__ JSON from Next.js HTML
 fn extract_next_data(html) {
-    // Find the __NEXT_DATA__ script tag
     let start_marker = `<script id="__NEXT_DATA__" type="application/json">`;
     let end_marker = `</script>`;
 
@@ -49,8 +68,7 @@ fn extract_next_data(html) {
 /// Search for series matching query
 fn search_series(query, page, auth) {
     let url = BASE_URL;
-
-    let html = http_get(url);
+    let html = fetch_html(url);
     let next_data = extract_next_data(html);
 
     if next_data == () {
@@ -60,7 +78,6 @@ fn search_series(query, page, auth) {
     let series = [];
     let query_lower = query.to_lower();
 
-    // Extract series from latestEntries blocks
     let props = next_data["props"];
     if props == () {
         return #{ series: [], has_more: false, total: 0 };
@@ -84,7 +101,6 @@ fn search_series(query, page, auth) {
                             continue;
                         }
 
-                        // Filter by query if provided
                         if query != "" && !title.to_lower().contains(query_lower) {
                             continue;
                         }
@@ -131,7 +147,7 @@ fn get_series(id_or_url, auth) {
     }
 
     let url = `${BASE_URL}/series/${series_id}`;
-    let html = http_get(url);
+    let html = fetch_html(url);
     let next_data = extract_next_data(html);
 
     if next_data == () {
@@ -187,14 +203,13 @@ fn get_chapters(series_id, auth) {
     if !series_id.starts_with("http") {
         url = `${BASE_URL}/series/${series_id}`;
     } else {
-        // Extract series_id from URL
         let parts = series_id.split("/series/");
         if parts.len() > 1 {
             series_id = parts[1].split("/")[0];
         }
     }
 
-    let html = http_get(url);
+    let html = fetch_html(url);
     let next_data = extract_next_data(html);
 
     if next_data == () {
@@ -231,7 +246,6 @@ fn get_chapters(series_id, auth) {
         });
     }
 
-    // Sort by chapter number (descending - newest first)
     chapters.sort(|a, b| {
         let num_a = parse_float(a.number);
         let num_b = parse_float(b.number);
@@ -249,7 +263,7 @@ fn get_chapter_pages(chapter_id, auth) {
         url = `${BASE_URL}/read/${chapter_id}`;
     }
 
-    let html = http_get(url);
+    let html = fetch_html(url);
     let next_data = extract_next_data(html);
 
     if next_data == () {
@@ -284,7 +298,6 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest updates
 fn get_latest_updates(page, auth) {
-    // Use the same logic as search but without query filter
     search_series("", page, auth)
 }
 
