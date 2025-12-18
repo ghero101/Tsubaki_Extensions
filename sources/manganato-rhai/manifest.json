@@ -1,0 +1,64 @@
+{
+  "manifest_version": 1,
+  "id": "manganato-rhai",
+  "name": "MangaNato",
+  "version": "1.0.0",
+  "description": "Scraper for MangaNato (manganato.com), one of the largest manga aggregator sites with thousands of titles.",
+  "author": {
+    "name": "Tsubaki Community",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "scraper",
+  "icon_path": "icon.png",
+  "nsfw": false,
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "plugin.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["manganato.com", "chapmanganato.to", "chapmanganato.com", "readmanganato.com"],
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
+  },
+
+  "authentication": {
+    "type": "none"
+  },
+
+  "source_info": {
+    "base_url": "https://manganato.com",
+    "language": "en",
+    "content_rating": "suggestive",
+    "tags": ["manga", "manhwa", "manhua", "aggregator"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 30,
+    "burst_limit": 5
+  },
+
+  "settings_schema": {
+    "image_quality": {
+      "type": "select",
+      "label": "Image Quality",
+      "description": "Preferred image quality for downloads",
+      "default": "high",
+      "options": [
+        {"value": "high", "label": "High Quality"},
+        {"value": "low", "label": "Low Quality (faster)"}
+      ]
+    }
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/manganato-rhai/manifest.json",
+    "auto_update": false
+  }
+}
