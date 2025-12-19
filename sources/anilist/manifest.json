@@ -1,0 +1,122 @@
+{
+  "manifest_version": 2,
+  "id": "anilist",
+  "name": "AniList",
+  "version": "2.0.0",
+  "description": "AniList metadata provider - provides manga metadata, tracking, and ID resolution. Supports reading list sync with OAuth2.",
+  "author": {
+    "name": "Tsubaki Team",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+
+  "addon_type": "metadata",
+  "icon_url": "https://anilist.co/img/icons/icon.svg",
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "anilist.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["graphql.anilist.co", "anilist.co"]
+  },
+
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_metadata": true,
+    "get_covers": true,
+    "get_recommendations": true,
+    "get_comments": false,
+    "get_chapters": false,
+    "get_pages": false,
+    "download": false,
+    "search_artwork": false,
+    "save_artwork": false,
+    "tracking": true,
+    "get_user_list": true,
+    "update_list_entry": true,
+    "remove_list_entry": true,
+    "sync_progress": true,
+    "get_list_entry": true
+  },
+
+  "authentication": {
+    "type": "oauth2",
+    "oauth2_config": {
+      "authorization_url": "https://anilist.co/api/v2/oauth/authorize",
+      "token_url": "https://anilist.co/api/v2/oauth/token",
+      "scopes": [],
+      "client_id_setting": "anilist_client_id",
+      "pkce": false,
+      "response_type": "code",
+      "instructions": "To use AniList tracking:\n1. Go to https://anilist.co/settings/developer\n2. Create a new client (App Name: Tsubaki, Redirect URL: your server URL + /api/v1/addon/anilist/callback/)\n3. Copy your Client ID and Client Secret\n4. Enter them in the addon settings below"
+    }
+  },
+
+  "source_info": {
+    "base_url": "https://anilist.co",
+    "language": "en",
+    "supported_languages": ["en", "ja"],
+    "content_rating": "all",
+    "tags": ["metadata", "tracking", "official"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 90
+  },
+
+  "settings_schema": {
+    "anilist_client_id": {
+      "type": "text",
+      "label": "Client ID",
+      "description": "Your AniList API Client ID from https://anilist.co/settings/developer",
+      "required": true,
+      "secret": false
+    },
+    "anilist_client_secret": {
+      "type": "password",
+      "label": "Client Secret",
+      "description": "Your AniList API Client Secret",
+      "required": true,
+      "secret": true
+    },
+    "auto_sync": {
+      "type": "toggle",
+      "label": "Auto-sync reading progress",
+      "description": "Automatically sync your reading progress to AniList when you read chapters",
+      "default": false
+    },
+    "sync_on_complete": {
+      "type": "toggle",
+      "label": "Sync on series completion",
+      "description": "Automatically mark series as completed on AniList when you finish reading",
+      "default": true
+    },
+    "private_entries": {
+      "type": "toggle",
+      "label": "Make list entries private",
+      "description": "New entries added via sync will be marked as private",
+      "default": false
+    },
+    "score_format": {
+      "type": "select",
+      "label": "Score format",
+      "description": "How to convert local ratings to AniList scores",
+      "default": "10_point",
+      "options": [
+        {"value": "10_point", "label": "10 Point (1-10)"},
+        {"value": "100_point", "label": "100 Point (1-100)"},
+        {"value": "5_star", "label": "5 Star (1-5)"}
+      ]
+    }
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/anilist/manifest.json",
+    "auto_update": true
+  }
+}

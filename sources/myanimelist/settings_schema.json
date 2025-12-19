@@ -1,0 +1,87 @@
+{
+  "$schema": "https://tsubaki.app/schemas/addon-settings-v1.json",
+  "version": 1,
+  "settings": [
+    {
+      "key": "include_nsfw",
+      "type": "boolean",
+      "label": "Include NSFW Content",
+      "description": "Include adult-rated manga in search results",
+      "default": false
+    },
+    {
+      "key": "preferred_title_type",
+      "type": "select",
+      "label": "Preferred Title Type",
+      "description": "Which title to display by default",
+      "default": "default",
+      "options": [
+        {"value": "default", "label": "Default (MAL's choice)"},
+        {"value": "english", "label": "English"},
+        {"value": "japanese", "label": "Japanese"}
+      ]
+    },
+    {
+      "key": "auto_sync_progress",
+      "type": "boolean",
+      "label": "Auto-sync Reading Progress",
+      "description": "Automatically sync reading progress when connected",
+      "default": true,
+      "requires_auth": true
+    },
+    {
+      "key": "sync_interval_minutes",
+      "type": "number",
+      "label": "Sync Interval (minutes)",
+      "description": "How often to sync with MyAnimeList (minimum 15 minutes)",
+      "default": 60,
+      "min": 15,
+      "max": 1440,
+      "requires_auth": true
+    },
+    {
+      "key": "default_status",
+      "type": "select",
+      "label": "Default Status",
+      "description": "Default status when adding manga to your list",
+      "default": "plan_to_read",
+      "options": [
+        {"value": "reading", "label": "Reading"},
+        {"value": "completed", "label": "Completed"},
+        {"value": "on_hold", "label": "On Hold"},
+        {"value": "dropped", "label": "Dropped"},
+        {"value": "plan_to_read", "label": "Plan to Read"}
+      ],
+      "requires_auth": true
+    },
+    {
+      "key": "rate_limit_delay_ms",
+      "type": "number",
+      "label": "Rate Limit Delay (ms)",
+      "description": "Delay between API requests to avoid rate limiting (Jikan API)",
+      "default": 1000,
+      "min": 500,
+      "max": 5000,
+      "advanced": true
+    }
+  ],
+  "groups": [
+    {
+      "id": "display",
+      "label": "Display Settings",
+      "settings": ["preferred_title_type", "include_nsfw"]
+    },
+    {
+      "id": "sync",
+      "label": "Sync Settings",
+      "settings": ["auto_sync_progress", "sync_interval_minutes", "default_status"],
+      "requires_auth": true
+    },
+    {
+      "id": "advanced",
+      "label": "Advanced",
+      "settings": ["rate_limit_delay_ms"],
+      "collapsed": true
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "manifest_version": 1,
+  "id": "gelbooru-rhai",
+  "name": "Gelbooru",
+  "version": "1.0.0",
+  "description": "Search and browse Gelbooru for anime-style artwork. Contains adult content - 18+ only.",
+  "author": {
+    "name": "Tsubaki Community",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "scraper",
+  "icon_path": "icon.png",
+  "nsfw": true,
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "plugin.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["gelbooru.com", "api.gelbooru.com"],
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
+  },
+
+  "authentication": {
+    "type": "api_key",
+    "credentials_schema": {
+      "fields": [
+        {
+          "name": "user_id",
+          "type": "text",
+          "label": "User ID",
+          "required": true,
+          "placeholder": "Your Gelbooru user ID"
+        },
+        {
+          "name": "api_key",
+          "type": "password",
+          "label": "API Key",
+          "required": true,
+          "placeholder": "Your Gelbooru API key"
+        }
+      ]
+    },
+    "help_url": "https://gelbooru.com/index.php?page=account&s=options"
+  },
+
+  "source_info": {
+    "base_url": "https://gelbooru.com",
+    "language": "en",
+    "content_rating": "explicit",
+    "tags": ["nsfw", "adult", "gelbooru", "anime", "fanart", "18+"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 30,
+    "burst_limit": 5
+  },
+
+  "settings_schema": {
+    "default_limit": {
+      "type": "number",
+      "label": "Results Per Page",
+      "description": "Number of results to fetch per page",
+      "default": 40,
+      "min": 10,
+      "max": 100
+    },
+    "safe_mode": {
+      "type": "boolean",
+      "label": "Exclude Extreme Content",
+      "description": "Filter out content tagged with extreme tags",
+      "default": false
+    }
+  },
+
+  "warnings": [
+    "This addon provides access to adult content.",
+    "You must be 18 years or older to use this addon.",
+    "By installing, you confirm you are of legal age in your jurisdiction."
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "https://tsubaki.app/schemas/addon-settings-v1.json",
+  "version": 1,
+  "settings": [
+    {
+      "key": "default_language",
+      "type": "select",
+      "label": "Default Language",
+      "description": "Preferred language for titles and descriptions",
+      "default": "english",
+      "options": [
+        {"value": "english", "label": "English"},
+        {"value": "romaji", "label": "Romaji"},
+        {"value": "native", "label": "Native (Japanese/Korean/etc)"}
+      ]
+    },
+    {
+      "key": "include_adult",
+      "type": "boolean",
+      "label": "Include Adult Content",
+      "description": "Include adult-rated manga in search results",
+      "default": false
+    },
+    {
+      "key": "auto_sync_progress",
+      "type": "boolean",
+      "label": "Auto-sync Reading Progress",
+      "description": "Automatically sync reading progress when connected",
+      "default": true,
+      "requires_auth": true
+    },
+    {
+      "key": "sync_interval_minutes",
+      "type": "number",
+      "label": "Sync Interval (minutes)",
+      "description": "How often to sync with AniList (minimum 15 minutes)",
+      "default": 60,
+      "min": 15,
+      "max": 1440,
+      "requires_auth": true
+    },
+    {
+      "key": "default_list_status",
+      "type": "select",
+      "label": "Default List Status",
+      "description": "Default status when adding manga to your list",
+      "default": "PLANNING",
+      "options": [
+        {"value": "CURRENT", "label": "Currently Reading"},
+        {"value": "PLANNING", "label": "Planning to Read"},
+        {"value": "COMPLETED", "label": "Completed"},
+        {"value": "DROPPED", "label": "Dropped"},
+        {"value": "PAUSED", "label": "Paused"}
+      ],
+      "requires_auth": true
+    }
+  ],
+  "groups": [
+    {
+      "id": "display",
+      "label": "Display Settings",
+      "settings": ["default_language", "include_adult"]
+    },
+    {
+      "id": "sync",
+      "label": "Sync Settings",
+      "settings": ["auto_sync_progress", "sync_interval_minutes", "default_list_status"],
+      "requires_auth": true
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "manifest_version": 2,
+  "id": "myanimelist",
+  "name": "MyAnimeList",
+  "version": "2.0.0",
+  "description": "MyAnimeList metadata provider - provides manga metadata via Jikan API and reading list tracking via official MAL API v2.",
+  "author": {
+    "name": "Tsubaki Team",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+
+  "addon_type": "metadata",
+  "icon_url": "https://cdn.myanimelist.net/images/favicon.ico",
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "myanimelist.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["api.jikan.moe", "myanimelist.net", "api.myanimelist.net"]
+  },
+
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_metadata": true,
+    "get_covers": true,
+    "get_recommendations": true,
+    "get_comments": false,
+    "get_chapters": false,
+    "get_pages": false,
+    "download": false,
+    "search_artwork": false,
+    "save_artwork": false,
+    "tracking": true,
+    "get_user_list": true,
+    "update_list_entry": true,
+    "remove_list_entry": true,
+    "sync_progress": true,
+    "get_list_entry": true
+  },
+
+  "authentication": {
+    "type": "oauth2",
+    "oauth2_config": {
+      "authorization_url": "https://myanimelist.net/v1/oauth2/authorize",
+      "token_url": "https://myanimelist.net/v1/oauth2/token",
+      "scopes": [],
+      "client_id_setting": "mal_client_id",
+      "pkce": true,
+      "code_challenge_method": "plain",
+      "response_type": "code",
+      "instructions": "To use MyAnimeList tracking:\n1. Go to https://myanimelist.net/apiconfig\n2. Create a new API client\n3. App Name: Tsubaki (or your preferred name)\n4. App Type: web\n5. App Redirect URL: your server URL + /api/v1/addon/myanimelist/callback/\n6. Copy your Client ID and Client Secret\n7. Enter them in the addon settings below"
+    }
+  },
+
+  "source_info": {
+    "base_url": "https://myanimelist.net",
+    "language": "en",
+    "supported_languages": ["en", "ja"],
+    "content_rating": "all",
+    "tags": ["metadata", "tracking", "official"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 60
+  },
+
+  "settings_schema": {
+    "mal_client_id": {
+      "type": "text",
+      "label": "Client ID",
+      "description": "Your MAL API Client ID from https://myanimelist.net/apiconfig",
+      "required": true,
+      "secret": false
+    },
+    "mal_client_secret": {
+      "type": "password",
+      "label": "Client Secret",
+      "description": "Your MAL API Client Secret (leave empty if using PKCE only)",
+      "required": false,
+      "secret": true
+    },
+    "auto_sync": {
+      "type": "toggle",
+      "label": "Auto-sync reading progress",
+      "description": "Automatically sync your reading progress to MAL when you read chapters",
+      "default": false
+    },
+    "sync_on_complete": {
+      "type": "toggle",
+      "label": "Sync on series completion",
+      "description": "Automatically mark series as completed on MAL when you finish reading",
+      "default": true
+    },
+    "score_format": {
+      "type": "select",
+      "label": "Score format",
+      "description": "How to convert local ratings to MAL scores (MAL uses 1-10)",
+      "default": "10_point",
+      "options": [
+        {"value": "10_point", "label": "10 Point (1-10)"},
+        {"value": "5_star", "label": "5 Star (convert to 1-10)"}
+      ]
+    },
+    "default_priority": {
+      "type": "select",
+      "label": "Default priority for new entries",
+      "description": "Priority level for newly added manga",
+      "default": "1",
+      "options": [
+        {"value": "0", "label": "Low"},
+        {"value": "1", "label": "Medium"},
+        {"value": "2", "label": "High"}
+      ]
+    }
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/myanimelist/manifest.json",
+    "auto_update": true
+  }
+}

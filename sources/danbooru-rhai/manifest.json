@@ -1,0 +1,89 @@
+{
+  "manifest_version": 1,
+  "id": "danbooru-rhai",
+  "name": "Danbooru",
+  "version": "1.0.0",
+  "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content.",
+  "author": {
+    "name": "Tsubaki Community",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "scraper",
+  "icon_path": "icon.png",
+  "nsfw": true,
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "plugin.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["danbooru.donmai.us"],
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
+  },
+
+  "authentication": {
+    "type": "api_key",
+    "credentials_schema": {
+      "fields": [
+        {
+          "name": "username",
+          "type": "text",
+          "label": "Username",
+          "required": false,
+          "placeholder": "Your Danbooru username (optional)"
+        },
+        {
+          "name": "api_key",
+          "type": "password",
+          "label": "API Key",
+          "required": false,
+          "placeholder": "Your Danbooru API key (optional)"
+        }
+      ]
+    },
+    "help_url": "https://danbooru.donmai.us/profile"
+  },
+
+  "source_info": {
+    "base_url": "https://danbooru.donmai.us",
+    "language": "en",
+    "content_rating": "mixed",
+    "tags": ["danbooru", "anime", "fanart", "artwork"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 60,
+    "burst_limit": 10
+  },
+
+  "settings_schema": {
+    "default_limit": {
+      "type": "number",
+      "label": "Results Per Page",
+      "description": "Number of results to fetch per page",
+      "default": 40,
+      "min": 10,
+      "max": 100
+    },
+    "rating_filter": {
+      "type": "select",
+      "label": "Content Rating",
+      "description": "Filter content by rating",
+      "default": "all",
+      "options": [
+        {"value": "all", "label": "All Ratings"},
+        {"value": "g", "label": "General (SFW)"},
+        {"value": "s", "label": "Sensitive"},
+        {"value": "q", "label": "Questionable"},
+        {"value": "e", "label": "Explicit (NSFW)"}
+      ]
+    }
+  }
+}

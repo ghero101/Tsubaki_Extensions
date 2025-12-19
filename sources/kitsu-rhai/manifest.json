@@ -1,0 +1,51 @@
+{
+  "manifest_version": 1,
+  "id": "kitsu-rhai",
+  "name": "Kitsu",
+  "version": "1.0.0",
+  "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations.",
+  "author": {
+    "name": "Tsubaki Team",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "metadata",
+  "icon_path": "icon.png",
+  "nsfw": false,
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "plugin.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["kitsu.io", "kitsu.app"],
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
+  },
+
+  "authentication": {
+    "type": "none"
+  },
+
+  "source_info": {
+    "base_url": "https://kitsu.io/api/edge",
+    "language": "en",
+    "content_rating": "all",
+    "tags": ["metadata", "tracking", "social", "ratings", "recommendations"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 60,
+    "burst_limit": 10
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/kitsu-rhai/manifest.json",
+    "auto_update": true
+  }
+}
