@@ -3,6 +3,34 @@
   "updated_at": "2025-12-18T00:00:00Z",
   "addons": [
     {
+      "id": "anilist",
+      "name": "AniList",
+      "version": "2.0.0",
+      "description": "AniList metadata provider with full tracking support - sync your reading list, progress, and scores via OAuth2.",
+      "author": "Tsubaki Team",
+      "technology": "rhai",
+      "addon_type": "metadata",
+      "nsfw": false,
+      "icon_url": "https://anilist.co/img/icons/icon.svg",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/anilist.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/anilist/manifest.json",
+      "features": ["search", "get_series", "get_metadata", "tracking", "sync_progress"]
+    },
+    {
+      "id": "myanimelist",
+      "name": "MyAnimeList",
+      "version": "2.0.0",
+      "description": "MyAnimeList metadata provider with full tracking support - sync your reading list via official MAL API v2.",
+      "author": "Tsubaki Team",
+      "technology": "rhai",
+      "addon_type": "metadata",
+      "nsfw": false,
+      "icon_url": "https://cdn.myanimelist.net/images/favicon.ico",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/myanimelist.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/myanimelist/manifest.json",
+      "features": ["search", "get_series", "get_metadata", "tracking", "sync_progress"]
+    },
+    {
       "id": "mangadex-rhai",
       "name": "MangaDex",
       "version": "1.1.0",

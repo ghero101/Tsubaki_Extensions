@@ -1,8 +1,8 @@
 {
-  "manifest_version": 1,
+  "manifest_version": 2,
   "id": "mangadex-rhai",
   "name": "MangaDex",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
   "author": {
     "name": "Tsubaki Team",
@@ -26,6 +26,21 @@
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
+  },
+
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_chapters": true,
+    "get_pages": true,
+    "download": true,
+    "get_metadata": true,
+    "get_covers": true,
+    "get_recommendations": false,
+    "get_comments": false,
+    "search_artwork": false,
+    "tracking": false
   },
 
   "authentication": {
