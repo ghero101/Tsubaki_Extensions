@@ -161,19 +161,6 @@
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/mangakakalot-rhai/manifest.json"
     },
     {
-      "id": "fanart-rhai",
-      "name": "Fan Art Gallery",
-      "version": "1.0.0",
-      "description": "Browse and save fan art from Safebooru and other art communities. Search by series name to find related artwork.",
-      "author": "Tsubaki Community",
-      "technology": "rhai",
-      "addon_type": "scraper",
-      "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/fanart-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/fanart-rhai.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/main/sources/fanart-rhai/manifest.json"
-    },
-    {
       "id": "mangaupdates-rhai",
       "name": "MangaUpdates",
       "version": "1.0.0",
