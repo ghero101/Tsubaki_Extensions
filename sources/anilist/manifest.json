@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "anilist",
   "name": "AniList",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "description": "AniList metadata provider - provides manga metadata, tracking, and ID resolution. Supports reading list sync with OAuth2.",
   "author": {
     "name": "Tsubaki Team",

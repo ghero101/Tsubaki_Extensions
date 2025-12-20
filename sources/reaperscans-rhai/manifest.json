@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "reaperscans-rhai",
   "name": "Reaper Scans",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Scraper for Reaper Scans (reaperscans.com), featuring high-quality manhwa and manga translations.",
   "author": {
     "name": "Tsubaki Community",

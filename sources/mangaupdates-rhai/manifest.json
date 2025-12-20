@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangaupdates-rhai",
   "name": "MangaUpdates",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Metadata provider for MangaUpdates - comprehensive manga database with release tracking, reviews, and detailed series information.",
   "author": {
     "name": "Tsubaki Team",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "danbooru-rhai",
   "name": "Danbooru",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content.",
   "author": {
     "name": "Tsubaki Community",

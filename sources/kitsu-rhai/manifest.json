@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "kitsu-rhai",
   "name": "Kitsu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations.",
   "author": {
     "name": "Tsubaki Team",
