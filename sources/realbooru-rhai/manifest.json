@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "realbooru-rhai",
   "name": "RealBooru",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",
@@ -11,7 +11,7 @@
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
 
-  "addon_type": "scraper",
+  "addon_type": "artwork",
   "icon_path": "icon.png",
   "nsfw": true,
   "category": "artwork",

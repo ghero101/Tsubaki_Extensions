@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "rule34-rhai",
   "name": "Rule34",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",
@@ -11,8 +11,8 @@
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
 
-  "addon_type": "scraper",
-  "icon_path": "logo-r34.jpg,
+  "addon_type": "artwork",
+  "icon_path": "logo-r34.jpg",
   "nsfw": true,
 
   "technology": "rhai",
