@@ -387,7 +387,7 @@ fn resolve_id(title, alt_titles) {
         }`;
 
         let response = http_post_json(BASE_URL, graphql_query);
-        let json = parse_json(response);
+        let json = json_parse(response);
 
         if json.data != () && json.data.Media != () {
             let media = json.data.Media;
