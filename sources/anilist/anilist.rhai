@@ -20,7 +20,7 @@ fn get_source_info() {
 fn normalize(s) {
     let result = "";
     for ch in s.to_lower().chars() {
-        if ch.is_alpha_numeric() {
+        if ch.is_alphanumeric() {
             result += ch;
         }
     }
