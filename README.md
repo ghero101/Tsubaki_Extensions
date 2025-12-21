@@ -1,17 +1,20 @@
 # Tsubaki Add-ons
 
-Official add-ons repository for Tsubaki manga scraper. Contains source connectors and metadata providers.
+Official add-ons repository for Tsubaki manga scraper. Contains source connectors, metadata providers, and artwork sources.
 
 ## Structure
 
 ```
 tsubaki-addons/
-├── scrapers/           # Content scraper add-ons
+├── scrapers/           # Content scraper add-ons (manga/comic sources)
 │   └── {addon-id}/
 │       ├── manifest.json
 │       ├── plugin.rhai (or .lua, .py, .wasm)
 │       └── icon.png
-├── metadata/           # Metadata-only add-ons
+├── metadata/           # Metadata-only add-ons (AniList, MAL, etc.)
+│   └── {addon-id}/
+│       └── ...
+├── artwork/            # Artwork provider add-ons (booru sites, fan art)
 │   └── {addon-id}/
 │       └── ...
 └── templates/          # Templates for creating new add-ons
@@ -21,8 +24,9 @@ tsubaki-addons/
 
 | Type | Description |
 |------|-------------|
-| `scraper` | Full source connector - search, browse, download chapters |
-| `metadata` | Metadata provider only - search, get series info (no downloads) |
+| `scraper` | Full source connector - search, browse, download chapters (manga/comic sites) |
+| `metadata` | Metadata provider only - search, get series info (AniList, MAL, MangaUpdates) |
+| `artwork` | Artwork/image provider - search and browse images with tag support (booru sites, fan art) |
 
 ## Supported Technologies
 
@@ -64,6 +68,16 @@ fn search_series(query, page, auth) -> SearchResult
 fn get_series(id_or_url, auth) -> SeriesInfo
 ```
 
+### Artwork Add-ons
+
+```rhai
+fn get_source_info() -> SourceInfo
+fn search_series(query, page, auth) -> SearchResult  // Tag-based search
+fn get_series(id_or_url, auth) -> SeriesInfo         // Image/post details
+fn tag_autocomplete(query, limit, auth) -> Vec<TagInfo>  // Optional
+fn get_popular_tags(limit, auth) -> Vec<TagInfo>         // Optional
+```
+
 ## Manifest Schema
 
 See `templates/` for full examples. Key fields:
@@ -74,7 +88,7 @@ See `templates/` for full examples. Key fields:
   "id": "unique-id",
   "name": "Display Name",
   "version": "1.0.0",
-  "addon_type": "scraper|metadata",
+  "addon_type": "scraper|metadata|artwork",
   "icon_path": "icon.png",
   "technology": "rhai|lua|wasm|native|python",
   "entry_point": { "file": "plugin.rhai" },
@@ -82,12 +96,19 @@ See `templates/` for full examples. Key fields:
     "level": "http_only|browser_automation",
     "allowed_domains": ["example.com"]
   },
+  "tag_search": {
+    "autocomplete": true,
+    "popular_tags": true,
+    "syntax_help": "Use spaces to combine tags"
+  },
   "dependencies": {
     "addons": [],
     "libraries": { "python": [], "lua": [] }
   }
 }
 ```
+
+**Note:** The `tag_search` field is only applicable to artwork add-ons and is optional.
 
 ## Contributing
 

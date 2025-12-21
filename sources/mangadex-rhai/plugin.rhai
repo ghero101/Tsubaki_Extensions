@@ -162,8 +162,8 @@ fn get_source_info() {
 /// Search for series matching a query.
 fn search_series(query, page, settings, auth) {
     let offset = (page - 1) * 25;
-    let preferred_lang = settings.preferred_language || "en";
-    let rating = settings.content_rating || "safe";
+    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
 
     let url = `${BASE_URL}/manga?title=${url_encode(query)}&limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&contentRating[]=${rating}`;
 
@@ -193,7 +193,7 @@ fn get_series_details(id_or_url, settings, auth) {
         id = id_or_url.split("/")[4];
     }
     
-    let preferred_lang = settings.preferred_language || "en";
+    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
     let url = `${BASE_URL}/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
 
     let response_text = http_get(url);
@@ -211,7 +211,7 @@ fn get_chapters(series_id, settings, auth) {
     let chapters = [];
     let offset = 0;
     let limit = 500; // Max limit for this endpoint
-    let lang = settings.preferred_language || "en";
+    let lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
 
     while true {
         let url = `${BASE_URL}/manga/${series_id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=${lang}&order[chapter]=desc&includes[]=scanlation_group`;
@@ -300,8 +300,8 @@ fn get_chapter_pages(chapter_id, settings, auth) {
 /// Get latest updates.
 fn get_latest_updates(page, settings, auth) {
     let offset = (page - 1) * 25;
-    let preferred_lang = settings.preferred_language || "en";
-    let rating = settings.content_rating || "safe";
+    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
 
     let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&order[updatedAt]=desc&contentRating[]=${rating}`;
 

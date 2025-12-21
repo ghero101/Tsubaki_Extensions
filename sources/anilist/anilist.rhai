@@ -16,15 +16,10 @@ fn get_source_info() {
     }
 }
 
-// Normalize string for comparison (lowercase, alphanumeric only)
+// Normalize string for comparison (lowercase, basic cleanup)
 fn normalize(s) {
-    let result = "";
-    for ch in s.to_lower().chars() {
-        if ch.is_alphanumeric() {
-            result += ch;
-        }
-    }
-    result
+    // Simple normalization: lowercase and trim
+    s.to_lower().trim()
 }
 
 // Search for manga series
@@ -470,15 +465,12 @@ fn get_viewer(auth) {
 }
 
 // Get user's manga list
-// status_filter: "reading", "completed", "on_hold", "dropped", "plan_to_read", "rereading", or () for all
 fn get_user_list(status_filter, page, auth) {
     if auth.access_token == () || auth.access_token == "" {
-        return #{ error: "Authentication required. Please connect your AniList account.", requires_auth: true };
+        return #{ error: "Authentication required", requires_auth: true };
     }
 
     let per_page = 50;
-
-    // Build status filter
     let status_clause = "";
     if status_filter != () && status_filter != "" && status_filter != "all" {
         let al_status = map_status_to_anilist(status_filter);
@@ -528,11 +520,16 @@ fn get_user_list(status_filter, page, auth) {
                 finish_date = `${item.completedAt.year}-${item.completedAt.month}-${item.completedAt.day}`;
             }
 
+            let entry_cover_url = "";
+            if media.coverImage != () {
+                entry_cover_url = media.coverImage.large;
+            }
+
             entries.push(#{
                 entry_id: `${item.id}`,
                 manga_id: `${item.mediaId}`,
                 title: title,
-                cover_url: if media.coverImage != () { media.coverImage.large } else { "" },
+                cover_url: entry_cover_url,
                 status: map_anilist_status(item.status),
                 score: item.score,
                 chapters_read: item.progress,
@@ -545,7 +542,7 @@ fn get_user_list(status_filter, page, auth) {
                 updated_at: item.updatedAt,
                 notes: item.notes,
                 priority: item.priority,
-                private: item.private
+                is_private: item["private"]
             });
         }
     }
@@ -598,6 +595,16 @@ fn get_list_entry(manga_id, auth) {
         title = media.title.romaji;
     }
 
+    let entry_start_date = ();
+    if item.startedAt != () && item.startedAt.year != () {
+        entry_start_date = `${item.startedAt.year}-${item.startedAt.month}-${item.startedAt.day}`;
+    }
+
+    let entry_finish_date = ();
+    if item.completedAt != () && item.completedAt.year != () {
+        entry_finish_date = `${item.completedAt.year}-${item.completedAt.month}-${item.completedAt.day}`;
+    }
+
     #{
         entry_id: `${item.id}`,
         manga_id: `${item.mediaId}`,
@@ -609,15 +616,14 @@ fn get_list_entry(manga_id, auth) {
         total_chapters: media.chapters,
         total_volumes: media.volumes,
         reread_count: item.repeat,
-        start_date: if item.startedAt != () && item.startedAt.year != () { `${item.startedAt.year}-${item.startedAt.month}-${item.startedAt.day}` } else { () },
-        finish_date: if item.completedAt != () && item.completedAt.year != () { `${item.completedAt.year}-${item.completedAt.month}-${item.completedAt.day}` } else { () },
+        start_date: entry_start_date,
+        finish_date: entry_finish_date,
         updated_at: item.updatedAt,
         notes: item.notes
     }
 }
 
 // Update manga entry in user's list (or add if not exists)
-// entry should contain: status, score, chapters_read, volumes_read, etc.
 fn update_list_entry(manga_id, entry, auth) {
     if auth.access_token == () || auth.access_token == "" {
         return #{ error: "Authentication required", requires_auth: true };
@@ -632,8 +638,6 @@ fn update_list_entry(manga_id, entry, auth) {
     }
 
     if entry.score != () {
-        // AniList score can be 0-100 or 0-10 depending on user settings
-        // We'll use the raw score and let AniList handle it
         variables = variables + `, "score": ${entry.score}`;
     }
 
@@ -653,8 +657,10 @@ fn update_list_entry(manga_id, entry, auth) {
         variables = variables + `, "notes": "${entry.notes}"`;
     }
 
-    if entry.private != () {
-        variables = variables + `, "private": ${entry.private}`;
+    // Use bracket notation for reserved keyword
+    let is_private_val = entry["private"];
+    if is_private_val != () {
+        variables = variables + `, "private": ${is_private_val}`;
     }
 
     // Handle dates - AniList uses FuzzyDateInput { year, month, day }
@@ -745,7 +751,6 @@ fn remove_list_entry(manga_id, auth) {
 }
 
 // Sync reading progress from local to AniList
-// progress should contain: manga_id, chapters_read, volumes_read, status (optional)
 fn sync_progress(manga_id, progress, auth) {
     if auth.access_token == () || auth.access_token == "" {
         return #{ error: "Authentication required", requires_auth: true };
@@ -808,10 +813,15 @@ fn get_recommendations(manga_id, auth) {
                     title = media.title.romaji;
                 }
 
+                let rec_cover_url = "";
+                if media.coverImage != () {
+                    rec_cover_url = media.coverImage.large;
+                }
+
                 recommendations.push(#{
                     id: `${media.id}`,
                     title: title,
-                    cover_url: if media.coverImage != () { media.coverImage.large } else { "" },
+                    cover_url: rec_cover_url,
                     url: `https://anilist.co/manga/${media.id}`,
                     rating: node.rating
                 });

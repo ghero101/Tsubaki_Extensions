@@ -20,7 +20,7 @@ fn get_source_info() {
 fn normalize(s) {
     let result = "";
     for ch in s.to_lower().chars() {
-        if ch.is_alpha_numeric() {
+        if ch.is_alphanumeric() {
             result += ch;
         }
     }
@@ -446,7 +446,7 @@ fn resolve_id(title, alt_titles) {
     for q in candidates {
         let url = `${BASE_URL}/manga?q=${url_encode(q)}&limit=5`;
         let response = http_get(url);
-        let json = parse_json(response);
+        let json = json_parse(response);
 
         if json.data != () {
             let target_norm = normalize(q);
@@ -668,7 +668,7 @@ fn update_list_entry(manga_id, entry, auth) {
 
     let body = form_data.join("&");
 
-    let response = http_patch_with_headers(url, body, headers);
+    let response = http_patch_form(url, body, headers);
     let json = json_parse(response);
 
     if json.error != () {
