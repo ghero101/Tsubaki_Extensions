@@ -1,8 +1,8 @@
 {
-  "manifest_version": 1,
+  "manifest_version": 2,
   "id": "nhentai-rhai",
   "name": "nhentai",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "nhentai doujinshi/manga source. Contains EXPLICIT adult content - 18+ only. By using this addon, you confirm you are of legal age.",
   "author": {
     "name": "Tsubaki Community",

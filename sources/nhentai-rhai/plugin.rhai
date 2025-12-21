@@ -220,11 +220,11 @@ fn get_source_info() {
 
 /// Search for galleries matching a query
 /// API: https://nhentai.net/api/galleries/search?query=TAG&page=1
-fn search_series(query, page, settings, auth) {
+fn search_series(query, page, auth) {
     let search_query = url_encode(query);
     let url = `${API_URL}/galleries/search?query=${search_query}&page=${page}`;
 
-    // Add language filter if set in settings
+    // Add language filter if set in settings (settings is a scope variable)
     let lang = settings["preferred_language"];
     if lang != () && lang != "" {
         url = `${API_URL}/galleries/search?query=${search_query}+language:${lang}&page=${page}`;
@@ -284,7 +284,7 @@ fn search_series(query, page, settings, auth) {
 
 /// Get detailed gallery information by ID
 /// API: https://nhentai.net/api/gallery/{id}
-fn get_series_details(id_or_url, settings, auth) {
+fn get_series_details(id_or_url, auth) {
     let id = id_or_url;
 
     // Extract ID from URL if provided
@@ -333,7 +333,7 @@ fn get_series_details(id_or_url, settings, auth) {
 
 /// Get chapters for a gallery
 /// For nhentai, each gallery IS the chapter (single chapter per gallery)
-fn get_chapters(series_id, settings, auth) {
+fn get_chapters(series_id, auth) {
     // First get the gallery details to get page count
     let url = `${API_URL}/gallery/${series_id}`;
 
@@ -392,7 +392,7 @@ fn get_chapters(series_id, settings, auth) {
 /// Get page URLs for a chapter (gallery)
 /// API: https://nhentai.net/api/gallery/{id}
 /// Images: https://i.nhentai.net/galleries/{media_id}/{page}.{ext}
-fn get_chapter_pages(chapter_id, settings, auth) {
+fn get_chapter_pages(chapter_id, auth) {
     let url = `${API_URL}/gallery/${chapter_id}`;
 
     let headers = #{
@@ -458,7 +458,7 @@ fn get_chapter_pages(chapter_id, settings, auth) {
 }
 
 /// Get latest/popular galleries
-fn get_latest_updates(page, settings, auth) {
+fn get_latest_updates(page, auth) {
     // Use the all galleries endpoint sorted by recent
     let url = `${API_URL}/galleries/all?page=${page}`;
 
@@ -525,20 +525,20 @@ fn get_popular_tags() {
 }
 
 /// Search by tag (convenience function)
-fn search_by_tag(tag, page, settings, auth) {
+fn search_by_tag(tag, page, auth) {
     // Tags can be searched using the tag: prefix
     let query = `tag:"${tag}"`;
-    search_series(query, page, settings, auth)
+    search_series(query, page, auth)
 }
 
 /// Search by artist (convenience function)
-fn search_by_artist(artist, page, settings, auth) {
+fn search_by_artist(artist, page, auth) {
     let query = `artist:"${artist}"`;
-    search_series(query, page, settings, auth)
+    search_series(query, page, auth)
 }
 
 /// Search by parody (convenience function)
-fn search_by_parody(parody, page, settings, auth) {
+fn search_by_parody(parody, page, auth) {
     let query = `parody:"${parody}"`;
-    search_series(query, page, settings, auth)
+    search_series(query, page, auth)
 }

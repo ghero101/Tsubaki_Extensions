@@ -160,7 +160,8 @@ fn get_source_info() {
 }
 
 /// Search for series matching a query.
-fn search_series(query, page, settings, auth) {
+/// Note: 'settings' is injected as a scope variable by the host
+fn search_series(query, page, auth) {
     let offset = (page - 1) * 25;
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
     let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
@@ -186,13 +187,13 @@ fn search_series(query, page, settings, auth) {
 }
 
 /// Get detailed series information.
-fn get_series_details(id_or_url, settings, auth) {
+fn get_series_details(id_or_url, auth) {
     let id = id_or_url;
     // Basic URL extraction
     if id_or_url.contains("mangadex.org/title/") {
         id = id_or_url.split("/")[4];
     }
-    
+
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
     let url = `${BASE_URL}/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
 
@@ -207,7 +208,7 @@ fn get_series_details(id_or_url, settings, auth) {
 }
 
 /// Get all chapters for a series.
-fn get_chapters(series_id, settings, auth) {
+fn get_chapters(series_id, auth) {
     let chapters = [];
     let offset = 0;
     let limit = 500; // Max limit for this endpoint
@@ -269,7 +270,7 @@ fn get_chapters(series_id, settings, auth) {
 }
 
 /// Get page URLs for a chapter.
-fn get_chapter_pages(chapter_id, settings, auth) {
+fn get_chapter_pages(chapter_id, auth) {
     let url = `${BASE_URL}/at-home/server/${chapter_id}`;
 
     let response_text = http_get(url);
@@ -297,13 +298,13 @@ fn get_chapter_pages(chapter_id, settings, auth) {
     return pages;
 }
 
-/// Get latest updates.
-fn get_latest_updates(page, settings, auth) {
+/// Get latest updates (for browse).
+fn get_latest_updates(page, auth) {
     let offset = (page - 1) * 25;
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
     let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
 
-    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&order[updatedAt]=desc&contentRating[]=${rating}`;
+    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[updatedAt]=desc&contentRating[]=${rating}`;
 
     let response_text = http_get(url);
     let response = json_parse(response_text);
@@ -311,19 +312,35 @@ fn get_latest_updates(page, settings, auth) {
     if response.result != "ok" {
         return #{ series: [], has_more: false };
     }
-    
+
     let series = [];
     for manga in response.data {
-        let attrs = manga.attributes;
-        series.push(#{
-            id: manga.id,
-            title: extract_title(attrs.title, preferred_lang),
-            url: `https://mangadex.org/title/${manga.id}`,
-            cover_url: extract_cover_url(manga.id, manga.relationships),
-            updated_at: attrs.updatedAt
-        });
+        series.push(build_series_result(manga, preferred_lang));
     }
 
     let has_more = offset + 25 < response.total;
-    return #{ series: series, has_more: has_more };
+    return #{ series: series, has_more: has_more, total: response.total };
+}
+
+/// Get popular manga (alternative browse).
+fn get_popular(page, auth) {
+    let offset = (page - 1) * 25;
+    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
+
+    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[followedCount]=desc&contentRating[]=${rating}`;
+
+    let response_text = http_get(url);
+    let response = json_parse(response_text);
+
+    if response.result != "ok" {
+        return [];
+    }
+
+    let series = [];
+    for manga in response.data {
+        series.push(build_series_result(manga, preferred_lang));
+    }
+
+    return series;
 }

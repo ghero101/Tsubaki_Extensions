@@ -1,6 +1,6 @@
 {
-  "version": 4,
-  "updated_at": "2025-12-20T20:00:00Z",
+  "version": 5,
+  "updated_at": "2025-12-20T21:00:00Z",
   "addons": [
     {
       "id": "anilist",
@@ -33,7 +33,7 @@
     {
       "id": "mangadex-rhai",
       "name": "MangaDex",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "description": "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -241,7 +241,7 @@
     {
       "id": "nhentai-rhai",
       "name": "nhentai",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "description": "nhentai doujinshi/manga source. Contains EXPLICIT adult content - 18+ only. By using this addon, you confirm you are of legal age.",
       "author": "Tsubaki Community",
       "technology": "rhai",
