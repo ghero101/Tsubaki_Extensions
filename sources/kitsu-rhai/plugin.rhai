@@ -369,8 +369,9 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest updates - returns trending manga
 fn get_latest_updates(page, auth) {
+    // Use updatedAt sort for latest updates (trending only returns ~10 items)
     let offset = (page - 1) * 20;
-    let url = `${API_BASE}/trending/manga?page[limit]=20&page[offset]=${offset}`;
+    let url = `${API_BASE}/manga?sort=-updatedAt&page[limit]=20&page[offset]=${offset}`;
 
     let response = http_get_with_headers(url, get_headers());
     let data = json_parse(response);

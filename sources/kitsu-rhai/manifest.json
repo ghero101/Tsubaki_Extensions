@@ -1,9 +1,9 @@
 {
-  "manifest_version": 1,
+  "manifest_version": 2,
   "id": "kitsu-rhai",
   "name": "Kitsu",
-  "version": "1.0.1",
-  "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations.",
+  "version": "1.1.0",
+  "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations. Supports OAuth for 18+ content and tracking.",
   "author": {
     "name": "Tsubaki Team",
     "url": "https://github.com/tsubaki"
@@ -29,7 +29,13 @@
   },
 
   "authentication": {
-    "type": "none"
+    "type": "oauth2",
+    "oauth_config": {
+      "authorization_url": "https://kitsu.io/api/oauth/authorize",
+      "token_url": "https://kitsu.io/api/oauth/token",
+      "scopes": ["read", "write"],
+      "client_id_required": true
+    }
   },
 
   "source_info": {
