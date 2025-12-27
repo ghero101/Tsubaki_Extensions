@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "myanimelist",
   "name": "MyAnimeList",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "MyAnimeList metadata provider - provides manga metadata via Jikan API and reading list tracking via official MAL API v2.",
   "author": {
     "name": "Tsubaki Team",
@@ -54,7 +54,25 @@
       "pkce": true,
       "code_challenge_method": "plain",
       "response_type": "code",
-      "instructions": "To use MyAnimeList tracking:\n1. Go to https://myanimelist.net/apiconfig\n2. Create a new API client\n3. App Name: Tsubaki (or your preferred name)\n4. App Type: web\n5. App Redirect URL: your server URL + /api/v1/addon/myanimelist/callback/\n6. Copy your Client ID and Client Secret\n7. Enter them in the addon settings below"
+      "instructions": "To use MyAnimeList tracking:\n1. Go to https://myanimelist.net/apiconfig\n2. Create a new API client\n3. App Name: Tsubaki (or your preferred name)\n4. App Type: web\n5. App Redirect URL: your server URL + /api/v1/addon/myanimelist/callback/\n6. Copy your Client ID and Client Secret\n7. Enter them in the credentials below"
+    },
+    "credentials_schema": {
+      "fields": [
+        {
+          "name": "mal_client_id",
+          "type": "text",
+          "label": "Client ID",
+          "description": "Your MAL API Client ID from https://myanimelist.net/apiconfig",
+          "required": true
+        },
+        {
+          "name": "mal_client_secret",
+          "type": "password",
+          "label": "Client Secret",
+          "description": "Your MAL API Client Secret (leave empty if using PKCE only)",
+          "required": false
+        }
+      ]
     }
   },
 
@@ -71,20 +89,6 @@
   },
 
   "settings_schema": {
-    "mal_client_id": {
-      "type": "text",
-      "label": "Client ID",
-      "description": "Your MAL API Client ID from https://myanimelist.net/apiconfig",
-      "required": true,
-      "secret": false
-    },
-    "mal_client_secret": {
-      "type": "password",
-      "label": "Client Secret",
-      "description": "Your MAL API Client Secret (leave empty if using PKCE only)",
-      "required": false,
-      "secret": true
-    },
     "auto_sync": {
       "type": "toggle",
       "label": "Auto-sync reading progress",
