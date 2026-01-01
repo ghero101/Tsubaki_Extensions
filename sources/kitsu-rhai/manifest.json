@@ -28,6 +28,12 @@
     "cloudflare_protected": false
   },
 
+  "features": {
+    "search": true,
+    "get_series": true,
+    "get_metadata": true
+  },
+
   "authentication": {
     "type": "oauth2",
     "oauth_config": {

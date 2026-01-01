@@ -360,6 +360,94 @@ fn get_popular(page, auth) {
     }
 }
 
+// Get ALL manga sorted by ID for complete database sync
+// This is used for comprehensive metadata sync
+fn get_all_manga(page, auth) {
+    // Sort by ID to get deterministic, complete coverage of all manga
+    // perPage max is 50 for AniList
+    let graphql_query = `{
+        "query": "query ($page: Int, $perPage: Int) { Page(page: $page, perPage: $perPage) { pageInfo { total currentPage lastPage hasNextPage } media(type: MANGA, sort: ID) { id title { romaji english native } description(asHtml: false) coverImage { large medium } genres status isAdult startDate { year } } } }",
+        "variables": {"page": ${page + 1}, "perPage": 50}
+    }`;
+
+    let response = http_post_json(BASE_URL, graphql_query);
+    let json = json_parse(response);
+
+    let series = [];
+
+    if json == () || json["data"] == () || json["data"]["Page"] == () {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    let page_info = json["data"]["Page"]["pageInfo"];
+    let media_list = json["data"]["Page"]["media"];
+
+    if media_list != () {
+        for media in media_list {
+            let title = "";
+            if media["title"]["english"] != () && media["title"]["english"] != "" {
+                title = media["title"]["english"];
+            } else if media["title"]["romaji"] != () {
+                title = media["title"]["romaji"];
+            } else if media["title"]["native"] != () {
+                title = media["title"]["native"];
+            }
+
+            let alt_titles = [];
+            if media["title"]["romaji"] != () && media["title"]["romaji"] != title {
+                alt_titles.push(media["title"]["romaji"]);
+            }
+            if media["title"]["native"] != () && media["title"]["native"] != title {
+                alt_titles.push(media["title"]["native"]);
+            }
+            if media["title"]["english"] != () && media["title"]["english"] != title {
+                alt_titles.push(media["title"]["english"]);
+            }
+
+            let cover_url = "";
+            if media["coverImage"] != () {
+                if media["coverImage"]["large"] != () {
+                    cover_url = media["coverImage"]["large"];
+                } else if media["coverImage"]["medium"] != () {
+                    cover_url = media["coverImage"]["medium"];
+                }
+            }
+
+            let rating = "safe";
+            if media["isAdult"] == true {
+                rating = "adult";
+            }
+
+            let genres = [];
+            if media["genres"] != () {
+                genres = media["genres"];
+            }
+
+            series.push(#{
+                id: media["id"].to_string(),
+                title: title,
+                alternate_titles: alt_titles,
+                description: media["description"],
+                cover_url: cover_url,
+                authors: [],
+                artists: [],
+                status: media["status"],
+                genres: genres,
+                tags: [],
+                year: media["startDate"]["year"],
+                content_rating: rating,
+                url: `https://anilist.co/manga/${media["id"]}`
+            });
+        }
+    }
+
+    #{
+        series: series,
+        has_more: page_info["hasNextPage"],
+        total: page_info["total"]
+    }
+}
+
 // Resolve manga title to AniList ID
 fn resolve_id(title, alt_titles) {
     // Build list of candidate titles to search

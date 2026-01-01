@@ -284,7 +284,7 @@ fn search_series(query, page, auth) {
 
 /// Get detailed gallery information by ID
 /// API: https://nhentai.net/api/gallery/{id}
-fn get_series_details(id_or_url, auth) {
+fn get_series(id_or_url, auth) {
     let id = id_or_url;
 
     // Extract ID from URL if provided

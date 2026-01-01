@@ -12,6 +12,24 @@
 
 const XBOORU_API = "https://xbooru.com/index.php";
 
+/// Join array elements with a separator (Rhai doesn't have built-in join)
+fn join_array(arr, separator) {
+    if arr.len() == 0 {
+        return "";
+    }
+    let result = "";
+    let first = true;
+    for item in arr {
+        if first {
+            result = item.to_string();
+            first = false;
+        } else {
+            result = result + separator + item.to_string();
+        }
+    }
+    result
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -29,7 +47,16 @@ fn get_source_info() {
 
 /// Helper to build series result from XBooru post
 fn build_result(post) {
-    let post_id = post["id"].to_string();
+    // Validate post is a proper map object
+    if post == () {
+        return ();
+    }
+
+    let post_id_val = post["id"];
+    if post_id_val == () {
+        return ();
+    }
+    let post_id = post_id_val.to_string();
 
     let is_video = false;
     let file_url = post["file_url"];
@@ -42,7 +69,7 @@ fn build_result(post) {
     // Parse tags into array
     let tag_string = post["tags"];
     let tag_list = [];
-    if tag_string != () {
+    if tag_string != () && tag_string != "" {
         tag_list = tag_string.split(" ");
     }
 
@@ -55,7 +82,7 @@ fn build_result(post) {
             count += 1;
         }
     }
-    let title = title_tags.join(", ");
+    let title = join_array(title_tags, ", ");
 
     #{
         id: post_id,
@@ -103,19 +130,27 @@ fn search_series(query, page, auth) {
 
     // XBooru returns array directly or { post: [...] } format
     let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
+    if data == () {
+        return #{ series: [], has_more: false, total: () };
+    }
+    // Check if data is an array (direct response)
+    if type_of(data) == "array" {
         posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        // Object response with "post" field
+        posts = data["post"];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts == () || posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
     let results = [];
     for post in posts {
-        results.push(build_result(post));
+        let result = build_result(post);
+        if result != () {
+            results.push(result);
+        }
     }
 
     #{
@@ -141,19 +176,27 @@ fn get_latest_updates(page, auth) {
     let data = json_parse(response_text);
 
     let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
+    if data == () {
+        return #{ series: [], has_more: false, total: () };
+    }
+    // Check if data is an array (direct response)
+    if type_of(data) == "array" {
         posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        // Object response with "post" field
+        posts = data["post"];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts == () || posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
     let results = [];
     for post in posts {
-        results.push(build_result(post));
+        let result = build_result(post);
+        if result != () {
+            results.push(result);
+        }
     }
 
     #{

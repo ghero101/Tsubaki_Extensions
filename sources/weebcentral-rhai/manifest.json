@@ -1,0 +1,74 @@
+{
+  "manifest_version": 1,
+  "id": "weebcentral-rhai",
+  "name": "WeebCentral",
+  "version": "1.0.0",
+  "description": "Scraper for WeebCentral (weebcentral.com), the successor to MangaSee and MangaLife featuring high-quality manga scans.",
+  "author": {
+    "name": "Tsubaki Community",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "scraper",
+  "icon_path": "icon.png",
+  "nsfw": false,
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "plugin.rhai"
+  },
+
+  "capabilities": {
+    "level": "browser_automation",
+    "allowed_domains": ["weebcentral.com", "cdn.weebcentral.com", "thumbnail.weebcentral.com"],
+    "requires_cookies": true,
+    "requires_javascript": true,
+    "cloudflare_protected": true
+  },
+
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_chapters": true,
+    "get_pages": true,
+    "download": true,
+    "get_covers": true
+  },
+
+  "authentication": {
+    "type": "none"
+  },
+
+  "source_info": {
+    "base_url": "https://weebcentral.com",
+    "language": "en",
+    "content_rating": "suggestive",
+    "tags": ["manga", "high-quality", "official", "aggregator"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 30,
+    "burst_limit": 5
+  },
+
+  "settings_schema": {
+    "reading_style": {
+      "type": "select",
+      "label": "Reading Style",
+      "description": "Preferred reading style for page images",
+      "default": "long_strip",
+      "options": [
+        {"value": "long_strip", "label": "Long Strip (Vertical)"},
+        {"value": "single", "label": "Single Page"}
+      ]
+    }
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/weebcentral-rhai/manifest.json",
+    "auto_update": false
+  }
+}

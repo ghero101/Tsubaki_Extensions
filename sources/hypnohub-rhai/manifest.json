@@ -29,6 +29,15 @@
     "cloudflare_protected": false
   },
 
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_chapter_pages": true,
+    "search_artwork": true,
+    "get_covers": true
+  },
+
   "authentication": {
     "type": "none",
     "credentials_schema": {

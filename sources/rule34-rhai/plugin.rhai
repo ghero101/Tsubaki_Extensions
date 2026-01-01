@@ -41,9 +41,36 @@ fn build_auth_params(auth) {
     `&user_id=${user_id}&api_key=${api_key}`
 }
 
+/// Join array elements with a separator (Rhai doesn't have built-in join)
+fn join_array(arr, separator) {
+    if arr.len() == 0 {
+        return "";
+    }
+    let result = "";
+    let first = true;
+    for item in arr {
+        if first {
+            result = item.to_string();
+            first = false;
+        } else {
+            result = result + separator + item.to_string();
+        }
+    }
+    result
+}
+
 /// Helper to build series result from Rule34 post
 fn build_result(post) {
-    let post_id = post["id"].to_string();
+    // Validate post is a proper map object
+    if post == () {
+        return ();
+    }
+
+    let post_id_val = post["id"];
+    if post_id_val == () {
+        return ();
+    }
+    let post_id = post_id_val.to_string();
 
     let is_video = false;
     let file_url = post["file_url"];
@@ -56,7 +83,7 @@ fn build_result(post) {
     // Parse tags into array
     let tag_string = post["tags"];
     let tag_list = [];
-    if tag_string != () {
+    if tag_string != () && tag_string != "" {
         tag_list = tag_string.split(" ");
     }
 
@@ -69,7 +96,7 @@ fn build_result(post) {
             count += 1;
         }
     }
-    let title = title_tags.join(", ");
+    let title = join_array(title_tags, ", ");
 
     #{
         id: post_id,
@@ -119,13 +146,25 @@ fn search_series(query, page, auth) {
 
     let posts = json_parse(response_text);
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts == () {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    // Check if posts is an array
+    if type_of(posts) != "array" {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    if posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
     let results = [];
     for post in posts {
-        results.push(build_result(post));
+        let result = build_result(post);
+        if result != () {
+            results.push(result);
+        }
     }
 
     #{
@@ -151,13 +190,25 @@ fn get_latest_updates(page, auth) {
 
     let posts = json_parse(response_text);
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts == () {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    // Check if posts is an array
+    if type_of(posts) != "array" {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    if posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
     let results = [];
     for post in posts {
-        results.push(build_result(post));
+        let result = build_result(post);
+        if result != () {
+            results.push(result);
+        }
     }
 
     #{

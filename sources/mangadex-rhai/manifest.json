@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "mangadex-rhai",
   "name": "MangaDex",
-  "version": "1.3.0",
+  "version": "1.6.0",
   "description": "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
   "author": {
     "name": "Tsubaki Team",
@@ -22,7 +22,7 @@
 
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["api.mangadex.org", "mangadex.org", "uploads.mangadex.org"],
+    "allowed_domains": ["api.mangadex.org", "mangadex.org", "uploads.mangadex.org", "auth.mangadex.org"],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
@@ -40,11 +40,15 @@
     "get_recommendations": false,
     "get_comments": false,
     "search_artwork": false,
-    "tracking": false
+    "tracking": false,
+    "login": true
   },
 
   "authentication": {
-    "type": "none"
+    "type": "optional",
+    "methods": ["oauth"],
+    "login_url": "https://mangadex.org/settings",
+    "note": "Authentication required for erotica/pornographic content. Create a Personal API Client at https://mangadex.org/settings to get client credentials."
   },
 
   "source_info": {
@@ -61,17 +65,39 @@
   },
 
   "settings_schema": {
-    "content_rating": {
-      "type": "select",
-      "label": "Content Rating Filter",
-      "description": "Filter manga by content rating. Note: 'erotica' and 'pornographic' require being logged in on the website.",
-      "default": "safe",
-      "options": [
-        {"value": "safe", "label": "Safe"},
-        {"value": "suggestive", "label": "Suggestive"},
-        {"value": "erotica", "label": "Erotica"},
-        {"value": "pornographic", "label": "Pornographic"}
-      ]
+    "client_id": {
+      "type": "text",
+      "label": "Client ID",
+      "description": "Personal API Client ID from MangaDex settings (required for 18+ content)",
+      "credential": true,
+      "default": ""
+    },
+    "client_secret": {
+      "type": "password",
+      "label": "Client Secret",
+      "description": "Personal API Client Secret from MangaDex settings",
+      "credential": true,
+      "default": ""
+    },
+    "username": {
+      "type": "text",
+      "label": "MangaDex Username",
+      "description": "Your MangaDex account username",
+      "credential": true,
+      "default": ""
+    },
+    "password": {
+      "type": "password",
+      "label": "MangaDex Password",
+      "description": "Your MangaDex account password",
+      "credential": true,
+      "default": ""
+    },
+    "include_adult_content": {
+      "type": "boolean",
+      "label": "Include Adult Content (18+)",
+      "description": "Enable to show erotica and pornographic content. Requires all 4 credentials above.",
+      "default": false
     },
     "preferred_language": {
       "type": "select",

@@ -1,0 +1,90 @@
+{
+  "manifest_version": 1,
+  "id": "foolslide-rhai",
+  "name": "FoolSlide",
+  "version": "1.0.0",
+  "description": "Framework parser for FoolSlide CMS-based manga sites. FoolSlide is an open-source manga reading platform used by many scanlation groups. Configure the base URL to connect to any FoolSlide instance.",
+  "author": {
+    "name": "Tsubaki Community",
+    "url": "https://github.com/tsubaki"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/tsubaki/tsubaki-addons",
+
+  "addon_type": "scraper",
+  "icon_path": "icon.png",
+  "nsfw": false,
+
+  "technology": "rhai",
+  "entry_point": {
+    "file": "plugin.rhai"
+  },
+
+  "capabilities": {
+    "level": "http_only",
+    "allowed_domains": ["*"],
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
+  },
+
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_chapters": true,
+    "get_pages": true,
+    "download": true,
+    "get_covers": true
+  },
+
+  "authentication": {
+    "type": "none"
+  },
+
+  "source_info": {
+    "base_url": "https://reader.example.com",
+    "language": "en",
+    "supported_languages": ["en", "es", "fr", "de", "it", "pt", "ru", "pl", "id", "vi"],
+    "content_rating": "suggestive",
+    "tags": ["manga", "scanlation", "foolslide", "framework", "configurable"]
+  },
+
+  "rate_limiting": {
+    "requests_per_minute": 60,
+    "burst_limit": 10
+  },
+
+  "settings_schema": {
+    "base_url": {
+      "type": "text",
+      "label": "FoolSlide Base URL",
+      "description": "The base URL of the FoolSlide site (e.g., https://reader.sensescans.com). Do not include trailing slash.",
+      "default": "",
+      "required": true
+    },
+    "preferred_language": {
+      "type": "select",
+      "label": "Preferred Language",
+      "description": "Preferred language for chapters",
+      "default": "en",
+      "options": [
+        {"value": "en", "label": "English"},
+        {"value": "es", "label": "Spanish"},
+        {"value": "fr", "label": "French"},
+        {"value": "de", "label": "German"},
+        {"value": "it", "label": "Italian"},
+        {"value": "pt", "label": "Portuguese"},
+        {"value": "ru", "label": "Russian"},
+        {"value": "pl", "label": "Polish"},
+        {"value": "id", "label": "Indonesian"},
+        {"value": "vi", "label": "Vietnamese"}
+      ]
+    }
+  },
+
+  "update": {
+    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/foolslide-rhai/manifest.json",
+    "auto_update": false
+  }
+}

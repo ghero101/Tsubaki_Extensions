@@ -4,6 +4,104 @@
 const BASE_URL = "https://api.mangadex.org";
 const COVERS_URL = "https://uploads.mangadex.org/covers";
 
+// --- Authentication Functions ---
+
+/// Get session token from auth context.
+/// Checks for session_token or access_token (OAuth compatibility).
+fn get_token_from_auth(auth) {
+    // Check for session_token first (from OAuth login)
+    if auth != () {
+        if auth.session_token != () && auth.session_token != "" {
+            return auth.session_token;
+        }
+        // Also check access_token for OAuth compatibility
+        if auth.access_token != () && auth.access_token != "" {
+            return auth.access_token;
+        }
+    }
+    return "";
+}
+
+/// Get auth headers for a request.
+fn get_auth_headers(auth) {
+    let token = get_token_from_auth(auth);
+    if token != "" {
+        return #{
+            "Authorization": `Bearer ${token}`
+        };
+    }
+    return #{};
+}
+
+/// Make an authenticated GET request.
+fn auth_http_get(url, auth) {
+    let headers = get_auth_headers(auth);
+    if headers.len() > 0 {
+        return http_get_with_headers(url, headers);
+    }
+    return http_get(url);
+}
+
+/// Perform OAuth 2.0 login to MangaDex.
+/// MangaDex uses Keycloak with password grant type.
+/// Required credentials: username, password, client_id, client_secret
+fn login(credentials) {
+    let auth_url = "https://auth.mangadex.org/realms/mangadex/protocol/openid-connect/token";
+
+    // Extract credentials
+    let username = if credentials.username != () { credentials.username } else { "" };
+    let password = if credentials.password != () { credentials.password } else { "" };
+    let client_id = if credentials.client_id != () { credentials.client_id } else { "" };
+    let client_secret = if credentials.client_secret != () { credentials.client_secret } else { "" };
+
+    // Validate required credentials
+    if username == "" || password == "" {
+        return #{
+            success: false,
+            error: "Username and password are required"
+        };
+    }
+
+    if client_id == "" || client_secret == "" {
+        return #{
+            success: false,
+            error: "Client ID and Client Secret are required. Create a Personal API Client at https://mangadex.org/settings"
+        };
+    }
+
+    // Build OAuth request body (URL-encoded form)
+    let body = `grant_type=password&username=${url_encode(username)}&password=${url_encode(password)}&client_id=${url_encode(client_id)}&client_secret=${url_encode(client_secret)}`;
+
+    // Make OAuth token request (http_post_form sets Content-Type automatically)
+    let response_text = http_post_form(auth_url, body);
+    let response = json_parse(response_text);
+
+    // Check for error response
+    if response.error != () {
+        let error_desc = if response.error_description != () { response.error_description } else { response.error };
+        return #{
+            success: false,
+            error: `Authentication failed: ${error_desc}`
+        };
+    }
+
+    // Check for access token
+    if response.access_token == () {
+        return #{
+            success: false,
+            error: "No access token in response"
+        };
+    }
+
+    // Return successful auth context
+    return #{
+        success: true,
+        session_token: response.access_token,
+        refresh_token: response.refresh_token,
+        expires_in: response.expires_in
+    };
+}
+
 // --- Helper Functions ---
 
 /// Checks if an array contains a given value.
@@ -94,6 +192,22 @@ fn map_status(status) {
     return status;
 }
 
+/// Build content rating query parameters based on settings.
+/// Returns the query string portion for content ratings.
+fn build_content_rating_params() {
+    let include_adult = if settings.include_adult_content != () { settings.include_adult_content } else { false };
+
+    // Always include safe and suggestive
+    let params = "contentRating[]=safe&contentRating[]=suggestive";
+
+    // Add adult content ratings if enabled
+    if include_adult {
+        params = params + "&contentRating[]=erotica&contentRating[]=pornographic";
+    }
+
+    return params;
+}
+
 /// Builds a series object from MangaDex manga data.
 fn build_series_result(manga, preferred_lang) {
     let id = manga.id;
@@ -164,11 +278,11 @@ fn get_source_info() {
 fn search_series(query, page, auth) {
     let offset = (page - 1) * 25;
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
-    let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
+    let content_rating_params = build_content_rating_params();
 
-    let url = `${BASE_URL}/manga?title=${url_encode(query)}&limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&contentRating[]=${rating}`;
+    let url = `${BASE_URL}/manga?title=${url_encode(query)}&limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&${content_rating_params}`;
 
-    let response_text = http_get(url);
+    let response_text = auth_http_get(url, auth);
     let response = json_parse(response_text);
 
     if response.result != "ok" {
@@ -187,6 +301,12 @@ fn search_series(query, page, auth) {
 }
 
 /// Get detailed series information.
+/// This is the main entry point expected by the scraper host.
+fn get_series(id_or_url, auth) {
+    return get_series_details(id_or_url, auth);
+}
+
+/// Get detailed series information (internal implementation).
 fn get_series_details(id_or_url, auth) {
     let id = id_or_url;
     // Basic URL extraction
@@ -197,7 +317,7 @@ fn get_series_details(id_or_url, auth) {
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
     let url = `${BASE_URL}/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
 
-    let response_text = http_get(url);
+    let response_text = auth_http_get(url, auth);
     let response = json_parse(response_text);
 
     if response.result != "ok" {
@@ -213,11 +333,12 @@ fn get_chapters(series_id, auth) {
     let offset = 0;
     let limit = 500; // Max limit for this endpoint
     let lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let content_rating_params = build_content_rating_params();
 
     while true {
-        let url = `${BASE_URL}/manga/${series_id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=${lang}&order[chapter]=desc&includes[]=scanlation_group`;
+        let url = `${BASE_URL}/manga/${series_id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=${lang}&order[chapter]=desc&includes[]=scanlation_group&${content_rating_params}`;
 
-        let response_text = http_get(url);
+        let response_text = auth_http_get(url, auth);
         let response = json_parse(response_text);
 
         if response.result != "ok" || response.data.len() == 0 {
@@ -271,9 +392,10 @@ fn get_chapters(series_id, auth) {
 
 /// Get page URLs for a chapter.
 fn get_chapter_pages(chapter_id, auth) {
-    let url = `${BASE_URL}/at-home/server/${chapter_id}`;
+    // Force port 443 to avoid unreliable volunteer CDN nodes
+    let url = `${BASE_URL}/at-home/server/${chapter_id}?forcePort443=true`;
 
-    let response_text = http_get(url);
+    let response_text = auth_http_get(url, auth);
     let response = json_parse(response_text);
 
     if response.result != "ok" {
@@ -283,15 +405,31 @@ fn get_chapter_pages(chapter_id, auth) {
     let server_base_url = response.baseUrl;
     let chapter_data = response.chapter;
     let hash = chapter_data.hash;
-    
+
+    // Build headers that look like a real browser
+    let image_headers = #{
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "image",
+        "Sec-Fetch-Mode": "no-cors",
+        "Sec-Fetch-Site": "cross-site",
+        "Pragma": "no-cache",
+        "Cache-Control": "no-cache"
+    };
+
     let pages = [];
     let i = 0;
     for filename in chapter_data.data {
+        // Use uploads.mangadex.org directly instead of at-home CDN
+        let page_url = `https://uploads.mangadex.org/data/${hash}/${filename}`;
+
         pages.push(#{
             index: i,
-            url: `${server_base_url}/data/${hash}/${filename}`,
-            headers: #{},
-            referer: "https://mangadex.org/"
+            url: page_url,
+            headers: image_headers,
+            referer: `https://mangadex.org/chapter/${chapter_id}`
         });
         i += 1;
     }
@@ -302,11 +440,11 @@ fn get_chapter_pages(chapter_id, auth) {
 fn get_latest_updates(page, auth) {
     let offset = (page - 1) * 25;
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
-    let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
+    let content_rating_params = build_content_rating_params();
 
-    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[updatedAt]=desc&contentRating[]=${rating}`;
+    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[updatedAt]=desc&${content_rating_params}`;
 
-    let response_text = http_get(url);
+    let response_text = auth_http_get(url, auth);
     let response = json_parse(response_text);
 
     if response.result != "ok" {
@@ -326,11 +464,11 @@ fn get_latest_updates(page, auth) {
 fn get_popular(page, auth) {
     let offset = (page - 1) * 25;
     let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
-    let rating = if settings.content_rating != () { settings.content_rating } else { "safe" };
+    let content_rating_params = build_content_rating_params();
 
-    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[followedCount]=desc&contentRating[]=${rating}`;
+    let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[followedCount]=desc&${content_rating_params}`;
 
-    let response_text = http_get(url);
+    let response_text = auth_http_get(url, auth);
     let response = json_parse(response_text);
 
     if response.result != "ok" {

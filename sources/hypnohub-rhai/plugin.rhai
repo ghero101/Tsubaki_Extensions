@@ -101,15 +101,15 @@ fn search_series(query, page, auth) {
 
     let data = json_parse(response_text);
 
-    // HypnoHub returns array directly or { post: [...] } format
+    // Check if data is an array first (HypnoHub returns array directly)
     let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
+    if type_of(data) == "array" {
         posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        posts = data["post"];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
@@ -140,14 +140,15 @@ fn get_latest_updates(page, auth) {
 
     let data = json_parse(response_text);
 
+    // Check if data is an array first (HypnoHub returns array directly)
     let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
+    if type_of(data) == "array" {
         posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        posts = data["post"];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
@@ -175,14 +176,15 @@ fn get_series_details(post_id, auth) {
 
     let data = json_parse(response_text);
 
+    // Check if data is an array first
     let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
+    if type_of(data) == "array" {
         posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        posts = data["post"];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts.len() == 0 {
         return ();
     }
 
@@ -207,14 +209,15 @@ fn get_chapter_pages(chapter_id, auth) {
 
     let data = json_parse(response_text);
 
+    // Check if data is an array first
     let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
+    if type_of(data) == "array" {
         posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        posts = data["post"];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    if posts.len() == 0 {
         return [];
     }
 

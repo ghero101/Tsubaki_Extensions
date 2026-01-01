@@ -28,6 +28,16 @@
     "cloudflare_protected": false
   },
 
+  "features": {
+    "search": true,
+    "browse": true,
+    "get_series": true,
+    "get_chapters": true,
+    "get_pages": true,
+    "download": true,
+    "get_covers": true
+  },
+
   "authentication": {
     "type": "none"
   },
