@@ -48,7 +48,39 @@
     "type": "optional",
     "methods": ["oauth"],
     "login_url": "https://mangadex.org/settings",
-    "note": "Authentication required for erotica/pornographic content. Create a Personal API Client at https://mangadex.org/settings to get client credentials."
+    "note": "Authentication required for erotica/pornographic content. Create a Personal API Client at https://mangadex.org/settings to get client credentials.",
+    "credentials_schema": {
+      "fields": [
+        {
+          "name": "client_id",
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "description": "Personal API Client ID from MangaDex settings"
+        },
+        {
+          "name": "client_secret",
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "description": "Personal API Client Secret from MangaDex settings"
+        },
+        {
+          "name": "username",
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "description": "Your MangaDex account username"
+        },
+        {
+          "name": "password",
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "description": "Your MangaDex account password"
+        }
+      ]
+    }
   },
 
   "source_info": {
