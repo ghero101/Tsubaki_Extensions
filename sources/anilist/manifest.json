@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "anilist",
   "name": "AniList",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "AniList metadata provider - provides manga metadata, tracking, and ID resolution. Supports reading list sync with OAuth2.",
   "author": {
     "name": "Tsubaki Team",
@@ -53,7 +53,25 @@
       "client_id_setting": "anilist_client_id",
       "pkce": false,
       "response_type": "code",
-      "instructions": "To use AniList tracking:\n1. Go to https://anilist.co/settings/developer\n2. Create a new client (App Name: Tsubaki, Redirect URL: your server URL + /api/v1/addon/anilist/callback/)\n3. Copy your Client ID and Client Secret\n4. Enter them in the addon settings below"
+      "instructions": "To use AniList tracking:\n1. Go to https://anilist.co/settings/developer\n2. Create a new client (App Name: Tsubaki, Redirect URL: your server URL + /api/v1/addon/anilist/callback/)\n3. Copy your Client ID and Client Secret\n4. Enter them in the credentials below"
+    },
+    "credentials_schema": {
+      "fields": [
+        {
+          "name": "anilist_client_id",
+          "type": "text",
+          "label": "Client ID",
+          "description": "Your AniList API Client ID from https://anilist.co/settings/developer",
+          "required": true
+        },
+        {
+          "name": "anilist_client_secret",
+          "type": "password",
+          "label": "Client Secret",
+          "description": "Your AniList API Client Secret",
+          "required": true
+        }
+      ]
     }
   },
 
@@ -70,20 +88,6 @@
   },
 
   "settings_schema": {
-    "anilist_client_id": {
-      "type": "text",
-      "label": "Client ID",
-      "description": "Your AniList API Client ID from https://anilist.co/settings/developer",
-      "required": true,
-      "secret": false
-    },
-    "anilist_client_secret": {
-      "type": "password",
-      "label": "Client Secret",
-      "description": "Your AniList API Client Secret",
-      "required": true,
-      "secret": true
-    },
     "auto_sync": {
       "type": "toggle",
       "label": "Auto-sync reading progress",

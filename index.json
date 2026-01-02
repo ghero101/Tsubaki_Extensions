@@ -1,11 +1,11 @@
 {
-  "version": 12,
-  "updated_at": "2025-12-24T15:00:00Z",
+  "version": 13,
+  "updated_at": "2026-01-02T06:00:00Z",
   "addons": [
     {
       "id": "anilist",
       "name": "AniList",
-      "version": "2.0.2",
+      "version": "2.0.4",
       "description": "AniList metadata provider with full tracking support - sync your reading list, progress, and scores via OAuth2.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -137,7 +137,7 @@
     {
       "id": "mangapark-rhai",
       "name": "MangaPark",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "description": "Scraper for MangaPark (mangapark.net), featuring a large manga library with multiple versions and scanlation groups.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -397,7 +397,7 @@
     {
       "id": "batcave-rhai",
       "name": "BatCave",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "Scraper for BatCave (batcave.biz), featuring DC Comics, Batman, and western comics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
