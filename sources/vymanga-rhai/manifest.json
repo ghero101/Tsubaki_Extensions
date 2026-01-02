@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "vymanga-rhai",
   "name": "VyManga",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scraper for VyManga (vymanga.net), a free manga reader with an extensive library of manga, manhwa, and manhua titles.",
   "author": {
     "name": "Tsubaki Community",

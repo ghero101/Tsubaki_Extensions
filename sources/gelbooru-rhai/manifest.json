@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "gelbooru-rhai",
   "name": "Gelbooru",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Search and browse Gelbooru for anime-style artwork. Contains adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",

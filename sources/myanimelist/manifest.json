@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "myanimelist",
   "name": "MyAnimeList",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "MyAnimeList metadata provider - provides manga metadata via Jikan API and reading list tracking via official MAL API v2.",
   "author": {
     "name": "Tsubaki Team",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangaowl-rhai",
   "name": "MangaOwl",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scraper for MangaOwl (mangaowl.io), a popular manga aggregator site using WordPress Madara theme.",
   "author": {
     "name": "Tsubaki Community",

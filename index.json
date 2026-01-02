@@ -1,11 +1,11 @@
 {
-  "version": 14,
-  "updated_at": "2026-01-02T08:00:00Z",
+  "version": 15,
+  "updated_at": "2026-01-02T09:00:00Z",
   "addons": [
     {
       "id": "anilist",
       "name": "AniList",
-      "version": "2.0.5",
+      "version": "2.0.6",
       "description": "AniList metadata provider with full tracking support - sync your reading list, progress, and scores via OAuth2.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -25,7 +25,7 @@
     {
       "id": "myanimelist",
       "name": "MyAnimeList",
-      "version": "2.0.4",
+      "version": "2.0.5",
       "description": "MyAnimeList metadata provider with full tracking support - sync your reading list via official MAL API v2.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -45,7 +45,7 @@
     {
       "id": "mangadex-rhai",
       "name": "MangaDex",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "description": "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -58,7 +58,7 @@
     {
       "id": "comick-rhai",
       "name": "ComicK",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "description": "Scraper for ComicK (comick.io), a popular manga reader with a clean API and fast CDN.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -71,7 +71,7 @@
     {
       "id": "asurascans",
       "name": "Asura Scans",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "description": "Asura Scans - Popular scanlation group for manhwa and manga",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -84,7 +84,7 @@
     {
       "id": "webtoon-rhai",
       "name": "Webtoon",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -97,7 +97,7 @@
     {
       "id": "mangasee-rhai",
       "name": "MangaSee",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -110,7 +110,7 @@
     {
       "id": "reaperscans-rhai",
       "name": "Reaper Scans",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "description": "Scraper for Reaper Scans (reaperscans.com), featuring high-quality manhwa and manga translations.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -123,7 +123,7 @@
     {
       "id": "flamecomics",
       "name": "Flame Comics",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "description": "Flame Comics - Free scanlation group for manhwa and manga",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -136,7 +136,7 @@
     {
       "id": "manganato-rhai",
       "name": "MangaNato",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "description": "Scraper for MangaNato (manganato.com), one of the largest manga aggregator sites with thousands of titles.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -149,7 +149,7 @@
     {
       "id": "mangapark-rhai",
       "name": "MangaPark",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "description": "Scraper for MangaPark (mangapark.net), featuring a large manga library with multiple versions and scanlation groups.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -162,7 +162,7 @@
     {
       "id": "mangakakalot-rhai",
       "name": "MangaKakalot",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Scraper for MangaKakalot (mangakakalot.com), one of the largest manga aggregator sites.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -175,7 +175,7 @@
     {
       "id": "mangaupdates-rhai",
       "name": "MangaUpdates",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Metadata provider for MangaUpdates - comprehensive manga database with release tracking, reviews, and detailed series information.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -188,7 +188,7 @@
     {
       "id": "kitsu-rhai",
       "name": "Kitsu",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations.",
       "author": "Tsubaki Team",
       "technology": "rhai",
@@ -201,7 +201,7 @@
     {
       "id": "rule34-rhai",
       "name": "Rule34",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -214,7 +214,7 @@
     {
       "id": "gelbooru-rhai",
       "name": "Gelbooru",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse Gelbooru for anime-style artwork. Contains adult content - 18+ only.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -227,7 +227,7 @@
     {
       "id": "danbooru-rhai",
       "name": "Danbooru",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -240,7 +240,7 @@
     {
       "id": "konachan-rhai",
       "name": "Konachan",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse Konachan for high-quality anime wallpapers and artwork. Contains adult content - 18+ only.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -253,7 +253,7 @@
     {
       "id": "nhentai-rhai",
       "name": "nhentai",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "nhentai doujinshi/manga source. Contains EXPLICIT adult content - 18+ only. By using this addon, you confirm you are of legal age.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -266,7 +266,7 @@
     {
       "id": "xbooru-rhai",
       "name": "XBooru",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse XBooru for anime-style artwork. Contains adult content - 18+ only.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -279,7 +279,7 @@
     {
       "id": "realbooru-rhai",
       "name": "RealBooru",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -292,7 +292,7 @@
     {
       "id": "hypnohub-rhai",
       "name": "HypnoHub",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "description": "Search and browse HypnoHub for hypnosis-themed artwork. Contains adult content - 18+ only.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -305,7 +305,7 @@
     {
       "id": "safebooru-rhai",
       "name": "Safebooru",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Search and browse Safebooru for safe-for-work anime artwork. No adult content.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -318,7 +318,7 @@
     {
       "id": "batoto-rhai",
       "name": "BatoTo",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for BatoTo (bato.to), a popular multi-language manga aggregator with millions of titles.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -331,7 +331,7 @@
     {
       "id": "dynastyscans-rhai",
       "name": "Dynasty Scans",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for Dynasty Scans (dynasty-scans.com), featuring yuri manga, doujinshi, and anthologies.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -344,7 +344,7 @@
     {
       "id": "mangapill-rhai",
       "name": "MangaPill",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for MangaPill (mangapill.com), a fast manga reader with a large library of titles.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -357,7 +357,7 @@
     {
       "id": "mangaowl-rhai",
       "name": "MangaOwl",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for MangaOwl (mangaowl.io), featuring a large manga library with Cloudflare protection.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -370,7 +370,7 @@
     {
       "id": "vymanga-rhai",
       "name": "VyManga",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for VyManga (vymanga.net), a manga site with multiple CDN domains for fast delivery.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -383,7 +383,7 @@
     {
       "id": "weebcentral-rhai",
       "name": "WeebCentral",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for WeebCentral (weebcentral.com), featuring manga and manhwa with official translations.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -409,7 +409,7 @@
     {
       "id": "batcave-rhai",
       "name": "BatCave",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Scraper for BatCave (batcave.biz), featuring DC Comics, Batman, and western comics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -422,7 +422,7 @@
     {
       "id": "mangatown-rhai",
       "name": "MangaTown",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for MangaTown (mangatown.com), a long-running manga aggregator with a large library.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -435,7 +435,7 @@
     {
       "id": "flixscans-rhai",
       "name": "Flix Scans",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for Flix Scans (flixscans.net), featuring manhwa and manga translations.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -448,7 +448,7 @@
     {
       "id": "mangageko-rhai",
       "name": "MangaGeko",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for MangaGeko (mgeko.cc), a manga reader with fast CDN delivery.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -487,7 +487,7 @@
     {
       "id": "demonicscans-rhai",
       "name": "DemonicScans",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for DemonicScans, a Madara-based manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -500,7 +500,7 @@
     {
       "id": "heytoon-rhai",
       "name": "HeyToon",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for HeyToon (heytoon.com), a webtoon reading site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -513,7 +513,7 @@
     {
       "id": "mycomiclist-rhai",
       "name": "MyComicList",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for MyComicList (mycomiclist.com), a comic aggregator site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -526,7 +526,7 @@
     {
       "id": "roliascan-rhai",
       "name": "RoliaScan",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for RoliaScan (roliascan.com), a manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -539,7 +539,7 @@
     {
       "id": "violetscans-rhai",
       "name": "VioletScans",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for VioletScans (violetscans.com), a Madara-based manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -552,7 +552,7 @@
     {
       "id": "guya-rhai",
       "name": "Guya",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Scraper for Guya (guya.cubari.moe), a manga reader platform featuring high-quality scanlations of popular series like Kaguya-sama and Oshi no Ko.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -565,7 +565,7 @@
     {
       "id": "fmreader-rhai",
       "name": "FMReader",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "FMReader framework parser - A configurable template for FMReader-based manga CMS sites including KissManga, RawKuma, and similar platforms.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -578,7 +578,7 @@
     {
       "id": "heancms-rhai",
       "name": "HeanCMS",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Framework parser for HeanCMS-based manga sites (OmegaScans, ReaperScans, QuantumScans, etc.). Configure the base URL in settings to use with your preferred HeanCMS site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -599,7 +599,7 @@
     {
       "id": "foolslide-rhai",
       "name": "FoolSlide",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Framework parser for FoolSlide CMS-based manga sites. FoolSlide is an open-source manga reading platform used by many scanlation groups. Configure the base URL to connect to any FoolSlide instance.",
       "author": "Tsubaki Community",
       "technology": "rhai",

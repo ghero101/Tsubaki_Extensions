@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangakakalot-rhai",
   "name": "MangaKakalot",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for MangaKakalot (mangakakalot.com), one of the largest manga aggregator sites.",
   "author": {
     "name": "Tsubaki Community",

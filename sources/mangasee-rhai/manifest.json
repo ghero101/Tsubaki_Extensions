@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangasee-rhai",
   "name": "MangaSee",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
   "author": {
     "name": "Tsubaki Community",

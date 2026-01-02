@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "safebooru-rhai",
   "name": "Safebooru",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Browse and search Safebooru for anime artwork. Safe-for-work image board with anime, manga, and game art.",
   "author": {
     "name": "Tsubaki Community",

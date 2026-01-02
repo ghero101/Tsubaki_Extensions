@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "guya-rhai",
   "name": "Guya",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scraper for Guya (guya.cubari.moe), a manga reader platform featuring high-quality scanlations of popular series like Kaguya-sama and Oshi no Ko.",
   "author": {
     "name": "Tsubaki Community",

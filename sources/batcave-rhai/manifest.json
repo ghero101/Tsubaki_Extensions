@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "batcave-rhai",
   "name": "BatCave",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for BatCave (batcave.biz) - Read western comics online including Marvel, DC, Image, Dark Horse, and more.",
   "author": {
     "name": "Tsubaki Community",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "flixscans-rhai",
   "name": "Flix Scans",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scraper for Flix Scans (flixscans.net), a popular scanlation group for manga, manhwa, and manhua with high-quality translations.",
   "author": {
     "name": "Tsubaki Community",
