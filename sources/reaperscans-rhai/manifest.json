@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "reaperscans-rhai",
   "name": "Reaper Scans",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for Reaper Scans (reaperscans.com), featuring high-quality manhwa and manga translations.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,23 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["reaperscans.com", "reaper-scans.com"],
+    "allowed_domains": [
+      "reaperscans.com",
+      "reaper-scans.com"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": true
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,23 +36,24 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://reaperscans.com",
     "language": "en",
     "content_rating": "suggestive",
-    "tags": ["manhwa", "manga", "scanlation", "webtoon"]
+    "tags": [
+      "manhwa",
+      "manga",
+      "scanlation",
+      "webtoon"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 20,
     "burst_limit": 3
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/reaperscans-rhai/manifest.json",
     "auto_update": false

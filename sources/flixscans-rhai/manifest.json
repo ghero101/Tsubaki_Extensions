@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "flixscans-rhai",
   "name": "Flix Scans",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scraper for Flix Scans (flixscans.net), a popular scanlation group for manga, manhwa, and manhua with high-quality translations.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,24 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "browser_automation",
-    "allowed_domains": ["flixscans.net", "flixscans.org", "flixscans.com"],
+    "allowed_domains": [
+      "flixscans.net",
+      "flixscans.org",
+      "flixscans.com"
+    ],
     "requires_cookies": true,
     "requires_javascript": true,
     "cloudflare_protected": true
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,24 +37,28 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://flixscans.net",
     "language": "en",
-    "supported_languages": ["en"],
+    "supported_languages": [
+      "en"
+    ],
     "content_rating": "suggestive",
-    "tags": ["scanlation", "manhwa", "manga", "manhua", "webtoon"]
+    "tags": [
+      "scanlation",
+      "manhwa",
+      "manga",
+      "manhua",
+      "webtoon"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/flixscans-rhai/manifest.json",
     "auto_update": true

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "konachan-rhai",
   "name": "Konachan",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Search and browse Konachan for high-quality anime wallpapers and artwork. Contains adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,25 +10,24 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "artwork",
   "icon_path": "icon.png",
   "nsfw": true,
   "category": "artwork",
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["konachan.com", "konachan.net"],
+    "allowed_domains": [
+      "konachan.com",
+      "konachan.net"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,26 +36,30 @@
     "search_artwork": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none",
     "credentials_schema": {
       "fields": []
     }
   },
-
   "source_info": {
     "base_url": "https://konachan.com",
     "language": "en",
     "content_rating": "explicit",
-    "tags": ["nsfw", "adult", "konachan", "anime", "wallpaper", "artwork", "18+"]
+    "tags": [
+      "nsfw",
+      "adult",
+      "konachan",
+      "anime",
+      "wallpaper",
+      "artwork",
+      "18+"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "settings_schema": {
     "default_limit": {
       "type": "number",
@@ -72,14 +75,25 @@
       "description": "Filter content by rating",
       "default": "all",
       "options": [
-        {"value": "all", "label": "All Ratings"},
-        {"value": "s", "label": "Safe (SFW)"},
-        {"value": "q", "label": "Questionable"},
-        {"value": "e", "label": "Explicit (NSFW)"}
+        {
+          "value": "all",
+          "label": "All Ratings"
+        },
+        {
+          "value": "s",
+          "label": "Safe (SFW)"
+        },
+        {
+          "value": "q",
+          "label": "Questionable"
+        },
+        {
+          "value": "e",
+          "label": "Explicit (NSFW)"
+        }
       ]
     }
   },
-
   "warnings": [
     "This addon provides access to adult content.",
     "You must be 18 years or older to use this addon.",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "vymanga-rhai",
   "name": "VyManga",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scraper for VyManga (vymanga.net), a free manga reader with an extensive library of manga, manhwa, and manhua titles.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,25 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "browser_automation",
-    "allowed_domains": ["vymanga.net", "vymanga.org", "cdnxyz.xyz", "vycdn.net"],
+    "allowed_domains": [
+      "vymanga.net",
+      "vymanga.org",
+      "cdnxyz.xyz",
+      "vycdn.net"
+    ],
     "requires_cookies": true,
     "requires_javascript": true,
     "cloudflare_protected": true
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,23 +38,24 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://vymanga.net",
     "language": "en",
     "content_rating": "suggestive",
-    "tags": ["manga", "manhwa", "manhua", "aggregator"]
+    "tags": [
+      "manga",
+      "manhwa",
+      "manhua",
+      "aggregator"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "settings_schema": {
     "image_server": {
       "type": "select",
@@ -61,13 +63,21 @@
       "description": "Preferred CDN for loading images",
       "default": "auto",
       "options": [
-        {"value": "auto", "label": "Auto (Default)"},
-        {"value": "cdnxyz", "label": "CDN XYZ"},
-        {"value": "vycdn", "label": "VyCDN"}
+        {
+          "value": "auto",
+          "label": "Auto (Default)"
+        },
+        {
+          "value": "cdnxyz",
+          "label": "CDN XYZ"
+        },
+        {
+          "value": "vycdn",
+          "label": "VyCDN"
+        }
       ]
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/vymanga-rhai/manifest.json",
     "auto_update": false

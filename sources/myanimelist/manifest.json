@@ -2,27 +2,27 @@
   "manifest_version": 2,
   "id": "myanimelist",
   "name": "MyAnimeList",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "MyAnimeList metadata provider - provides manga metadata via Jikan API and reading list tracking via official MAL API v2.",
   "author": {
     "name": "Tsubaki Team",
     "url": "https://github.com/tsubaki"
   },
   "license": "MIT",
-
   "addon_type": "metadata",
   "icon_url": "https://cdn.myanimelist.net/images/favicon.ico",
-
   "technology": "rhai",
   "entry_point": {
     "file": "myanimelist.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["api.jikan.moe", "myanimelist.net", "api.myanimelist.net"]
+    "allowed_domains": [
+      "api.jikan.moe",
+      "myanimelist.net",
+      "api.myanimelist.net"
+    ]
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -43,7 +43,6 @@
     "sync_progress": true,
     "get_list_entry": true
   },
-
   "authentication": {
     "type": "oauth2",
     "oauth2_config": {
@@ -75,19 +74,23 @@
       ]
     }
   },
-
   "source_info": {
     "base_url": "https://myanimelist.net",
     "language": "en",
-    "supported_languages": ["en", "ja"],
+    "supported_languages": [
+      "en",
+      "ja"
+    ],
     "content_rating": "all",
-    "tags": ["metadata", "tracking", "official"]
+    "tags": [
+      "metadata",
+      "tracking",
+      "official"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 60
   },
-
   "settings_schema": {
     "auto_sync": {
       "type": "toggle",
@@ -107,8 +110,14 @@
       "description": "How to convert local ratings to MAL scores (MAL uses 1-10)",
       "default": "10_point",
       "options": [
-        {"value": "10_point", "label": "10 Point (1-10)"},
-        {"value": "5_star", "label": "5 Star (convert to 1-10)"}
+        {
+          "value": "10_point",
+          "label": "10 Point (1-10)"
+        },
+        {
+          "value": "5_star",
+          "label": "5 Star (convert to 1-10)"
+        }
       ]
     },
     "default_priority": {
@@ -117,13 +126,21 @@
       "description": "Priority level for newly added manga",
       "default": "1",
       "options": [
-        {"value": "0", "label": "Low"},
-        {"value": "1", "label": "Medium"},
-        {"value": "2", "label": "High"}
+        {
+          "value": "0",
+          "label": "Low"
+        },
+        {
+          "value": "1",
+          "label": "Medium"
+        },
+        {
+          "value": "2",
+          "label": "High"
+        }
       ]
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/myanimelist/manifest.json",
     "auto_update": true

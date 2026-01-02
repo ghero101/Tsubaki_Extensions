@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangasee-rhai",
   "name": "MangaSee",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,28 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["mangasee123.com", "manga4life.com", "official-ongoing-1.ivalice.us", "official-ongoing-2.ivalice.us", "scans-ongoing-1.ivalice.us", "scans-ongoing-2.ivalice.us", "cover.nep.li"],
+    "allowed_domains": [
+      "mangasee123.com",
+      "manga4life.com",
+      "official-ongoing-1.ivalice.us",
+      "official-ongoing-2.ivalice.us",
+      "scans-ongoing-1.ivalice.us",
+      "scans-ongoing-2.ivalice.us",
+      "cover.nep.li"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,23 +41,23 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://mangasee123.com",
     "language": "en",
     "content_rating": "suggestive",
-    "tags": ["manga", "official", "high-quality"]
+    "tags": [
+      "manga",
+      "official",
+      "high-quality"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "settings_schema": {
     "image_server": {
       "type": "select",
@@ -61,13 +65,21 @@
       "description": "Preferred image server for downloads",
       "default": "auto",
       "options": [
-        {"value": "auto", "label": "Automatic"},
-        {"value": "1", "label": "Server 1"},
-        {"value": "2", "label": "Server 2"}
+        {
+          "value": "auto",
+          "label": "Automatic"
+        },
+        {
+          "value": "1",
+          "label": "Server 1"
+        },
+        {
+          "value": "2",
+          "label": "Server 2"
+        }
       ]
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/mangasee-rhai/manifest.json",
     "auto_update": false

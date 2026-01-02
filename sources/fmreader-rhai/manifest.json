@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "fmreader-rhai",
   "name": "FMReader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "FMReader framework parser - A template for FMReader-based manga sites. Supports multiple sites using the FMReader CMS including KissManga, ReadManga, and similar platforms.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,16 +10,13 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
     "allowed_domains": [
@@ -33,7 +30,6 @@
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -48,24 +44,29 @@
     "search_artwork": false,
     "tracking": false
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://kissmanga.org",
     "language": "en",
-    "supported_languages": ["en"],
+    "supported_languages": [
+      "en"
+    ],
     "content_rating": "suggestive",
-    "tags": ["manga", "manhwa", "manhua", "aggregator", "fmreader", "multi-site"]
+    "tags": [
+      "manga",
+      "manhwa",
+      "manhua",
+      "aggregator",
+      "fmreader",
+      "multi-site"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 60,
     "burst_limit": 10
   },
-
   "settings_schema": {
     "base_url": {
       "type": "text",
@@ -80,7 +81,6 @@
       "default": false
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/fmreader-rhai/manifest.json",
     "auto_update": true

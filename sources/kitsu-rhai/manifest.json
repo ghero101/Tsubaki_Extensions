@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "kitsu-rhai",
   "name": "Kitsu",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations. Supports OAuth for 18+ content and tracking.",
   "author": {
     "name": "Tsubaki Team",
@@ -10,52 +10,56 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "metadata",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["kitsu.io", "kitsu.app"],
+    "allowed_domains": [
+      "kitsu.io",
+      "kitsu.app"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "get_series": true,
     "get_metadata": true
   },
-
   "authentication": {
     "type": "oauth2",
     "oauth_config": {
       "authorization_url": "https://kitsu.io/api/oauth/authorize",
       "token_url": "https://kitsu.io/api/oauth/token",
-      "scopes": ["read", "write"],
+      "scopes": [
+        "read",
+        "write"
+      ],
       "client_id_required": true
     }
   },
-
   "source_info": {
     "base_url": "https://kitsu.io/api/edge",
     "language": "en",
     "content_rating": "all",
-    "tags": ["metadata", "tracking", "social", "ratings", "recommendations"]
+    "tags": [
+      "metadata",
+      "tracking",
+      "social",
+      "ratings",
+      "recommendations"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 60,
     "burst_limit": 10
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/kitsu-rhai/manifest.json",
     "auto_update": true

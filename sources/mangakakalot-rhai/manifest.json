@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangakakalot-rhai",
   "name": "MangaKakalot",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Scraper for MangaKakalot (mangakakalot.com), one of the largest manga aggregator sites.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,26 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["mangakakalot.com", "mangakakalot.tv", "chapmanganelo.com", "manganelo.com", "readmanganato.com"],
+    "allowed_domains": [
+      "mangakakalot.com",
+      "mangakakalot.tv",
+      "chapmanganelo.com",
+      "manganelo.com",
+      "readmanganato.com"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,23 +39,24 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://mangakakalot.com",
     "language": "en",
     "content_rating": "suggestive",
-    "tags": ["manga", "manhwa", "manhua", "aggregator"]
+    "tags": [
+      "manga",
+      "manhwa",
+      "manhua",
+      "aggregator"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/mangakakalot-rhai/manifest.json",
     "auto_update": false

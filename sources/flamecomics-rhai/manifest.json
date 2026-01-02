@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "flamecomics",
   "name": "Flame Comics",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Flame Comics - Free scanlation group for manhwa and manga",
   "author": {
     "name": "Tsubaki Team",
@@ -10,23 +10,22 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "browser_automation",
-    "allowed_domains": ["flamecomics.xyz", "flamecomics.com"],
+    "allowed_domains": [
+      "flamecomics.xyz",
+      "flamecomics.com"
+    ],
     "requires_cookies": true,
     "requires_javascript": true,
     "cloudflare_protected": true
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -36,24 +35,28 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://flamecomics.xyz",
     "language": "en",
-    "supported_languages": ["en"],
+    "supported_languages": [
+      "en"
+    ],
     "content_rating": "suggestive",
-    "tags": ["scanlation", "manhwa", "manga", "webtoon", "free"]
+    "tags": [
+      "scanlation",
+      "manhwa",
+      "manga",
+      "webtoon",
+      "free"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/flamecomics-rhai/manifest.json",
     "auto_update": true

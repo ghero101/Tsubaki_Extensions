@@ -2,27 +2,26 @@
   "manifest_version": 2,
   "id": "anilist",
   "name": "AniList",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "AniList metadata provider - provides manga metadata, tracking, and ID resolution. Supports reading list sync with OAuth2.",
   "author": {
     "name": "Tsubaki Team",
     "url": "https://github.com/tsubaki"
   },
   "license": "MIT",
-
   "addon_type": "metadata",
   "icon_url": "https://anilist.co/img/icons/icon.svg",
-
   "technology": "rhai",
   "entry_point": {
     "file": "anilist.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["graphql.anilist.co", "anilist.co"]
+    "allowed_domains": [
+      "graphql.anilist.co",
+      "anilist.co"
+    ]
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -43,7 +42,6 @@
     "sync_progress": true,
     "get_list_entry": true
   },
-
   "authentication": {
     "type": "oauth2",
     "oauth2_config": {
@@ -74,19 +72,23 @@
       ]
     }
   },
-
   "source_info": {
     "base_url": "https://anilist.co",
     "language": "en",
-    "supported_languages": ["en", "ja"],
+    "supported_languages": [
+      "en",
+      "ja"
+    ],
     "content_rating": "all",
-    "tags": ["metadata", "tracking", "official"]
+    "tags": [
+      "metadata",
+      "tracking",
+      "official"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 90
   },
-
   "settings_schema": {
     "auto_sync": {
       "type": "toggle",
@@ -112,13 +114,21 @@
       "description": "How to convert local ratings to AniList scores",
       "default": "10_point",
       "options": [
-        {"value": "10_point", "label": "10 Point (1-10)"},
-        {"value": "100_point", "label": "100 Point (1-100)"},
-        {"value": "5_star", "label": "5 Star (1-5)"}
+        {
+          "value": "10_point",
+          "label": "10 Point (1-10)"
+        },
+        {
+          "value": "100_point",
+          "label": "100 Point (1-100)"
+        },
+        {
+          "value": "5_star",
+          "label": "5 Star (1-5)"
+        }
       ]
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/anilist/manifest.json",
     "auto_update": true

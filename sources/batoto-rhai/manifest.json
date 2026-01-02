@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "batoto-rhai",
   "name": "BatoTo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "BatoTo manga reader - Multi-language manga aggregator with extensive library. Uses browser automation due to Vue.js rendering.",
   "author": {
     "name": "Tsubaki Team",
@@ -10,16 +10,13 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "browser_automation",
     "allowed_domains": [
@@ -38,7 +35,6 @@
     "requires_javascript": true,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -53,24 +49,43 @@
     "search_artwork": false,
     "tracking": false
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://mto.to",
     "language": "en",
-    "supported_languages": ["en", "ja", "ko", "zh", "es", "fr", "de", "it", "pt-br", "ru", "vi", "th", "id", "tr", "ar"],
+    "supported_languages": [
+      "en",
+      "ja",
+      "ko",
+      "zh",
+      "es",
+      "fr",
+      "de",
+      "it",
+      "pt-br",
+      "ru",
+      "vi",
+      "th",
+      "id",
+      "tr",
+      "ar"
+    ],
     "content_rating": "suggestive",
-    "tags": ["aggregator", "multi-language", "manga", "manhwa", "manhua", "webtoon"]
+    "tags": [
+      "aggregator",
+      "multi-language",
+      "manga",
+      "manhwa",
+      "manhua",
+      "webtoon"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "settings_schema": {
     "preferred_language": {
       "type": "select",
@@ -78,25 +93,69 @@
       "description": "Preferred language for chapters",
       "default": "en",
       "options": [
-        {"value": "en", "label": "English"},
-        {"value": "ja", "label": "Japanese"},
-        {"value": "ko", "label": "Korean"},
-        {"value": "zh", "label": "Chinese"},
-        {"value": "es", "label": "Spanish"},
-        {"value": "fr", "label": "French"},
-        {"value": "de", "label": "German"},
-        {"value": "it", "label": "Italian"},
-        {"value": "pt-br", "label": "Portuguese (BR)"},
-        {"value": "ru", "label": "Russian"},
-        {"value": "vi", "label": "Vietnamese"},
-        {"value": "th", "label": "Thai"},
-        {"value": "id", "label": "Indonesian"},
-        {"value": "tr", "label": "Turkish"},
-        {"value": "ar", "label": "Arabic"}
+        {
+          "value": "en",
+          "label": "English"
+        },
+        {
+          "value": "ja",
+          "label": "Japanese"
+        },
+        {
+          "value": "ko",
+          "label": "Korean"
+        },
+        {
+          "value": "zh",
+          "label": "Chinese"
+        },
+        {
+          "value": "es",
+          "label": "Spanish"
+        },
+        {
+          "value": "fr",
+          "label": "French"
+        },
+        {
+          "value": "de",
+          "label": "German"
+        },
+        {
+          "value": "it",
+          "label": "Italian"
+        },
+        {
+          "value": "pt-br",
+          "label": "Portuguese (BR)"
+        },
+        {
+          "value": "ru",
+          "label": "Russian"
+        },
+        {
+          "value": "vi",
+          "label": "Vietnamese"
+        },
+        {
+          "value": "th",
+          "label": "Thai"
+        },
+        {
+          "value": "id",
+          "label": "Indonesian"
+        },
+        {
+          "value": "tr",
+          "label": "Turkish"
+        },
+        {
+          "value": "ar",
+          "label": "Arabic"
+        }
       ]
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/batoto-rhai/manifest.json",
     "auto_update": true

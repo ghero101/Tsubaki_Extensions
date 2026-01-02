@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "violetscans-rhai",
   "name": "VioletScans",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scraper for VioletScans manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,23 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "browser_automation",
-    "allowed_domains": ["violetscans.com", "www.violetscans.com"],
+    "allowed_domains": [
+      "violetscans.com",
+      "www.violetscans.com"
+    ],
     "requires_cookies": false,
     "requires_javascript": true,
     "cloudflare_protected": true
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,18 +36,19 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://violetscans.com",
     "language": "en",
     "content_rating": "suggestive",
-    "tags": ["manga", "manhwa", "scanlation"]
+    "tags": [
+      "manga",
+      "manhwa",
+      "scanlation"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5

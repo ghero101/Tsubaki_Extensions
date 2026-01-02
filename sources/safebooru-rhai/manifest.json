@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "safebooru-rhai",
   "name": "Safebooru",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Browse and search Safebooru for anime artwork. Safe-for-work image board with anime, manga, and game art.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,24 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "artwork",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["safebooru.org", "gelbooru.com", "api.gelbooru.com"],
+    "allowed_domains": [
+      "safebooru.org",
+      "gelbooru.com",
+      "api.gelbooru.com"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -36,23 +36,25 @@
     "search_artwork": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://safebooru.org",
     "language": "en",
     "content_rating": "safe",
-    "tags": ["fanart", "artwork", "booru", "sfw", "anime"]
+    "tags": [
+      "fanart",
+      "artwork",
+      "booru",
+      "sfw",
+      "anime"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
   },
-
   "settings_schema": {
     "default_limit": {
       "type": "number",
@@ -69,7 +71,6 @@
       "default": false
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/safebooru-rhai/manifest.json",
     "auto_update": false

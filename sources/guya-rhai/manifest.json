@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "guya-rhai",
   "name": "Guya",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scraper for Guya (guya.cubari.moe), a manga reader platform featuring high-quality scanlations of popular series like Kaguya-sama and Oshi no Ko.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,23 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["guya.cubari.moe", "cubari.moe"],
+    "allowed_domains": [
+      "guya.cubari.moe",
+      "cubari.moe"
+    ],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,23 +36,24 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "none"
   },
-
   "source_info": {
     "base_url": "https://guya.cubari.moe",
     "language": "en",
     "content_rating": "safe",
-    "tags": ["manga", "scanlation", "guya", "cubari"]
+    "tags": [
+      "manga",
+      "scanlation",
+      "guya",
+      "cubari"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 60,
     "burst_limit": 10
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/guya-rhai/manifest.json",
     "auto_update": false

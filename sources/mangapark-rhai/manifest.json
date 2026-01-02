@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangapark-rhai",
   "name": "MangaPark",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Scraper for MangaPark (mangapark.net), featuring a large manga library with multiple versions and scanlation groups.",
   "author": {
     "name": "Tsubaki Community",
@@ -10,24 +10,26 @@
   },
   "license": "MIT",
   "repository": "https://github.com/tsubaki/tsubaki-addons",
-
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
-
   "technology": "rhai",
   "entry_point": {
     "file": "plugin.rhai"
   },
-
   "capabilities": {
     "level": "browser_automation",
-    "allowed_domains": ["mangapark.net", "mangapark.com", "mangapark.org", "mangapark.io", "v2.mangapark.net"],
+    "allowed_domains": [
+      "mangapark.net",
+      "mangapark.com",
+      "mangapark.org",
+      "mangapark.io",
+      "v2.mangapark.net"
+    ],
     "requires_cookies": true,
     "requires_javascript": true,
     "cloudflare_protected": true
   },
-
   "features": {
     "search": true,
     "browse": true,
@@ -37,7 +39,6 @@
     "download": true,
     "get_covers": true
   },
-
   "authentication": {
     "type": "optional",
     "credentials_schema": {
@@ -59,19 +60,20 @@
       ]
     }
   },
-
   "source_info": {
     "base_url": "https://mangapark.net",
     "language": "en",
     "content_rating": "suggestive",
-    "tags": ["manga", "scanlation", "multi-source"]
+    "tags": [
+      "manga",
+      "scanlation",
+      "multi-source"
+    ]
   },
-
   "rate_limiting": {
     "requests_per_minute": 20,
     "burst_limit": 3
   },
-
   "settings_schema": {
     "preferred_version": {
       "type": "select",
@@ -79,12 +81,17 @@
       "description": "When multiple versions exist, prefer this one",
       "default": "first",
       "options": [
-        {"value": "first", "label": "First Available"},
-        {"value": "latest", "label": "Most Recent Upload"}
+        {
+          "value": "first",
+          "label": "First Available"
+        },
+        {
+          "value": "latest",
+          "label": "Most Recent Upload"
+        }
       ]
     }
   },
-
   "update": {
     "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/mangapark-rhai/manifest.json",
     "auto_update": false
