@@ -59,6 +59,25 @@ fn join_array(arr, separator) {
     result
 }
 
+/// Check if response is an error message instead of JSON data
+fn is_error_response(response_text) {
+    if response_text == () || response_text == "" {
+        return true;
+    }
+    // Check for common error indicators
+    if response_text.contains("Missing authentication") {
+        return true;
+    }
+    if response_text.contains("error") && !response_text.starts_with("[") {
+        return true;
+    }
+    // Valid JSON array responses start with [
+    if !response_text.starts_with("[") {
+        return true;
+    }
+    false
+}
+
 /// Helper to build series result from Rule34 post
 fn build_result(post) {
     // Validate post is a proper map object
@@ -135,13 +154,28 @@ fn search_series(query, page, auth) {
     let search_tags = url_encode(query);
     let auth_params = build_auth_params(auth);
 
+    // Check if auth is provided - Rule34 API requires authentication
+    if auth_params == "" {
+        return #{
+            series: [],
+            has_more: false,
+            total: (),
+            error: "Rule34 requires authentication. Please add your API credentials in the extension settings."
+        };
+    }
+
     let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${limit}${auth_params}`;
 
     let response_text = http_get(url);
 
-    // Handle empty results
-    if response_text == "" || response_text == "[]" {
-        return #{ series: [], has_more: false, total: () };
+    // Check for error responses before parsing
+    if is_error_response(response_text) {
+        return #{
+            series: [],
+            has_more: false,
+            total: (),
+            error: "Authentication required or API error. Please check your Rule34 credentials."
+        };
     }
 
     let posts = json_parse(response_text);
@@ -180,12 +214,28 @@ fn get_latest_updates(page, auth) {
     let pid = page;
     let auth_params = build_auth_params(auth);
 
+    // Check if auth is provided - Rule34 API requires authentication
+    if auth_params == "" {
+        return #{
+            series: [],
+            has_more: false,
+            total: (),
+            error: "Rule34 requires authentication. Please add your API credentials in the extension settings."
+        };
+    }
+
     let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&pid=${pid}&limit=${limit}${auth_params}`;
 
     let response_text = http_get(url);
 
-    if response_text == "" || response_text == "[]" {
-        return #{ series: [], has_more: false, total: () };
+    // Check for error responses before parsing
+    if is_error_response(response_text) {
+        return #{
+            series: [],
+            has_more: false,
+            total: (),
+            error: "Authentication required or API error. Please check your Rule34 credentials."
+        };
     }
 
     let posts = json_parse(response_text);
