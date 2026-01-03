@@ -138,10 +138,14 @@ fn search_series(query, page, auth) {
         posts = data;
     } else if type_of(data) == "map" && data["post"] != () {
         // Object response with "post" field
-        posts = data["post"];
+        let post_data = data["post"];
+        if type_of(post_data) == "array" {
+            posts = post_data;
+        }
     }
 
-    if posts == () || posts.len() == 0 {
+    // Ensure posts is an array before checking length
+    if type_of(posts) != "array" || posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
@@ -184,10 +188,14 @@ fn get_latest_updates(page, auth) {
         posts = data;
     } else if type_of(data) == "map" && data["post"] != () {
         // Object response with "post" field
-        posts = data["post"];
+        let post_data = data["post"];
+        if type_of(post_data) == "array" {
+            posts = post_data;
+        }
     }
 
-    if posts == () || posts.len() == 0 {
+    // Ensure posts is an array before checking length
+    if type_of(posts) != "array" || posts.len() == 0 {
         return #{ series: [], has_more: false, total: () };
     }
 
@@ -217,15 +225,21 @@ fn get_series_details(post_id, auth) {
     }
 
     let data = json_parse(response_text);
-
-    let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
-        posts = data;
+    if data == () {
+        return ();
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    let posts = [];
+    if type_of(data) == "array" {
+        posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        let post_data = data["post"];
+        if type_of(post_data) == "array" {
+            posts = post_data;
+        }
+    }
+
+    if type_of(posts) != "array" || posts.len() == 0 {
         return ();
     }
 
@@ -249,15 +263,21 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let data = json_parse(response_text);
-
-    let posts = [];
-    if data["post"] != () {
-        posts = data["post"];
-    } else if type_of(data) == "array" {
-        posts = data;
+    if data == () {
+        return [];
     }
 
-    if posts == () || posts.len == () || posts.len() == 0 {
+    let posts = [];
+    if type_of(data) == "array" {
+        posts = data;
+    } else if type_of(data) == "map" && data["post"] != () {
+        let post_data = data["post"];
+        if type_of(post_data) == "array" {
+            posts = post_data;
+        }
+    }
+
+    if type_of(posts) != "array" || posts.len() == 0 {
         return [];
     }
 
@@ -275,13 +295,14 @@ fn get_chapter_pages(chapter_id, auth) {
 }
 
 /// Tag autocomplete using XBooru's autocomplete API
-fn tag_autocomplete(query, auth) {
-    if query == "" || query.len() < 2 {
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn tag_autocomplete(query, limit, auth) {
+    if query == () || query == "" || query.len() < 2 {
         return [];
     }
 
     let encoded_query = url_encode(query);
-    let url = `${XBOORU_API}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=10`;
+    let url = `${XBOORU_API}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=${limit}`;
 
     let response_text = http_get(url);
 
@@ -296,9 +317,14 @@ fn tag_autocomplete(query, auth) {
     }
 
     let results = [];
+    let count = 0;
     for item in data {
+        if count >= limit {
+            break;
+        }
         let tag_name = "";
         let tag_count = 0;
+        let tag_type = "general";
 
         // Handle different response formats
         if type_of(item) == "map" {
@@ -314,15 +340,20 @@ fn tag_autocomplete(query, auth) {
             } else if item["post_count"] != () {
                 tag_count = item["post_count"];
             }
+            if item["type"] != () {
+                tag_type = item["type"];
+            }
         } else if type_of(item) == "string" {
             tag_name = item;
         }
 
         if tag_name != "" {
             results.push(#{
-                name: tag_name,
-                count: tag_count
+                tag: tag_name,
+                count: tag_count,
+                tag_type: tag_type
             });
+            count += 1;
         }
     }
 
@@ -330,27 +361,40 @@ fn tag_autocomplete(query, auth) {
 }
 
 /// Get popular tags
-fn get_popular_tags() {
-    [
-        "1girl",
-        "solo",
-        "breasts",
-        "long_hair",
-        "looking_at_viewer",
-        "blush",
-        "smile",
-        "open_mouth",
-        "blue_eyes",
-        "large_breasts",
-        "highres",
-        "short_hair",
-        "blonde_hair",
-        "black_hair",
-        "thighhighs",
-        "simple_background",
-        "nipples",
-        "nude",
-        "pussy",
-        "ass"
-    ]
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn get_popular_tags(limit, auth) {
+    let popular = [
+        #{ tag: "1girl", count: 2000000, tag_type: "general" },
+        #{ tag: "solo", count: 1800000, tag_type: "general" },
+        #{ tag: "breasts", count: 1600000, tag_type: "general" },
+        #{ tag: "long_hair", count: 1400000, tag_type: "general" },
+        #{ tag: "looking_at_viewer", count: 1200000, tag_type: "general" },
+        #{ tag: "blush", count: 1100000, tag_type: "general" },
+        #{ tag: "smile", count: 1000000, tag_type: "general" },
+        #{ tag: "open_mouth", count: 950000, tag_type: "general" },
+        #{ tag: "blue_eyes", count: 900000, tag_type: "general" },
+        #{ tag: "large_breasts", count: 850000, tag_type: "general" },
+        #{ tag: "highres", count: 800000, tag_type: "meta" },
+        #{ tag: "short_hair", count: 750000, tag_type: "general" },
+        #{ tag: "blonde_hair", count: 700000, tag_type: "general" },
+        #{ tag: "black_hair", count: 650000, tag_type: "general" },
+        #{ tag: "thighhighs", count: 600000, tag_type: "general" },
+        #{ tag: "simple_background", count: 550000, tag_type: "general" },
+        #{ tag: "nipples", count: 500000, tag_type: "general" },
+        #{ tag: "nude", count: 480000, tag_type: "general" },
+        #{ tag: "pussy", count: 450000, tag_type: "general" },
+        #{ tag: "ass", count: 420000, tag_type: "general" }
+    ];
+
+    let results = [];
+    let count = 0;
+    for tag_info in popular {
+        if count >= limit {
+            break;
+        }
+        results.push(tag_info);
+        count += 1;
+    }
+
+    results
 }

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "xbooru-rhai",
   "name": "XBooru",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Search and browse XBooru for anime-style artwork. Contains adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",
@@ -30,10 +30,11 @@
   "features": {
     "search": true,
     "browse": true,
-    "get_series": true,
     "get_chapter_pages": true,
     "search_artwork": true,
-    "get_covers": true
+    "get_covers": true,
+    "tag_autocomplete": true,
+    "popular_tags": true
   },
   "authentication": {
     "type": "none",
@@ -70,8 +71,22 @@
     "safe_mode": {
       "type": "boolean",
       "label": "Exclude Extreme Content",
-      "description": "Filter out content tagged with extreme tags",
-      "default": false
+      "description": "Filter out content tagged with extreme tags (gore, scat, etc.)",
+      "default": true
+    },
+    "always_include_tags": {
+      "type": "text",
+      "label": "Always Include Tags",
+      "description": "Tags to always include in searches (comma-separated). These tags will be added to every search.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
+    },
+    "always_exclude_tags": {
+      "type": "text",
+      "label": "Always Exclude Tags",
+      "description": "Tags to always exclude from searches (comma-separated). Content with these tags will never appear.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
     }
   },
   "warnings": [

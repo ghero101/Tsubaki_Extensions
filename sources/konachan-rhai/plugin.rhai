@@ -220,13 +220,14 @@ fn get_chapter_pages(chapter_id, auth) {
 }
 
 /// Tag autocomplete for search suggestions
-fn tag_autocomplete(query, auth) {
-    if query == "" || query.len() < 2 {
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn tag_autocomplete(query, limit, auth) {
+    if query == () || query == "" || query.len() < 2 {
         return [];
     }
 
     let encoded_query = url_encode(query);
-    let url = `${KONACHAN_API}/tag.json?name=${encoded_query}*&order=count&limit=10`;
+    let url = `${KONACHAN_API}/tag.json?name=${encoded_query}*&order=count&limit=${limit}`;
 
     let response_text = http_get(url);
 
@@ -241,13 +242,27 @@ fn tag_autocomplete(query, auth) {
     }
 
     let results = [];
+    let count = 0;
     for tag in tags {
+        if count >= limit {
+            break;
+        }
         let name = tag["name"];
         if name != () {
+            // Konachan tag types: 0=general, 1=artist, 3=copyright, 4=character, 5=circle, 6=faults
+            let tag_type_id = tag["tag_type"];
+            let tag_type = "general";
+            if tag_type_id == 1 { tag_type = "artist"; }
+            else if tag_type_id == 3 { tag_type = "copyright"; }
+            else if tag_type_id == 4 { tag_type = "character"; }
+            else if tag_type_id == 5 { tag_type = "circle"; }
+
             results.push(#{
-                name: name,
-                count: tag["count"]
+                tag: name,
+                count: tag["count"],
+                tag_type: tag_type
             });
+            count += 1;
         }
     }
 
@@ -255,17 +270,40 @@ fn tag_autocomplete(query, auth) {
 }
 
 /// Get popular tags
-fn get_popular_tags() {
-    [
-        "highres",
-        "long_hair",
-        "breasts",
-        "cleavage",
-        "dress",
-        "thighhighs",
-        "blue_eyes",
-        "blonde_hair",
-        "sword",
-        "landscape"
-    ]
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn get_popular_tags(limit, auth) {
+    let popular = [
+        #{ tag: "highres", count: 500000, tag_type: "meta" },
+        #{ tag: "long_hair", count: 450000, tag_type: "general" },
+        #{ tag: "breasts", count: 400000, tag_type: "general" },
+        #{ tag: "cleavage", count: 350000, tag_type: "general" },
+        #{ tag: "dress", count: 320000, tag_type: "general" },
+        #{ tag: "thighhighs", count: 300000, tag_type: "general" },
+        #{ tag: "blue_eyes", count: 280000, tag_type: "general" },
+        #{ tag: "blonde_hair", count: 260000, tag_type: "general" },
+        #{ tag: "sword", count: 240000, tag_type: "general" },
+        #{ tag: "landscape", count: 220000, tag_type: "general" },
+        #{ tag: "sky", count: 200000, tag_type: "general" },
+        #{ tag: "clouds", count: 180000, tag_type: "general" },
+        #{ tag: "original", count: 160000, tag_type: "copyright" },
+        #{ tag: "black_hair", count: 150000, tag_type: "general" },
+        #{ tag: "water", count: 140000, tag_type: "general" },
+        #{ tag: "ass", count: 130000, tag_type: "general" },
+        #{ tag: "nipples", count: 120000, tag_type: "general" },
+        #{ tag: "nude", count: 110000, tag_type: "general" },
+        #{ tag: "sunset", count: 100000, tag_type: "general" },
+        #{ tag: "building", count: 95000, tag_type: "general" }
+    ];
+
+    let results = [];
+    let count = 0;
+    for tag_info in popular {
+        if count >= limit {
+            break;
+        }
+        results.push(tag_info);
+        count += 1;
+    }
+
+    results
 }

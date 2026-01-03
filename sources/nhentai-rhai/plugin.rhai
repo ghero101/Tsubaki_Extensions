@@ -113,21 +113,25 @@ fn build_alternate_titles(gallery) {
 }
 
 /// Build cover URL from gallery data
+/// Uses the correct extension based on cover type from API response
 fn build_cover_url(gallery) {
     let media_id = gallery["media_id"];
     if media_id == () {
         return "";
     }
+
+    // Get cover type from images.cover.t
     let images = gallery["images"];
-    if images == () {
-        return `${THUMB_URL}/${media_id}/thumb.jpg`;
+    let cover_type = "j"; // Default to jpg
+    if images != () {
+        let cover = images["cover"];
+        if cover != () && cover["t"] != () {
+            cover_type = cover["t"];
+        }
     }
-    let cover = images["cover"];
-    if cover == () {
-        return `${THUMB_URL}/${media_id}/thumb.jpg`;
-    }
-    let ext = get_extension(cover["t"]);
-    return `${THUMB_URL}/${media_id}/cover.${ext}`;
+
+    let ext = get_extension(cover_type);
+    return `${THUMB_URL}/${media_id}/thumb.${ext}`;
 }
 
 /// Build a series result from nhentai gallery data

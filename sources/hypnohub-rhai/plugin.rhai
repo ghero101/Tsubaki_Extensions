@@ -235,13 +235,14 @@ fn get_chapter_pages(chapter_id, auth) {
 }
 
 /// Tag autocomplete using HypnoHub's autocomplete API
-fn tag_autocomplete(query, auth) {
-    if query == "" || query.len() < 2 {
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn tag_autocomplete(query, limit, auth) {
+    if query == () || query == "" || query.len() < 2 {
         return [];
     }
 
     let encoded_query = url_encode(query);
-    let url = `${HYPNOHUB_API}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=10`;
+    let url = `${HYPNOHUB_API}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=${limit}`;
 
     let response_text = http_get(url);
 
@@ -256,9 +257,14 @@ fn tag_autocomplete(query, auth) {
     }
 
     let results = [];
+    let count = 0;
     for item in data {
+        if count >= limit {
+            break;
+        }
         let tag_name = "";
         let tag_count = 0;
+        let tag_type = "general";
 
         // Handle different response formats
         if type_of(item) == "map" {
@@ -274,15 +280,20 @@ fn tag_autocomplete(query, auth) {
             } else if item["post_count"] != () {
                 tag_count = item["post_count"];
             }
+            if item["type"] != () {
+                tag_type = item["type"];
+            }
         } else if type_of(item) == "string" {
             tag_name = item;
         }
 
         if tag_name != "" {
             results.push(#{
-                name: tag_name,
-                count: tag_count
+                tag: tag_name,
+                count: tag_count,
+                tag_type: tag_type
             });
+            count += 1;
         }
     }
 
@@ -290,27 +301,40 @@ fn tag_autocomplete(query, auth) {
 }
 
 /// Get popular tags for HypnoHub (hypnosis-themed)
-fn get_popular_tags() {
-    [
-        "hypnosis",
-        "mind_control",
-        "spiral",
-        "empty_eyes",
-        "glowing_eyes",
-        "pendulum",
-        "spiral_eyes",
-        "blank_expression",
-        "hypnotized",
-        "brainwashing",
-        "drool",
-        "trance",
-        "1girl",
-        "solo",
-        "breasts",
-        "long_hair",
-        "looking_at_viewer",
-        "symbol_in_eyes",
-        "heart_eyes",
-        "kneeling"
-    ]
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn get_popular_tags(limit, auth) {
+    let popular = [
+        #{ tag: "hypnosis", count: 100000, tag_type: "general" },
+        #{ tag: "mind_control", count: 90000, tag_type: "general" },
+        #{ tag: "spiral", count: 80000, tag_type: "general" },
+        #{ tag: "empty_eyes", count: 70000, tag_type: "general" },
+        #{ tag: "glowing_eyes", count: 65000, tag_type: "general" },
+        #{ tag: "pendulum", count: 60000, tag_type: "general" },
+        #{ tag: "spiral_eyes", count: 55000, tag_type: "general" },
+        #{ tag: "blank_expression", count: 50000, tag_type: "general" },
+        #{ tag: "hypnotized", count: 48000, tag_type: "general" },
+        #{ tag: "brainwashing", count: 45000, tag_type: "general" },
+        #{ tag: "drool", count: 42000, tag_type: "general" },
+        #{ tag: "trance", count: 40000, tag_type: "general" },
+        #{ tag: "1girl", count: 38000, tag_type: "general" },
+        #{ tag: "solo", count: 36000, tag_type: "general" },
+        #{ tag: "breasts", count: 34000, tag_type: "general" },
+        #{ tag: "long_hair", count: 32000, tag_type: "general" },
+        #{ tag: "looking_at_viewer", count: 30000, tag_type: "general" },
+        #{ tag: "symbol_in_eyes", count: 28000, tag_type: "general" },
+        #{ tag: "heart_eyes", count: 26000, tag_type: "general" },
+        #{ tag: "kneeling", count: 24000, tag_type: "general" }
+    ];
+
+    let results = [];
+    let count = 0;
+    for tag_info in popular {
+        if count >= limit {
+            break;
+        }
+        results.push(tag_info);
+        count += 1;
+    }
+
+    results
 }

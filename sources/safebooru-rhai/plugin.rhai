@@ -245,3 +245,109 @@ fn get_chapter_pages(chapter_id) {
         }
     ]
 }
+
+/// Tag autocomplete - search for tags matching query
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn tag_autocomplete(query, limit, auth) {
+    if query == () || query == "" || query.len() < 2 {
+        return [];
+    }
+
+    let encoded_query = url_encode(query);
+    let url = `${API_URL}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=${limit}`;
+
+    let response_text = http_get(url);
+
+    if response_text == "" || response_text == "[]" {
+        return [];
+    }
+
+    let data = json_parse(response_text);
+
+    if type_of(data) != "array" {
+        return [];
+    }
+
+    let results = [];
+    let count = 0;
+    for item in data {
+        if count >= limit {
+            break;
+        }
+        let tag_name = "";
+        let tag_count = 0;
+        let tag_type = "general";
+
+        if type_of(item) == "map" {
+            if item["value"] != () {
+                tag_name = item["value"];
+            } else if item["label"] != () {
+                tag_name = item["label"];
+            } else if item["name"] != () {
+                tag_name = item["name"];
+            }
+            if item["count"] != () {
+                tag_count = item["count"];
+            } else if item["post_count"] != () {
+                tag_count = item["post_count"];
+            }
+            if item["type"] != () {
+                tag_type = item["type"];
+            } else if item["category"] != () {
+                tag_type = item["category"];
+            }
+        } else if type_of(item) == "string" {
+            tag_name = item;
+        }
+
+        if tag_name != "" {
+            results.push(#{
+                tag: tag_name,
+                count: tag_count,
+                tag_type: tag_type
+            });
+            count += 1;
+        }
+    }
+
+    results
+}
+
+/// Get popular tags
+/// Returns array of TagInfo objects: [{tag: "...", count: N, tag_type: "..."}]
+fn get_popular_tags(limit, auth) {
+    let popular = [
+        #{ tag: "1girl", count: 3000000, tag_type: "general" },
+        #{ tag: "solo", count: 2500000, tag_type: "general" },
+        #{ tag: "long_hair", count: 2000000, tag_type: "general" },
+        #{ tag: "highres", count: 1800000, tag_type: "meta" },
+        #{ tag: "looking_at_viewer", count: 1600000, tag_type: "general" },
+        #{ tag: "smile", count: 1500000, tag_type: "general" },
+        #{ tag: "short_hair", count: 1400000, tag_type: "general" },
+        #{ tag: "blue_eyes", count: 1300000, tag_type: "general" },
+        #{ tag: "open_mouth", count: 1200000, tag_type: "general" },
+        #{ tag: "blonde_hair", count: 1100000, tag_type: "general" },
+        #{ tag: "simple_background", count: 1000000, tag_type: "general" },
+        #{ tag: "black_hair", count: 950000, tag_type: "general" },
+        #{ tag: "multiple_girls", count: 900000, tag_type: "general" },
+        #{ tag: "brown_hair", count: 850000, tag_type: "general" },
+        #{ tag: "thighhighs", count: 800000, tag_type: "general" },
+        #{ tag: "original", count: 750000, tag_type: "copyright" },
+        #{ tag: "white_background", count: 700000, tag_type: "general" },
+        #{ tag: "skirt", count: 650000, tag_type: "general" },
+        #{ tag: "dress", count: 600000, tag_type: "general" },
+        #{ tag: "blush", count: 550000, tag_type: "general" }
+    ];
+
+    let results = [];
+    let count = 0;
+    for tag_info in popular {
+        if count >= limit {
+            break;
+        }
+        results.push(tag_info);
+        count += 1;
+    }
+
+    results
+}

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "safebooru-rhai",
   "name": "Safebooru",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Browse and search Safebooru for anime artwork. Safe-for-work image board with anime, manga, and game art.",
   "author": {
     "name": "Tsubaki Community",
@@ -31,10 +31,11 @@
   "features": {
     "search": true,
     "browse": true,
-    "get_series": true,
     "get_chapter_pages": true,
     "search_artwork": true,
-    "get_covers": true
+    "get_covers": true,
+    "tag_autocomplete": true,
+    "popular_tags": true
   },
   "authentication": {
     "type": "none"
@@ -69,6 +70,20 @@
       "label": "Include Questionable Content",
       "description": "Include content rated 'questionable' (suggestive but not explicit)",
       "default": false
+    },
+    "always_include_tags": {
+      "type": "text",
+      "label": "Always Include Tags",
+      "description": "Tags to always include in searches (comma-separated). These tags will be added to every search.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
+    },
+    "always_exclude_tags": {
+      "type": "text",
+      "label": "Always Exclude Tags",
+      "description": "Tags to always exclude from searches (comma-separated). Content with these tags will never appear.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
     }
   },
   "update": {

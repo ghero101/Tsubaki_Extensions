@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "id": "realbooru-rhai",
   "name": "RealBooru",
-  "version": "1.0.5",
-  "description": "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only.",
+  "version": "1.1.0",
+  "description": "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only. Uses HTML scraping since the JSON API is offline.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -30,10 +30,11 @@
   "features": {
     "search": true,
     "browse": true,
-    "get_series": true,
-    "get_chapter_pages": true,
+    "get_pages": true,
     "search_artwork": true,
-    "get_covers": true
+    "get_covers": true,
+    "tag_autocomplete": true,
+    "popular_tags": true
   },
   "authentication": {
     "type": "none",
@@ -70,8 +71,22 @@
     "safe_mode": {
       "type": "boolean",
       "label": "Exclude Extreme Content",
-      "description": "Filter out content tagged with extreme tags",
-      "default": false
+      "description": "Filter out content tagged with extreme tags (gore, scat, etc.)",
+      "default": true
+    },
+    "always_include_tags": {
+      "type": "text",
+      "label": "Always Include Tags",
+      "description": "Tags to always include in searches (comma-separated). These tags will be added to every search.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
+    },
+    "always_exclude_tags": {
+      "type": "text",
+      "label": "Always Exclude Tags",
+      "description": "Tags to always exclude from searches (comma-separated). Content with these tags will never appear.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
     }
   },
   "warnings": [

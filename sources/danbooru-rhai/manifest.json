@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "id": "danbooru-rhai",
   "name": "Danbooru",
-  "version": "1.0.5",
-  "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content.",
+  "version": "1.0.6",
+  "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content. Note: Due to Cloudflare protection, API credentials may be required - configure in addon settings.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -20,19 +20,21 @@
   "capabilities": {
     "level": "http_only",
     "allowed_domains": [
-      "danbooru.donmai.us"
+      "danbooru.donmai.us",
+      "cdn.donmai.us"
     ],
     "requires_cookies": false,
     "requires_javascript": false,
-    "cloudflare_protected": false
+    "cloudflare_protected": true
   },
   "features": {
     "search": true,
     "browse": true,
-    "get_series": true,
     "get_chapter_pages": true,
     "search_artwork": true,
-    "get_covers": true
+    "get_covers": true,
+    "tag_autocomplete": true,
+    "popular_tags": true
   },
   "authentication": {
     "type": "api_key",
@@ -107,6 +109,26 @@
           "label": "Explicit (NSFW)"
         }
       ]
+    },
+    "safe_mode": {
+      "type": "boolean",
+      "label": "Exclude Extreme Content",
+      "description": "Filter out content tagged with extreme tags (gore, scat, etc.)",
+      "default": true
+    },
+    "always_include_tags": {
+      "type": "text",
+      "label": "Always Include Tags",
+      "description": "Tags to always include in searches (comma-separated). These tags will be added to every search.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
+    },
+    "always_exclude_tags": {
+      "type": "text",
+      "label": "Always Exclude Tags",
+      "description": "Tags to always exclude from searches (comma-separated). Content with these tags will never appear.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
     }
   }
 }

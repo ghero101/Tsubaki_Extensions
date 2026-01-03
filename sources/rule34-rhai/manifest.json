@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "id": "rule34-rhai",
   "name": "Rule34",
-  "version": "1.0.6",
-  "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only.",
+  "version": "1.0.8",
+  "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only. API credentials (User ID + API Key) are REQUIRED.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -22,6 +22,10 @@
     "allowed_domains": [
       "api.rule34.xxx",
       "rule34.xxx",
+      "us.rule34.xxx",
+      "wimg.rule34.xxx",
+      "img.rule34.xxx",
+      "video.rule34.xxx",
       "gelbooru.com",
       "api.gelbooru.com"
     ],
@@ -32,10 +36,11 @@
   "features": {
     "search": true,
     "browse": true,
-    "get_series": true,
     "get_chapter_pages": true,
     "search_artwork": true,
-    "get_covers": true
+    "get_covers": true,
+    "tag_autocomplete": true,
+    "popular_tags": true
   },
   "authentication": {
     "type": "api_key",
@@ -87,7 +92,7 @@
     "safe_mode": {
       "type": "boolean",
       "label": "Exclude Extreme Content",
-      "description": "Filter out content tagged with extreme tags",
+      "description": "Filter out content tagged with extreme tags (gore, scat, etc.)",
       "default": true
     },
     "video_enabled": {
@@ -95,6 +100,20 @@
       "label": "Include Videos",
       "description": "Include video/animated content in results",
       "default": true
+    },
+    "always_include_tags": {
+      "type": "text",
+      "label": "Always Include Tags",
+      "description": "Tags to always include in searches (comma-separated). These tags will be added to every search.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
+    },
+    "always_exclude_tags": {
+      "type": "text",
+      "label": "Always Exclude Tags",
+      "description": "Tags to always exclude from searches (comma-separated). Content with these tags will never appear.",
+      "default": "",
+      "placeholder": "tag1, tag2, tag3"
     }
   },
   "update": {
