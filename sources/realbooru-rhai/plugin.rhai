@@ -489,23 +489,42 @@ fn get_chapter_pages(chapter_id, auth) {
         return [];
     }
 
-    // Find the main image
-    let img = html_select_first(response_text, "#image");
-    if img == "" {
-        // Try alternative selector
-        img = html_select_first(response_text, "img.image");
-    }
-
     let file_url = "";
-    if img != "" {
-        file_url = element_attr(img, "src");
+
+    // Priority 1: Check for "Original image" link which has the full-size file
+    // Realbooru has a link like: <a href="//realbooru.com/images/xx/yy/hash.ext">Original image</a>
+    let original_link = html_select_first(response_text, "a[href*='/images/']");
+    if original_link != "" {
+        file_url = element_attr(original_link, "href");
     }
 
-    // Also check for original link
+    // Priority 2: Check for high-res link (some posts have this)
     if file_url == "" {
-        let original_link = html_select_first(response_text, "a[href*='/images/']");
-        if original_link != "" {
-            file_url = element_attr(original_link, "href");
+        let highres_link = html_select_first(response_text, "#highres");
+        if highres_link != "" {
+            file_url = element_attr(highres_link, "href");
+        }
+    }
+
+    // Priority 3: Fall back to the main image element (may be sample)
+    if file_url == "" {
+        let img = html_select_first(response_text, "#image");
+        if img == "" {
+            // Try alternative selector
+            img = html_select_first(response_text, "img.image");
+        }
+        if img != "" {
+            file_url = element_attr(img, "src");
+            // If this is a sample URL, try to convert to original
+            // Pattern: /samples/xx/sample_HASH.ext -> /images/xx/HASH.ext
+            if file_url.contains("/samples/") {
+                let original_attempt = file_url.replace("/samples/", "/images/");
+                original_attempt = original_attempt.replace("/sample_", "/");
+                // Use original attempt if it looks valid
+                if original_attempt.contains("/images/") {
+                    file_url = original_attempt;
+                }
+            }
         }
     }
 
