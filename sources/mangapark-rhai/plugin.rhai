@@ -11,7 +11,7 @@
 //   Regex: regex_find(pattern, text)
 //   url_encode(text) -> string
 
-const BASE_URL = "https://mangapark.net";
+const BASE_URL = "https://mangapark.me";
 
 /// Fetch HTML using browser automation (bypasses Cloudflare and renders JS)
 /// Falls back to HTTP if browser not available

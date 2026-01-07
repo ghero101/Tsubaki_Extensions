@@ -53,85 +53,85 @@ fn search_series(query, page, auth) {
 
     let html = http_get_with_headers(url, get_headers());
 
-    let series = [];
+    // Check if we got blocked/redirected (more specific patterns to avoid false positives)
+    if html.contains("Access Denied") || html.contains("challenge-running") || html.contains("cf-chl-widget") {
+        return #{
+            series: [],
+            has_more: false,
+            total: (),
+            error: "Access blocked or captcha required"
+        };
+    }
 
-    // Select search result cards
-    let cards = html_select(html, "a.card_item, div.card_item a, ul.card_lst li a");
+    let series = [];
+    let seen_ids = #{};
+
+    // Find all card items with data-title-no attribute
+    let cards = html_select(html, "a._card_item[data-title-no]");
 
     for card in cards {
+        let title_no = element_attr(card, "data-title-no");
+        if title_no == () || title_no == "" {
+            continue;
+        }
+
+        // Skip duplicates
+        if seen_ids[title_no] != () {
+            continue;
+        }
+        seen_ids[title_no] = true;
+
+        // Get URL
         let href = element_attr(card, "href");
-        if href == () || href == "" {
-            continue;
-        }
+        let series_url = if href != () && href != "" { href } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` };
 
-        // Get title
-        let title = "";
-        let title_els = html_select(card, "p.subj, .info .subj, .subject");
+        // Get title from .title element
+        let title = `Webtoon #${title_no}`;
+        let title_els = html_select(card, "strong.title, .title");
         if title_els.len() > 0 {
-            title = element_text(title_els[0]).trim();
-        }
-
-        if title == "" {
-            continue;
-        }
-
-        // Extract title_no from URL
-        let title_no = extract_title_no(href);
-        if title_no == "" {
-            continue;
-        }
-
-        // Get cover image
-        let cover_url = ();
-        let imgs = html_select(card, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
-            if cover_url == () {
-                cover_url = element_attr(imgs[0], "data-src");
+            let t = element_text(title_els[0]);
+            if t != () && t != "" {
+                title = t.trim();
             }
         }
 
         // Get author
         let authors = [];
-        let author_els = html_select(card, "p.author, .info .author");
+        let author_els = html_select(card, ".author");
         if author_els.len() > 0 {
-            let author = element_text(author_els[0]).trim();
-            if author != "" {
-                authors.push(author);
+            let a = element_text(author_els[0]);
+            if a != () && a != "" {
+                authors.push(a.trim());
             }
         }
 
-        // Get genre
-        let genres = [];
-        let genre_els = html_select(card, "p.genre, .info .genre");
-        if genre_els.len() > 0 {
-            let genre = element_text(genre_els[0]).trim();
-            if genre != "" {
-                genres.push(genre);
+        // Get cover image
+        let cover_url = ();
+        let img_els = html_select(card, "img");
+        if img_els.len() > 0 {
+            let src = element_attr(img_els[0], "src");
+            if src != () && src != "" {
+                cover_url = src;
             }
         }
 
         series.push(#{
             id: title_no,
             title: title,
-            url: make_full_url(href),
+            url: series_url,
             cover_url: cover_url,
             alternate_titles: [],
             authors: authors,
             artists: [],
             status: (),
-            genres: genres,
+            genres: [],
             tags: [],
             description: ()
         });
     }
 
     // Check for next page
-    let has_more = false;
-    let next_links = html_select(html, "a.pg_next, .paginate a.on + a");
-    if next_links.len() > 0 {
-        has_more = true;
-    }
+    let has_more = html.contains("pg_next") || html.contains("page-next");
 
     #{ series: series, has_more: has_more, total: () }
 }
@@ -147,10 +147,39 @@ fn get_series(id_or_url, auth) {
         url = id_or_url;
     }
 
-    // If we don't have a full URL, we need to find the series URL first
+    // If we don't have a full URL, try to find the series by searching
     if url == "" {
-        // Try to find series via search or direct lookup
-        url = `${BASE_URL}/en/originals/series?title_no=${title_no}`;
+        // Use search to find the proper URL for this title_no
+        let search_url = `${BASE_URL}/en/search?keyword=${title_no}&page=1`;
+        let search_html = http_get_with_headers(search_url, get_headers());
+
+        // Find the card with matching data-title-no
+        let cards = html_select(search_html, `a._card_item[data-title-no="${title_no}"]`);
+        if cards.len() > 0 {
+            url = element_attr(cards[0], "href");
+        }
+
+        // Fallback: look for any link with this title_no
+        if url == () || url == "" {
+            if search_html.contains(`title_no=${title_no}`) {
+                // Extract the URL from the HTML
+                let parts = search_html.split(`title_no=${title_no}`);
+                if parts.len() > 0 {
+                    // Look backwards for the href
+                    let before = parts[0];
+                    let href_parts = before.split("href=\"");
+                    if href_parts.len() > 1 {
+                        let last_part = href_parts[href_parts.len() - 1];
+                        url = last_part.split("\"")[0] + `?title_no=${title_no}`;
+                    }
+                }
+            }
+        }
+
+        // Final fallback - use a generic URL (may not work)
+        if url == () || url == "" {
+            url = `${BASE_URL}/en/originals/series?title_no=${title_no}`;
+        }
     }
 
     let html = http_get_with_headers(url, get_headers());
@@ -251,17 +280,34 @@ fn get_series(id_or_url, auth) {
 /// Get all chapters (episodes) for a series
 fn get_chapters(series_id, auth) {
     let title_no = series_id;
+    let base_list_url = "";
 
+    // If a URL is provided, extract the list URL base and title_no
     if series_id.contains("webtoons.com") {
         title_no = extract_title_no(series_id);
+        // Extract everything before ?title_no or &title_no to get the base URL
+        if series_id.contains("/list?") {
+            base_list_url = series_id.split("?")[0];
+        } else if series_id.contains("/list&") {
+            base_list_url = series_id.split("&")[0];
+        } else {
+            // Try to use the URL as-is if it looks like a list URL
+            base_list_url = series_id;
+        }
     }
 
     let chapters = [];
     let page = 1;
 
     loop {
-        // Webtoon episode list URL
-        let url = `${BASE_URL}/en/originals/series/list?title_no=${title_no}&page=${page}`;
+        // Build episode list URL - use proper URL if we have it
+        let url = "";
+        if base_list_url != "" {
+            url = `${base_list_url}?title_no=${title_no}&page=${page}`;
+        } else {
+            // Fallback - this likely won't work but try anyway
+            url = `${BASE_URL}/en/originals/series/list?title_no=${title_no}&page=${page}`;
+        }
 
         let html = http_get_with_headers(url, get_headers());
 
@@ -347,8 +393,13 @@ fn get_chapters(series_id, auth) {
 
         page += 1;
 
-        // Safety limit
-        if page > 100 {
+        // Safety limit - prevent runaway loops
+        if page > 20 {
+            break;
+        }
+
+        // Also limit total chapters to prevent Rhai operation limit
+        if chapters.len() > 500 {
             break;
         }
     }

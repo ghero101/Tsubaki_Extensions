@@ -504,17 +504,16 @@ fn get_chapter_pages(chapter_id, auth) {
 
         let idx = 0;
         for img_match in image_matches {
-            // The match is the full pattern, extract just the URL
-            let img_url = regex_find(`["']([^"']+)["']$`, img_match);
-            if img_url == () || img_url == "" {
-                // Try to clean up the match directly
-                img_url = img_match.replace(`"image": "`, "").replace(`"image":"`, "")
-                                   .replace(`'image': '`, "").replace(`'image':'`, "")
-                                   .replace(`image: "`, "").replace(`image:"`, "")
-                                   .replace(`"`, "").replace(`'`, "").trim();
-            }
+            // Clean up the match - remove all quote characters and key prefix
+            let img_url = img_match;
+            // Remove various "image": prefixes
+            img_url = img_url.replace(`"image": `, "").replace(`"image":`, "");
+            img_url = img_url.replace(`'image': `, "").replace(`'image':`, "");
+            img_url = img_url.replace(`image: `, "").replace(`image:`, "");
+            // Remove all quote characters
+            img_url = img_url.replace(`"`, "").replace(`'`, "").trim();
 
-            if img_url != () && img_url != "" {
+            if img_url != () && img_url != "" && img_url.starts_with("/") {
                 let full_url = make_full_url(img_url);
                 pages.push(#{
                     index: idx,
