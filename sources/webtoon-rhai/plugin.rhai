@@ -404,15 +404,18 @@ fn get_chapters(series_id, auth) {
                 }
             }
 
+            // Use full viewer URL as chapter ID - Webtoon requires the path with slug
+            let chapter_url = make_full_url(href);
+
             chapters.push(#{
-                id: `${title_no}_${episode_no}`,
+                id: chapter_url,
                 series_id: title_no,
                 number: ep_num,
                 title: title,
                 volume: (),
                 language: "en",
                 scanlator: "Webtoon",
-                url: make_full_url(href),
+                url: chapter_url,
                 published_at: date,
                 page_count: (),
                 extra: #{
@@ -451,15 +454,20 @@ fn get_chapters(series_id, auth) {
 fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
 
-    // If it's our composite ID, need to build URL
-    if chapter_id.contains("_") && !chapter_id.contains("webtoons.com") {
+    // Chapter ID should now be the full viewer URL
+    // Handle legacy composite ID format just in case
+    if chapter_id.contains("_") && !chapter_id.contains("webtoons.com") && !chapter_id.contains("/") {
         let parts = chapter_id.split("_");
         if parts.len() >= 2 {
             let title_no = parts[0];
             let episode_no = parts[1];
+            // This fallback URL likely won't work without the proper path
             url = `${BASE_URL}/en/originals/viewer?title_no=${title_no}&episode_no=${episode_no}`;
         }
     }
+
+    // Make sure URL is absolute
+    url = make_full_url(url);
 
     let html = http_get_with_headers(url, get_headers());
 
