@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "webtoon-rhai",
   "name": "Webtoon",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
   "author": {
     "name": "Tsubaki Community",

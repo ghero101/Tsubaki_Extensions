@@ -81,9 +81,15 @@ fn search_series(query, page, auth) {
         }
         seen_ids[title_no] = true;
 
-        // Get URL
+        // Get URL - need the full URL with genre/slug for get_series to work
         let href = element_attr(card, "href");
-        let series_url = if href != () && href != "" { href } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` };
+        let series_url = "";
+        if href != () && href != "" {
+            series_url = make_full_url(href);
+        }
+        if series_url == "" {
+            series_url = `${BASE_URL}/en/originals/series?title_no=${title_no}`;
+        }
 
         // Get title from .title element
         let title = `Webtoon #${title_no}`;
@@ -115,8 +121,11 @@ fn search_series(query, page, auth) {
             }
         }
 
+        // Use full URL as ID - this is required for Webtoon since get_series needs the path
+        let series_id = if series_url.contains("webtoons.com") { series_url } else { title_no };
+
         series.push(#{
-            id: title_no,
+            id: series_id,
             title: title,
             url: series_url,
             cover_url: cover_url,
@@ -138,46 +147,46 @@ fn search_series(query, page, auth) {
 
 /// Get detailed series information
 fn get_series(id_or_url, auth) {
-    let title_no = id_or_url;
+    let title_no = "";
     let url = "";
 
-    // Extract title_no from URL if provided
+    // Check if we received a URL (our new ID format) or just a numeric ID
     if id_or_url.contains("webtoons.com") {
-        title_no = extract_title_no(id_or_url);
+        // We have a full URL - use it directly
         url = id_or_url;
-    }
+        title_no = extract_title_no(id_or_url);
+    } else {
+        // Just a numeric ID - need to search for the proper URL
+        title_no = id_or_url;
 
-    // If we don't have a full URL, try to find the series by searching
-    if url == "" {
-        // Use search to find the proper URL for this title_no
-        let search_url = `${BASE_URL}/en/search?keyword=${title_no}&page=1`;
-        let search_html = http_get_with_headers(search_url, get_headers());
+        // Search the originals page to find the series URL
+        let originals_url = `${BASE_URL}/en/originals`;
+        let search_html = http_get_with_headers(originals_url, get_headers());
 
         // Find the card with matching data-title-no
-        let cards = html_select(search_html, `a._card_item[data-title-no="${title_no}"]`);
+        let cards = html_select(search_html, `a[data-title-no="${title_no}"]`);
         if cards.len() > 0 {
-            url = element_attr(cards[0], "href");
+            let href = element_attr(cards[0], "href");
+            if href != () && href != "" {
+                url = make_full_url(href);
+            }
         }
 
-        // Fallback: look for any link with this title_no
-        if url == () || url == "" {
-            if search_html.contains(`title_no=${title_no}`) {
-                // Extract the URL from the HTML
-                let parts = search_html.split(`title_no=${title_no}`);
-                if parts.len() > 0 {
-                    // Look backwards for the href
-                    let before = parts[0];
-                    let href_parts = before.split("href=\"");
-                    if href_parts.len() > 1 {
-                        let last_part = href_parts[href_parts.len() - 1];
-                        url = last_part.split("\"")[0] + `?title_no=${title_no}`;
-                    }
+        // If not found in originals, try search
+        if url == "" {
+            let search_page = `${BASE_URL}/en/search?keyword=${title_no}&page=1`;
+            let search_html2 = http_get_with_headers(search_page, get_headers());
+            let cards2 = html_select(search_html2, `a._card_item[data-title-no="${title_no}"]`);
+            if cards2.len() > 0 {
+                let href = element_attr(cards2[0], "href");
+                if href != () && href != "" {
+                    url = make_full_url(href);
                 }
             }
         }
 
-        // Final fallback - use a generic URL (may not work)
-        if url == () || url == "" {
+        // Last resort fallback
+        if url == "" {
             url = `${BASE_URL}/en/originals/series?title_no=${title_no}`;
         }
     }
@@ -279,20 +288,48 @@ fn get_series(id_or_url, auth) {
 
 /// Get all chapters (episodes) for a series
 fn get_chapters(series_id, auth) {
-    let title_no = series_id;
+    let title_no = "";
     let base_list_url = "";
 
-    // If a URL is provided, extract the list URL base and title_no
+    // Check if we received a URL or just a numeric ID
     if series_id.contains("webtoons.com") {
         title_no = extract_title_no(series_id);
-        // Extract everything before ?title_no or &title_no to get the base URL
-        if series_id.contains("/list?") {
+        // Build the list URL from the provided URL
+        // URLs look like: https://www.webtoons.com/en/action/teenage-mercenary/list?title_no=2677
+        if series_id.contains("/list") {
+            // Already a list URL, extract base
             base_list_url = series_id.split("?")[0];
-        } else if series_id.contains("/list&") {
-            base_list_url = series_id.split("&")[0];
         } else {
-            // Try to use the URL as-is if it looks like a list URL
-            base_list_url = series_id;
+            // Not a list URL, but same pattern - just append /list if needed
+            // Or use as-is
+            let url_base = series_id.split("?")[0];
+            if url_base.ends_with("/list") {
+                base_list_url = url_base;
+            } else {
+                // Need to add /list - check if URL has trailing slug
+                // e.g., /en/action/teenage-mercenary -> /en/action/teenage-mercenary/list
+                base_list_url = url_base + "/list";
+            }
+        }
+    } else {
+        // Just a numeric ID - need to find the proper URL first
+        title_no = series_id;
+
+        // Try originals page first
+        let originals_url = `${BASE_URL}/en/originals`;
+        let search_html = http_get_with_headers(originals_url, get_headers());
+        let cards = html_select(search_html, `a[data-title-no="${title_no}"]`);
+        if cards.len() > 0 {
+            let href = element_attr(cards[0], "href");
+            if href != () && href != "" {
+                let full_url = make_full_url(href);
+                let url_base = full_url.split("?")[0];
+                if url_base.ends_with("/list") {
+                    base_list_url = url_base;
+                } else {
+                    base_list_url = url_base + "/list";
+                }
+            }
         }
     }
 
@@ -300,12 +337,12 @@ fn get_chapters(series_id, auth) {
     let page = 1;
 
     loop {
-        // Build episode list URL - use proper URL if we have it
+        // Build episode list URL
         let url = "";
         if base_list_url != "" {
             url = `${base_list_url}?title_no=${title_no}&page=${page}`;
         } else {
-            // Fallback - this likely won't work but try anyway
+            // Fallback - unlikely to work but try anyway
             url = `${BASE_URL}/en/originals/series/list?title_no=${title_no}&page=${page}`;
         }
 
@@ -489,6 +526,12 @@ fn get_latest_updates(page, auth) {
 
         let href = element_attr(card, "href");
 
+        // Make full URL - this is critical for get_series/get_chapters to work
+        let full_url = "";
+        if href != () && href != "" {
+            full_url = make_full_url(href);
+        }
+
         // Get title
         let title = "";
         let title_els = html_select(card, "strong.title, p.subj, .info .subj");
@@ -547,10 +590,14 @@ fn get_latest_updates(page, auth) {
             }
         }
 
+        // Use full URL as the ID so get_series/get_chapters can work properly
+        // Webtoon requires the full path with genre/slug to fetch series data
+        let series_id = if full_url != "" { full_url } else { title_no };
+
         series.push(#{
-            id: title_no,
+            id: series_id,
             title: title,
-            url: if href != () && href != "" { href } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` },
+            url: if full_url != "" { full_url } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` },
             cover_url: cover_url,
             authors: [],
             artists: [],
