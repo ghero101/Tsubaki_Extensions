@@ -544,7 +544,7 @@
     {
       "id": "mangapill-rhai",
       "name": "MangaPill",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Scraper for MangaPill (mangapill.com), a fast manga reader with a large library of titles.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -558,9 +558,14 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai.zip",
           "released_at": "2026-01-02T09:00:00Z",
           "changelog": "Initial release"
+        },
+        "1.0.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai.zip",
+          "released_at": "2026-01-07T03:35:00Z",
+          "changelog": "Fixed chapter page fetching - improved URL slug discovery for downloading chapters"
         }
       },
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "mangaowl-rhai",
