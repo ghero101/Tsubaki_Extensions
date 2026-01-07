@@ -510,11 +510,54 @@ fn get_latest_updates(page, auth) {
             }
         }
 
+        // Get genre
+        let genres = [];
+        let genre_els = html_select(card, "div.genre, .genre");
+        if genre_els.len() > 0 {
+            let genre = element_text(genre_els[0]).trim();
+            if genre != "" {
+                genres.push(genre);
+            }
+        }
+
+        // Extract genre from URL path (e.g., /en/action/teenage-mercenary/)
+        if genres.len() == 0 && href != () {
+            let url_parts = href.split("/");
+            for i in 0..url_parts.len() {
+                if url_parts[i] == "en" && i + 1 < url_parts.len() {
+                    let genre_slug = url_parts[i + 1];
+                    // Capitalize first letter
+                    if genre_slug != "" && genre_slug != "originals" {
+                        let first_char = genre_slug.sub_string(0, 1).to_upper();
+                        let rest = genre_slug.sub_string(1);
+                        genres.push(first_char + rest);
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Check content rating from data attribute
+        let content_rating = "safe";
+        let image_wrap = html_select(card, ".image_wrap");
+        if image_wrap.len() > 0 {
+            let unsuitable = element_attr(image_wrap[0], "data-title-unsuitable-for-children");
+            if unsuitable == "true" {
+                content_rating = "suggestive";
+            }
+        }
+
         series.push(#{
             id: title_no,
             title: title,
             url: if href != () && href != "" { href } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` },
             cover_url: cover_url,
+            authors: [],
+            artists: [],
+            genres: genres,
+            tags: ["webtoon", "originals"],
+            status: "Ongoing",
+            content_rating: content_rating,
             updated_at: ()
         });
     }

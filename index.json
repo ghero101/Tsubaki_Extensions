@@ -1,6 +1,6 @@
 {
-  "version": 16,
-  "updated_at": "2026-01-06T12:17:52Z",
+  "version": 17,
+  "updated_at": "2026-01-07T00:15:00Z",
   "addons": [
     {
       "id": "anilist",
@@ -124,7 +124,7 @@
     {
       "id": "webtoon-rhai",
       "name": "Webtoon",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -143,9 +143,14 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai.zip",
           "released_at": "2026-01-07T05:06:46Z",
           "changelog": "Updated"
+        },
+        "1.1.2": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai.zip",
+          "released_at": "2026-01-07T00:15:00Z",
+          "changelog": "Fixed browse functionality and added metadata (genres, tags, status, content_rating)"
         }
       },
-      "latest_version": "1.1.1"
+      "latest_version": "1.1.2"
     },
     {
       "id": "mangasee-rhai",
@@ -170,13 +175,14 @@
     },
     {
       "id": "reaperscans-rhai",
-      "name": "Reaper Scans",
-      "version": "1.0.4",
-      "description": "Scraper for Reaper Scans (reaperscans.com), featuring high-quality manhwa and manga translations.",
+      "name": "Reaper Scans [RETIRED]",
+      "version": "1.0.5",
+      "description": "[RETIRED - Site is down] Scraper for Reaper Scans (reaperscans.com). This extension is no longer functional as the website appears to be permanently offline.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
+      "status": "retired",
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/reaperscans-rhai/icon.png",
       "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/reaperscans-rhai.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/reaperscans-rhai/manifest.json",
@@ -185,9 +191,14 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/reaperscans-rhai.zip",
           "released_at": "2026-01-07T05:06:46Z",
           "changelog": "Updated"
+        },
+        "1.0.5": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/reaperscans-rhai.zip",
+          "released_at": "2026-01-07T00:15:00Z",
+          "changelog": "Marked as retired - website is permanently offline (502 errors)"
         }
       },
-      "latest_version": "1.0.4"
+      "latest_version": "1.0.5"
     },
     {
       "id": "flamecomics",

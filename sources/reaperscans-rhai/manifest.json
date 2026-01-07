@@ -1,9 +1,11 @@
 {
   "manifest_version": 1,
   "id": "reaperscans-rhai",
-  "name": "Reaper Scans",
-  "version": "1.0.4",
-  "description": "Scraper for Reaper Scans (reaperscans.com), featuring high-quality manhwa and manga translations.",
+  "name": "Reaper Scans [RETIRED]",
+  "version": "1.0.5",
+  "description": "[RETIRED - Site is down] Scraper for Reaper Scans (reaperscans.com). This extension is no longer functional as the website appears to be permanently offline.",
+  "status": "retired",
+  "retired_reason": "Website returning 502 errors - appears to be permanently offline",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
