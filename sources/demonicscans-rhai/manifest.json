@@ -51,5 +51,8 @@
   "rate_limiting": {
     "requests_per_minute": 30,
     "burst_limit": 5
+  },
+  "update": {
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans-rhai.zip"
   }
 }

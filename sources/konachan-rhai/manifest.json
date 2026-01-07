@@ -119,5 +119,8 @@
     "This addon provides access to adult content.",
     "You must be 18 years or older to use this addon.",
     "By installing, you confirm you are of legal age in your jurisdiction."
-  ]
+  ],
+  "update": {
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan-rhai.zip"
+  }
 }

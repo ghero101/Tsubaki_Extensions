@@ -59,6 +59,7 @@
   },
   "update": {
     "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangakakalot-rhai/manifest.json",
-    "auto_update": false
+    "auto_update": false,
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangakakalot-rhai.zip"
   }
 }

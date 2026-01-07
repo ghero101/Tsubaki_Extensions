@@ -130,5 +130,8 @@
       "default": "",
       "placeholder": "tag1, tag2, tag3"
     }
+  },
+  "update": {
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru-rhai.zip"
   }
 }
