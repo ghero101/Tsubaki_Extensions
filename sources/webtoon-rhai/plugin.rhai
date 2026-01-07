@@ -470,30 +470,34 @@ fn get_latest_updates(page, auth) {
     let html = http_get_with_headers(url, get_headers());
 
     let series = [];
+    let seen_ids = #{};
 
-    // Get daily schedule cards (updated series)
-    let cards = html_select(html, ".daily_section li a, .daily_card a, .update_lst li a");
+    // Get originals title cards - use the same selector pattern as search
+    let cards = html_select(html, "a._originals_title_a[data-title-no], a._card_item[data-title-no]");
 
     for card in cards {
-        let href = element_attr(card, "href");
-        if href == () || href == "" {
+        let title_no = element_attr(card, "data-title-no");
+        if title_no == () || title_no == "" {
             continue;
         }
 
-        let title_no = extract_title_no(href);
-        if title_no == "" {
+        // Skip duplicates
+        if seen_ids[title_no] != () {
             continue;
         }
+        seen_ids[title_no] = true;
+
+        let href = element_attr(card, "href");
 
         // Get title
         let title = "";
-        let title_els = html_select(card, "p.subj, .info .subj");
+        let title_els = html_select(card, "strong.title, p.subj, .info .subj");
         if title_els.len() > 0 {
             title = element_text(title_els[0]).trim();
         }
 
         if title == "" {
-            continue;
+            title = `Webtoon #${title_no}`;
         }
 
         // Get cover
@@ -509,7 +513,7 @@ fn get_latest_updates(page, auth) {
         series.push(#{
             id: title_no,
             title: title,
-            url: make_full_url(href),
+            url: if href != () && href != "" { href } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` },
             cover_url: cover_url,
             updated_at: ()
         });

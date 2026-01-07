@@ -124,7 +124,7 @@
     {
       "id": "webtoon-rhai",
       "name": "Webtoon",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -145,7 +145,7 @@
           "changelog": "Updated"
         }
       },
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.1"
     },
     {
       "id": "mangasee-rhai",
