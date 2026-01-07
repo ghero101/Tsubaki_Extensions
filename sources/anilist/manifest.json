@@ -130,7 +130,7 @@
     }
   },
   "update": {
-    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/anilist/manifest.json",
+    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/anilist/manifest.json",
     "auto_update": true
   }
 }

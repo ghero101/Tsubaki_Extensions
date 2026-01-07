@@ -9,7 +9,7 @@
     "url": "https://github.com/tsubaki"
   },
   "license": "MIT",
-  "repository": "https://github.com/tsubaki/tsubaki-addons",
+  "repository": "https://github.com/ghero101/Tsubaki_Extensions",
   "addon_type": "scraper",
   "icon_path": "icon.png",
   "nsfw": false,
@@ -55,7 +55,7 @@
     "burst_limit": 3
   },
   "update": {
-    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/reaperscans-rhai/manifest.json",
+    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/reaperscans-rhai/manifest.json",
     "auto_update": false
   }
 }

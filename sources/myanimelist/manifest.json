@@ -142,7 +142,7 @@
     }
   },
   "update": {
-    "url": "https://raw.githubusercontent.com/tsubaki/tsubaki-addons/main/sources/myanimelist/manifest.json",
+    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/myanimelist/manifest.json",
     "auto_update": true
   }
 }
