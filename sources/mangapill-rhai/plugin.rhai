@@ -913,8 +913,20 @@ fn get_latest_updates(page, auth) {
         });
     }
 
-    // Check for next page
-    let has_more = response_text.contains(`page=${page + 1}`);
+    // Check for next page - MangaPill uses pagination links with page parameter
+    // Look for multiple patterns to ensure we catch the pagination
+    let next_page = page + 1;
+    let next_page_str = `${next_page}`;
+    let has_more = response_text.contains(`page=${next_page_str}`) ||
+                   response_text.contains(`page=${next_page}`) ||
+                   response_text.contains(`?page=${next_page_str}`) ||
+                   response_text.contains(`&page=${next_page_str}`);
+
+    // Also check if we got a reasonable number of results (MangaPill typically shows 30-50 per page)
+    // If we got results, assume there might be more
+    if !has_more && series.len() >= 20 {
+        has_more = true;
+    }
 
     #{ series: series, has_more: has_more }
 }
@@ -1002,8 +1014,20 @@ fn browse(page, category, auth) {
         });
     }
 
-    // Check for next page
-    let has_more = response_text.contains(`page=${page + 1}`);
+    // Check for next page - MangaPill uses pagination links with page parameter
+    // Look for multiple patterns to ensure we catch the pagination
+    let next_page = page + 1;
+    let next_page_str = `${next_page}`;
+    let has_more = response_text.contains(`page=${next_page_str}`) ||
+                   response_text.contains(`page=${next_page}`) ||
+                   response_text.contains(`?page=${next_page_str}`) ||
+                   response_text.contains(`&page=${next_page_str}`);
+
+    // Also check if we got a reasonable number of results
+    // If we got results, assume there might be more
+    if !has_more && series.len() >= 20 {
+        has_more = true;
+    }
 
     #{ series: series, has_more: has_more }
 }

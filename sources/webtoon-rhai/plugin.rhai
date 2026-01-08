@@ -211,17 +211,40 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract cover
+    // Extract cover - the detail page only has banner images, so we need to search
+    // by series title to get the proper poster/thumbnail image used in cards
     let cover_url = ();
-    let cover_els = html_select(html, ".detail_body .thmb img, .detail_header img, meta[property='og:image']");
-    for el in cover_els {
-        let src = element_attr(el, "src");
-        if src == () {
-            src = element_attr(el, "content");
+
+    // Try to get poster from search results using the series title
+    if title != "" {
+        let encoded_title = url_encode(title);
+        let search_url = `${BASE_URL}/en/search?keyword=${encoded_title}&page=1`;
+        let search_html = http_get_with_headers(search_url, get_headers());
+        // Find the card that matches our title_no
+        let search_cards = html_select(search_html, `a._card_item[data-title-no="${title_no}"]`);
+        if search_cards.len() > 0 {
+            let imgs = html_select(search_cards[0], "img");
+            if imgs.len() > 0 {
+                let src = element_attr(imgs[0], "src");
+                if src != () && src != "" {
+                    cover_url = src;
+                }
+            }
         }
-        if src != () && src != "" {
-            cover_url = src;
-            break;
+    }
+
+    // Fallback to detail page images if search didn't work (likely won't be great)
+    if cover_url == () {
+        let cover_els = html_select(html, ".detail_body .thmb img, .detail_header img, meta[property='og:image']");
+        for el in cover_els {
+            let src = element_attr(el, "src");
+            if src == () {
+                src = element_attr(el, "content");
+            }
+            if src != () && src != "" {
+                cover_url = src;
+                break;
+            }
         }
     }
 
@@ -425,9 +448,22 @@ fn get_chapters(series_id, auth) {
             });
         }
 
-        // Check for next page
-        let next_links = html_select(html, "a.pg_next:not(.disabled), .paginate a.on + a");
-        if next_links.len() == 0 {
+        // Check for next page - Webtoon pagination uses numbered links inside .paginate
+        // The current page has span.on, we need to check if there are more pages
+        let paginate = html_select(html, ".paginate a");
+        let has_next = false;
+        let current_page_found = false;
+        for pg_link in paginate {
+            let span_els = html_select(pg_link, "span.on");
+            if span_els.len() > 0 {
+                current_page_found = true;
+            } else if current_page_found {
+                // Found a link after the current page
+                has_next = true;
+                break;
+            }
+        }
+        if !has_next {
             break;
         }
 
@@ -507,18 +543,149 @@ fn get_chapter_pages(chapter_id, auth) {
     pages
 }
 
-/// Get latest updates
+/// Get latest updates - iterates through genre pages for comprehensive coverage
+/// Pages: 1=Originals, 2=Completed(A-L), 3=Completed(M-Z), 4+=Genre pages
 fn get_latest_updates(page, auth) {
-    // Webtoon updates are on the main originals page
-    let url = `${BASE_URL}/en/originals`;
+    // Webtoon genre slugs - each genre page contains 100-800 series
+    let webtoon_genres = [
+        "drama", "fantasy", "comedy", "action", "romance",
+        "sf", "thriller", "supernatural", "mystery", "sports",
+        "slice_of_life", "super_hero", "historical", "heart_warming",
+        "horror", "informative"
+    ];
+
+    if page == 1 {
+        // First page: Get series from main originals page (ongoing)
+        let url = `${BASE_URL}/en/originals`;
+        let html = http_get_with_headers(url, get_headers());
+        let result = parse_webtoon_cards(html);
+        return #{ series: result.series, has_more: true };
+    }
+
+    if page == 2 {
+        // Second page: Completed originals sorted by MANA (first 500)
+        let url = `${BASE_URL}/en/originals/complete?sortOrder=MANA`;
+        let html = http_get_with_headers(url, get_headers());
+        let result = parse_webtoon_genre_cards_limited(html, 0, 500);
+        return #{ series: result.series, has_more: true };
+    }
+
+    if page == 3 {
+        // Third page: Completed originals (next 500, offset)
+        let url = `${BASE_URL}/en/originals/complete?sortOrder=MANA`;
+        let html = http_get_with_headers(url, get_headers());
+        let result = parse_webtoon_genre_cards_limited(html, 500, 500);
+        return #{ series: result.series, has_more: true };
+    }
+
+    // Pages 4+ iterate through genre pages
+    let genre_index = page - 4;  // page 4 = genre 0, page 5 = genre 1, etc.
+
+    if genre_index >= webtoon_genres.len() {
+        return #{ series: [], has_more: false };
+    }
+
+    let genre = webtoon_genres[genre_index];
+    let url = `${BASE_URL}/en/genres/${genre}?sortOrder=MANA`;
 
     let html = http_get_with_headers(url, get_headers());
 
+    // Parse genre page cards (different structure from originals)
+    let result = parse_webtoon_genre_cards_limited(html, 0, 500);
+
+    // Has more if there are more genres to iterate
+    let has_more = genre_index + 1 < webtoon_genres.len();
+
+    #{ series: result.series, has_more: has_more }
+}
+
+/// Parse cards from genre/completed pages with offset and limit
+/// Used to split large pages into multiple requests
+fn parse_webtoon_genre_cards_limited(html, offset, limit) {
     let series = [];
     let seen_ids = #{};
 
-    // Get originals title cards - use the same selector pattern as search
-    let cards = html_select(html, "a._originals_title_a[data-title-no], a._card_item[data-title-no]");
+    // Use the broad selector for all Webtoon link types
+    let cards = html_select(html, "a[data-title-no]");
+
+    let count = 0;
+    let skipped = 0;
+
+    for card in cards {
+        // Skip items until we reach offset
+        if skipped < offset {
+            skipped += 1;
+            continue;
+        }
+
+        // Stop when we've collected enough
+        if count >= limit {
+            break;
+        }
+
+        let title_no = element_attr(card, "data-title-no");
+        if title_no == () || title_no == "" {
+            continue;
+        }
+
+        // Skip duplicates
+        if seen_ids[title_no] != () {
+            continue;
+        }
+        seen_ids[title_no] = true;
+
+        let href = element_attr(card, "href");
+        let full_url = "";
+        if href != () && href != "" {
+            full_url = make_full_url(href);
+        }
+
+        // Get title - simplified extraction
+        let title = "";
+        let title_els = html_select(card, "strong.title, p.subj");
+        if title_els.len() > 0 {
+            title = element_text(title_els[0]).trim();
+        }
+        if title == "" {
+            title = `Webtoon #${title_no}`;
+        }
+
+        // Get cover from first img
+        let cover_url = ();
+        let imgs = html_select(card, "img");
+        if imgs.len() > 0 {
+            cover_url = element_attr(imgs[0], "src");
+        }
+
+        let series_id = if full_url != "" { full_url } else { title_no };
+
+        series.push(#{
+            id: series_id,
+            title: title,
+            url: if full_url != "" { full_url } else { `${BASE_URL}/en/originals/series?title_no=${title_no}` },
+            cover_url: cover_url,
+            authors: [],
+            artists: [],
+            genres: [],
+            tags: ["webtoon"],
+            status: (),
+            content_rating: "safe",
+            updated_at: ()
+        });
+
+        count += 1;
+    }
+
+    #{ series: series, seen_ids: seen_ids }
+}
+
+/// Helper function to parse Webtoon cards from HTML - returns result map
+fn parse_webtoon_cards(html) {
+    let series = [];
+    let seen_ids = #{};
+
+    // Get originals title cards - use multiple selector patterns
+    let cards = html_select(html, "a._originals_title_a[data-title-no], a._card_item[data-title-no], a[data-title-no]");
 
     for card in cards {
         let title_no = element_attr(card, "data-title-no");
@@ -578,7 +745,7 @@ fn get_latest_updates(page, auth) {
                 if url_parts[i] == "en" && i + 1 < url_parts.len() {
                     let genre_slug = url_parts[i + 1];
                     // Capitalize first letter
-                    if genre_slug != "" && genre_slug != "originals" {
+                    if genre_slug != "" && genre_slug != "originals" && genre_slug != "genre" {
                         let first_char = genre_slug.sub_string(0, 1).to_upper();
                         let rest = genre_slug.sub_string(1);
                         genres.push(first_char + rest);
@@ -617,22 +784,25 @@ fn get_latest_updates(page, auth) {
         });
     }
 
-    // Webtoon doesn't really paginate latest, limit pages
-    let has_more = page < 1;
-
-    #{ series: series, has_more: has_more }
+    #{ series: series, seen_ids: seen_ids }
 }
 
 /// Get popular series
 fn get_popular(page, auth) {
+    // Popular/top page only has one page of content
+    if page > 1 {
+        return #{ series: [], has_more: false };
+    }
+
     let url = `${BASE_URL}/en/top`;
 
     let html = http_get_with_headers(url, get_headers());
 
     let series = [];
+    let seen_ids = #{};
 
     // Get top ranking cards
-    let cards = html_select(html, ".lst_area li a, .top_lst li a, .ranking_lst li a");
+    let cards = html_select(html, ".lst_area li a, .top_lst li a, .ranking_lst li a, a[data-title-no]");
 
     for card in cards {
         let href = element_attr(card, "href");
@@ -642,12 +812,21 @@ fn get_popular(page, auth) {
 
         let title_no = extract_title_no(href);
         if title_no == "" {
+            title_no = element_attr(card, "data-title-no");
+        }
+        if title_no == "" || title_no == () {
             continue;
         }
 
+        // Skip duplicates
+        if seen_ids[title_no] != () {
+            continue;
+        }
+        seen_ids[title_no] = true;
+
         // Get title
         let title = "";
-        let title_els = html_select(card, "p.subj, .info .subj");
+        let title_els = html_select(card, "p.subj, .info .subj, strong.title");
         if title_els.len() > 0 {
             title = element_text(title_els[0]).trim();
         }
@@ -666,15 +845,23 @@ fn get_popular(page, auth) {
             }
         }
 
+        let full_url = make_full_url(href);
+
         series.push(#{
-            id: title_no,
+            id: full_url,
             title: title,
-            url: make_full_url(href),
-            cover_url: cover_url
+            url: full_url,
+            cover_url: cover_url,
+            authors: [],
+            artists: [],
+            genres: [],
+            tags: ["webtoon", "popular"],
+            status: "Ongoing"
         });
     }
 
-    let has_more = page < 1;
+    // Popular page doesn't have multiple pages
+    let has_more = false;
 
     #{ series: series, has_more: has_more }
 }

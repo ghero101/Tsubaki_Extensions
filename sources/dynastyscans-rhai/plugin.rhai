@@ -79,7 +79,7 @@ fn search_series(query, page, auth) {
         }
 
         // Skip duplicates
-        if seen.contains(series_id) {
+        if seen[series_id] != () {
             continue;
         }
         seen[series_id] = true;
@@ -123,7 +123,7 @@ fn search_series(query, page, auth) {
 
     // Check for next page
     let has_more = false;
-    let pagers = html_select(html, "ul.pagination li a");
+    let pagers = html_select(html, "div.pagination a, ul.pagination li a");
     for pager in pagers {
         let rel = element_attr(pager, "rel");
         if rel == "next" {
@@ -404,7 +404,7 @@ fn get_chapters(series_id, auth) {
         }
 
         // Skip duplicates
-        if seen.contains(href) {
+        if seen[href] != () {
             continue;
         }
         seen[href] = true;
@@ -582,6 +582,28 @@ fn get_chapter_pages(chapter_id, auth) {
     pages
 }
 
+/// Browse the catalog - uses latest updates which has cover images
+/// Dynasty Scans series directory doesn't show cover thumbnails,
+/// so we use the homepage/latest updates which has proper thumbnails
+fn browse(page, filters, auth) {
+    // Extract category from filters if provided
+    let category = "latest";
+    if filters != () {
+        if filters.contains("category") {
+            category = filters["category"];
+        }
+    }
+
+    // Use latest updates as the default browse view since it has cover images
+    // The series directory (get_popular) doesn't have cover thumbnails
+    if category == "popular" {
+        return get_popular(page, auth);
+    }
+
+    // Default to latest updates which has cover images
+    return get_latest_updates(page, auth);
+}
+
 /// Get latest updates
 fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/?page=${page}`;
@@ -618,7 +640,7 @@ fn get_latest_updates(page, auth) {
         let series_title = extract_series_title_from_chapter(full_title);
 
         // Skip duplicates by series title (not chapter)
-        if seen.contains(series_title) {
+        if seen[series_title] != () {
             continue;
         }
         seen[series_title] = true;
@@ -627,11 +649,23 @@ fn get_latest_updates(page, auth) {
         let series_id = "chapter:" + extract_chapter_id(href);
         let series_url = make_full_url(href);
 
-        // Get cover
+        // Get cover - check both src and data-src for lazy loading
         let cover_url = ();
         let imgs = html_select(item, "img");
         if imgs.len() > 0 {
+            // Try src first
             cover_url = element_attr(imgs[0], "src");
+
+            // Fallback to data-src for lazy loaded images
+            if cover_url == () || cover_url == "" || cover_url.contains("blank.gif") || cover_url.contains("placeholder") {
+                cover_url = element_attr(imgs[0], "data-src");
+            }
+
+            // Also try data-original
+            if cover_url == () || cover_url == "" {
+                cover_url = element_attr(imgs[0], "data-original");
+            }
+
             if cover_url != () && cover_url != "" {
                 cover_url = make_full_url(cover_url);
             }
@@ -647,7 +681,7 @@ fn get_latest_updates(page, auth) {
 
     // Check for next page
     let has_more = false;
-    let pagers = html_select(html, "ul.pagination li a");
+    let pagers = html_select(html, "div.pagination a, ul.pagination li a");
     for pager in pagers {
         let rel = element_attr(pager, "rel");
         if rel == "next" {
@@ -697,7 +731,7 @@ fn get_popular(page, auth) {
 
     // Check for next page
     let has_more = false;
-    let pagers = html_select(html, "ul.pagination li a");
+    let pagers = html_select(html, "div.pagination a, ul.pagination li a");
     for pager in pagers {
         let rel = element_attr(pager, "rel");
         if rel == "next" {

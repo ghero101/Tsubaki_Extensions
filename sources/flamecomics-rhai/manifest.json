@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "flamecomics",
   "name": "Flame Comics",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "description": "Flame Comics - Free scanlation group for manhwa and manga",
   "author": {
     "name": "Tsubaki Team",
@@ -20,7 +20,8 @@
     "level": "browser_automation",
     "allowed_domains": [
       "flamecomics.xyz",
-      "flamecomics.com"
+      "flamecomics.com",
+      "cdn.flamecomics.xyz"
     ],
     "requires_cookies": true,
     "requires_javascript": true,

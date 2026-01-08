@@ -1,6 +1,6 @@
 {
-  "version": 19,
-  "updated_at": "2026-01-07T00:27:00Z",
+  "version": 20,
+  "updated_at": "2026-01-07T14:40:00Z",
   "addons": [
     {
       "id": "anilist",
@@ -124,7 +124,7 @@
     {
       "id": "webtoon-rhai",
       "name": "Webtoon",
-      "version": "1.1.4",
+      "version": "1.1.6",
       "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -158,9 +158,14 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai.zip",
           "released_at": "2026-01-07T00:27:00Z",
           "changelog": "Fixed chapter downloads - chapter IDs now use full viewer URLs"
+        },
+        "1.1.6": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai.zip",
+          "released_at": "2026-01-07T14:40:00Z",
+          "changelog": "Fixed cover images - now fetches proper poster covers instead of banners"
         }
       },
-      "latest_version": "1.1.4"
+      "latest_version": "1.1.6"
     },
     {
       "id": "mangasee-rhai",

@@ -1,40 +1,26 @@
 // Asura Scans Scraper Add-on (Rhai)
-// Browser-based scraper for asuracomic.net (Cloudflare protected)
+// HTTP-based scraper for asuracomic.net (Next.js server-rendered)
 //
 // Available APIs:
-//   HTTP (fallback): http_get(url), http_get_with_headers(url, headers)
-//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_cloudflare(id, timeout)
-//            browser_get_html(id), browser_close(id), browser_is_available()
+//   HTTP: http_get(url), http_get_with_headers(url, headers)
 //   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
 //   Regex: regex_match(pattern, text), regex_find(pattern, text)
 
 const BASE_URL = "https://asuracomic.net";
 
-/// Fetch HTML using browser automation (bypasses Cloudflare)
-/// Falls back to HTTP if browser not available
-fn fetch_html(url) {
-    // Try browser first if available (for Cloudflare bypass)
-    if browser_is_available() {
-        let browser_id = browser_launch();
-
-        // Navigate and wait for Cloudflare
-        browser_goto(browser_id, url);
-        browser_wait_for_cloudflare(browser_id, 15000);  // 15 second timeout for CF challenge
-
-        // Get the rendered HTML
-        let html = browser_get_html(browser_id);
-
-        // Close browser session to free resources
-        browser_close(browser_id);
-
-        return html;
+/// Get standard headers for requests
+fn get_headers() {
+    #{
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Referer": BASE_URL
     }
+}
 
-    // Fallback to HTTP (will likely fail with Cloudflare)
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    };
-    http_get_with_headers(url, headers)
+/// Fetch HTML using HTTP
+fn fetch_html(url) {
+    http_get_with_headers(url, get_headers())
 }
 
 /// Returns metadata about this source
@@ -46,7 +32,7 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "browser_automation"
+        capability_level: "http_only"
     }
 }
 
@@ -54,68 +40,110 @@ fn get_source_info() {
 fn search_series(query, page, auth) {
     let url = `${BASE_URL}/series?page=${page}`;
     let html = fetch_html(url);
-    let doc = html_parse(html);
 
     let series = [];
     let query_lower = query.to_lower();
+    let seen = #{};
 
-    // Select all series links
-    for link in html_select(doc, "a[href*='series/']") {
-        let href = element_attr(link, "href");
+    // Split HTML by series card anchor tags to extract slug+cover pairs together
+    // Each card starts with <a href="series/SLUG"> and contains <img src="COVER">
+    // Find the main grid section first (skip preload/header images)
+    let grid_start = "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5";
+    let main_html = html;
+    if html.contains(grid_start) {
+        let parts = html.split(grid_start);
+        if parts.len() > 1 {
+            main_html = parts[1];
+        }
+    }
 
-        // Skip chapter links
-        if href == () || href.contains("/chapter/") {
+    // Extract card data: split by series links to process each card
+    let card_parts = main_html.split("<a href=\"series/");
+
+    let slugs = [];
+    let covers = [];
+    let titles = [];
+
+    for i in 1..card_parts.len() {
+        let card = card_parts[i];
+
+        // Extract slug (everything before the closing quote)
+        let slug = "";
+        let quote_pos = card.index_of("\"");
+        if quote_pos > 0 {
+            slug = card.sub_string(0, quote_pos);
+        }
+
+        if slug == "" || slug.contains("/") || slug.len() > 100 {
             continue;
         }
 
-        // Extract slug from href
-        let slug = "";
-        if href.starts_with("series/") {
-            slug = href.replace("series/", "");
-        } else if href.contains("/series/") {
-            let parts = href.split("/series/");
-            if parts.len() > 1 {
-                slug = parts[1];
+        // Skip duplicates
+        if seen.contains(slug) {
+            continue;
+        }
+        seen[slug] = true;
+        slugs.push(slug);
+
+        // Extract cover from this card section (first img src after the anchor)
+        // Look for both webp and gif formats
+        let cover = ();
+
+        // Try webp first (most common)
+        let webp_match = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/[0-9]+/conversions/[^\"\\\\\\s]+thumb-small\\.webp", card);
+        if webp_match.len() > 0 {
+            cover = webp_match[0];
+        }
+
+        // Try gif if no webp found
+        if cover == () {
+            let gif_match = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/[0-9]+/[^\"\\\\\\s]+\\.gif", card);
+            if gif_match.len() > 0 {
+                cover = gif_match[0];
             }
         }
 
-        // Skip if slug has additional paths or is empty
-        if slug.contains("/") || slug == "" {
-            continue;
+        // Try any image as last resort
+        if cover == () {
+            let any_img = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/[0-9]+/[^\"\\\\\\s]+\\.(webp|gif|jpg|png)", card);
+            if any_img.len() > 0 {
+                cover = any_img[0];
+            }
         }
 
-        // Get title from span or link text
-        let title_spans = html_select(link, "span");
-        let title = if title_spans.len() > 0 { element_text(title_spans[0]) } else { element_text(link) };
+        covers.push(cover);
 
-        // Clean up title
-        title = title.trim();
-        if title.contains("Chapter") {
-            let parts = title.split("Chapter");
-            title = parts[0].trim();
+        // Extract title from this card (span with font-bold)
+        let title = slug.replace("-", " ");
+        // Look for the title span pattern
+        if card.contains("font-bold\">") {
+            let title_parts = card.split("font-bold\">");
+            if title_parts.len() > 1 {
+                let title_text = title_parts[1];
+                let end_pos = title_text.index_of("<");
+                if end_pos > 0 && end_pos < 100 {
+                    title = title_text.sub_string(0, end_pos);
+                }
+            }
         }
-        title = title.replace("MANHWA", "").replace("MANGA", "").trim();
+        titles.push(title);
+    }
 
-        // Skip invalid titles
-        if title.len() < 3 || title.len() > 150 {
-            continue;
-        }
+    // Build series list
+    for idx in 0..slugs.len() {
+        let slug = slugs[idx];
+        let title = if idx < titles.len() { titles[idx] } else { slug.replace("-", " ") };
+        let cover_url = if idx < covers.len() { covers[idx] } else { () };
 
-        // Filter by search query if provided
+        // Filter by query
         if query != "" && !title.to_lower().contains(query_lower) {
             continue;
         }
 
-        // Extract cover image
-        let imgs = html_select(link, "img");
-        let cover_url = if imgs.len() > 0 { element_attr(imgs[0], "src") } else { () };
-
-        let series_url = `${BASE_URL}/series/${slug}`;
-
         series.push(#{
             id: slug,
             title: title,
-            url: series_url,
+            url: `${BASE_URL}/series/${slug}`,
             cover_url: cover_url,
             alternate_titles: [],
             authors: [],
@@ -127,10 +155,9 @@ fn search_series(query, page, auth) {
         });
     }
 
-    // Check for next page
-    let next_links = html_select(doc, "a[rel='next']");
-    let has_more = next_links.len() > 0;
-
+    // has_more is true if we got a full page of results (15 series)
+    let count = series.len();
+    let has_more = if count >= 15 { true } else { false };
     #{ series: series, has_more: has_more, total: () }
 }
 
@@ -145,56 +172,76 @@ fn get_series(id_or_url, auth) {
         // Extract slug from URL
         let parts = id_or_url.split("/series/");
         if parts.len() > 1 {
-            slug = parts[1].split("/")[0];
+            slug = parts[1].split("/")[0].split("?")[0];
         }
     }
 
     let html = fetch_html(url);
     let doc = html_parse(html);
 
-    // Extract title
-    let title_els = html_select(doc, "h1");
-    let title = if title_els.len() > 0 { element_text(title_els[0]).trim() } else { "" };
+    // Extract title from the bold span (main title element)
+    let title = "";
+    let title_els = html_select(doc, "span.text-xl.font-bold");
+    if title_els.len() > 0 {
+        title = element_text(title_els[0]).trim();
+    }
+    // Fallback: try title tag
+    if title == "" {
+        let title_tags = html_select(doc, "title");
+        if title_tags.len() > 0 {
+            title = element_text(title_tags[0]).trim();
+            // Remove " - Asura Scans" suffix
+            if title.contains(" - Asura") {
+                let parts = title.split(" - Asura");
+                title = parts[0].trim();
+            }
+        }
+    }
 
-    // Extract cover
-    let cover_els = html_select(doc, "img.rounded-md, img[alt='poster']");
-    let cover_url = if cover_els.len() > 0 { element_attr(cover_els[0], "src") } else { () };
+    // Extract cover from poster image
+    let cover_url = ();
+    let cover_els = html_select(doc, "img[alt='poster']");
+    if cover_els.len() > 0 {
+        cover_url = element_attr(cover_els[0], "src");
+    }
+    // Fallback: try rounded image
+    if cover_url == () {
+        let rounded_imgs = html_select(doc, "img.rounded");
+        if rounded_imgs.len() > 0 {
+            cover_url = element_attr(rounded_imgs[0], "src");
+        }
+    }
 
-    // Extract description
-    let desc_els = html_select(doc, "div.prose, div.description");
-    let description = if desc_els.len() > 0 { element_text(desc_els[0]).trim() } else { () };
+    // Extract description from the synopsis paragraph
+    let description = ();
+    let desc_els = html_select(doc, "span.font-medium.text-sm.text-\\[\\#A2A2A2\\]");
+    if desc_els.len() > 0 {
+        description = element_text(desc_els[0]).trim();
+    }
 
-    // Extract status
+    // Extract status from the status row
     let status = ();
-    for span in html_select(doc, "span") {
-        let text = element_text(span).to_lower();
-        if text.contains("ongoing") {
+    for h3 in html_select(doc, "h3.text-sm") {
+        let text = element_text(h3).trim().to_lower();
+        if text == "ongoing" {
             status = "Ongoing";
             break;
-        } else if text.contains("completed") {
+        } else if text == "completed" {
             status = "Completed";
             break;
-        } else if text.contains("hiatus") {
+        } else if text == "hiatus" {
             status = "Hiatus";
             break;
         }
     }
 
-    // Extract genres
+    // Extract genres from genre buttons
     let genres = [];
-    for genre_link in html_select(doc, "a[href*='genre/']") {
-        let genre = element_text(genre_link).trim();
-        if genre != "" && !genres.contains(genre) {
+    // Look for buttons after the "Genres" heading
+    for btn in html_select(doc, "button.bg-\\[\\#343434\\]") {
+        let genre = element_text(btn).trim();
+        if genre != "" && genre.len() < 30 && !genres.contains(genre) {
             genres.push(genre);
-        }
-    }
-
-    // Extract authors
-    let authors = [];
-    for author_el in html_select(doc, "a[href*='author/'], span.author") {
-        let author = element_text(author_el).trim();
-        if author != "" && !authors.contains(author) {
-            authors.push(author);
         }
     }
 
@@ -204,7 +251,7 @@ fn get_series(id_or_url, auth) {
         alternate_titles: [],
         description: description,
         cover_url: cover_url,
-        authors: authors,
+        authors: [],
         artists: [],
         status: status,
         genres: genres,
@@ -219,9 +266,16 @@ fn get_series(id_or_url, auth) {
 /// Get all chapters for a series
 fn get_chapters(series_id, auth) {
     let url = series_id;
+    let slug = series_id;
 
     if !series_id.starts_with("http") {
         url = `${BASE_URL}/series/${series_id}`;
+    } else {
+        // Extract slug from URL
+        let parts = series_id.split("/series/");
+        if parts.len() > 1 {
+            slug = parts[1].split("/")[0].split("?")[0];
+        }
     }
 
     let html = fetch_html(url);
@@ -230,7 +284,7 @@ fn get_chapters(series_id, auth) {
     let chapters = [];
     let seen = #{};
 
-    // Find all chapter links
+    // Find all chapter links - they're in format "slug/chapter/N" or full URLs
     for link in html_select(doc, "a[href*='/chapter/']") {
         let href = element_attr(link, "href");
         if href == () {
@@ -244,25 +298,44 @@ fn get_chapters(series_id, auth) {
             chapter_num = parts[1].split("/")[0].split("?")[0];
         }
 
+        // Skip empty or invalid chapter numbers
+        if chapter_num == "" {
+            continue;
+        }
+
         // Skip if already seen
         if seen.contains(chapter_num) {
             continue;
         }
         seen[chapter_num] = true;
 
-        // Build full URL
+        // Build full URL - handle relative URLs like "slug/chapter/N"
         let chapter_url = href;
         if !href.starts_with("http") {
             if href.starts_with("/") {
                 chapter_url = `${BASE_URL}${href}`;
+            } else if href.contains("/chapter/") {
+                // Relative URL like "slug/chapter/N" - need to add /series/ prefix
+                chapter_url = `${BASE_URL}/series/${href}`;
             } else {
                 chapter_url = `${BASE_URL}/${href}`;
             }
         }
 
-        // Extract title if available
-        let title_spans = html_select(link, "span");
-        let title = if title_spans.len() > 0 { element_text(title_spans[0]).trim() } else { () };
+        // Extract title from h3 inside the link
+        let title = ();
+        let h3_els = html_select(link, "h3");
+        if h3_els.len() > 0 {
+            let h3_text = element_text(h3_els[0]).trim();
+            // Extract any title text after chapter number
+            if h3_text.contains("{") {
+                // Has a title like "{S2 Start}"
+                let title_parts = h3_text.split("{");
+                if title_parts.len() > 1 {
+                    title = "{" + title_parts[1];
+                }
+            }
+        }
 
         chapters.push(#{
             id: chapter_url,
@@ -279,7 +352,7 @@ fn get_chapters(series_id, auth) {
         });
     }
 
-    // Sort chapters by number
+    // Sort chapters by number (descending - newest first is default, but we want ascending)
     chapters.sort(|a, b| {
         let num_a = parse_float(a.number);
         let num_b = parse_float(b.number);
@@ -298,36 +371,61 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let html = fetch_html(url);
-    let doc = html_parse(html);
 
     let pages = [];
     let idx = 0;
+    let seen = #{};
 
-    // Find all page images
-    for img in html_select(doc, "div.reader-content img, div.chapter-images img, img[src*='wp-content']") {
-        let img_url = element_attr(img, "src");
-        if img_url == () {
-            img_url = element_attr(img, "data-src");
-        }
+    // Images are embedded in escaped JSON in Next.js page data
+    // Extract URLs using regex - pattern matches page images
+    // Format: https://gg.asuracomic.net/storage/media/XXXXX/conversions/FILENAME-optimized.webp
+    // Filenames can be alphanumeric IDs like "01K0SK60JGY8VDJQQ2H7YJHHMW" or hex IDs like "5357f1a1"
+    let matches = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
 
-        if img_url != () && img_url.contains("http") {
-            pages.push(#{
-                index: idx,
-                url: img_url,
-                headers: #{
-                    "Referer": url
-                },
-                referer: url
-            });
-            idx += 1;
+    for img_url in matches {
+        // Skip duplicates
+        if seen.contains(img_url) {
+            continue;
         }
+        seen[img_url] = true;
+
+        pages.push(#{
+            index: idx,
+            url: img_url,
+            headers: #{
+                "Referer": url
+            },
+            referer: url
+        });
+        idx += 1;
     }
 
     pages
 }
 
-/// Get latest updates
+/// Get latest updates - reuses search_series logic for home page
 fn get_latest_updates(page, auth) {
+    // The home page and series page have similar structure
+    // Use search_series with empty query to get latest
+    let result = search_series("", page, auth);
+
+    // Convert to latest updates format
+    let series = [];
+    for s in result.series {
+        series.push(#{
+            id: s.id,
+            title: s.title,
+            url: s.url,
+            cover_url: s.cover_url,
+            updated_at: ()
+        });
+    }
+
+    #{ series: series, has_more: result.has_more }
+}
+
+/// Legacy get_latest_updates_old - kept for reference
+fn get_latest_updates_old(page, auth) {
     let url = `${BASE_URL}?page=${page}`;
     let html = fetch_html(url);
     let doc = html_parse(html);

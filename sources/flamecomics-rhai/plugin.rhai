@@ -9,6 +9,7 @@
 //   JSON: json_parse(text)
 
 const BASE_URL = "https://flamecomics.xyz";
+const CDN_URL = "https://cdn.flamecomics.xyz";
 
 /// Fetch HTML using browser automation (bypasses Cloudflare)
 /// Falls back to HTTP if browser not available
@@ -117,14 +118,14 @@ fn search_series(query, page, auth) {
                             id: `${series_id}`,
                             title: title,
                             url: `${BASE_URL}/series/${series_id}`,
-                            cover_url: cover,
+                            cover_url: build_cover_url(series_id, cover),
                             alternate_titles: if alt_titles != () { alt_titles } else { [] },
                             authors: if authors != () { authors } else { [] },
                             artists: if artists != () { artists } else { [] },
                             status: (),
                             genres: if tags != () { tags } else { [] },
                             tags: [],
-                            description: description
+                            description: strip_html(description)
                         });
                     }
                 }
@@ -182,8 +183,8 @@ fn get_series(id_or_url, auth) {
         id: series_id,
         title: if title != () { title } else { "" },
         alternate_titles: if alt_titles != () { alt_titles } else { [] },
-        description: description,
-        cover_url: cover,
+        description: strip_html(description),
+        cover_url: build_cover_url(series_id, cover),
         authors: if authors != () { authors } else { [] },
         artists: if artists != () { artists } else { [] },
         status: (),
@@ -199,13 +200,14 @@ fn get_series(id_or_url, auth) {
 /// Get all chapters for a series
 fn get_chapters(series_id, auth) {
     let url = series_id;
+    let original_series_id = series_id;
 
     if !series_id.starts_with("http") {
         url = `${BASE_URL}/series/${series_id}`;
     } else {
         let parts = series_id.split("/series/");
         if parts.len() > 1 {
-            series_id = parts[1].split("/")[0];
+            original_series_id = parts[1].split("/")[0];
         }
     }
 
@@ -228,21 +230,27 @@ fn get_chapters(series_id, auth) {
 
     for ch in chapters_data {
         let chapter_id = ch["chapter_id"];
+        let token = ch["token"];  // Token is required for reader URL
         let chapter_num = ch["chapter"];
         let title = ch["title"];
+        let ch_series_id = ch["series_id"];
 
+        // Use compound ID (series_id:token) so get_chapter_pages can build correct URL
         chapters.push(#{
-            id: `${chapter_id}`,
-            series_id: series_id,
+            id: `${ch_series_id}:${token}`,  // Compound ID: series_id:token
+            series_id: `${ch_series_id}`,
             number: chapter_num,
             title: title,
             volume: (),
             language: "en",
             scanlator: "Flame Comics",
-            url: `${BASE_URL}/read/${chapter_id}`,
+            url: `${BASE_URL}/series/${ch_series_id}/${token}`,
             published_at: (),
             page_count: (),
-            extra: #{}
+            extra: #{
+                chapter_id: `${chapter_id}`,  // Store original chapter_id in extra
+                token: token
+            }
         });
     }
 
@@ -256,11 +264,25 @@ fn get_chapters(series_id, auth) {
 }
 
 /// Get page URLs for a chapter
+/// chapter_id can be:
+/// - A token (e.g., "51b1d42b24b70dd6") - needs series_id to build URL
+/// - A full URL (e.g., "https://flamecomics.xyz/series/51/51b1d42b24b70dd6")
 fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
 
     if !chapter_id.starts_with("http") {
-        url = `${BASE_URL}/read/${chapter_id}`;
+        // chapter_id is a token, but we don't know the series_id
+        // Try to parse it as a compound ID: "series_id:token"
+        if chapter_id.contains(":") {
+            let parts = chapter_id.split(":");
+            let series_id = parts[0];
+            let token = parts[1];
+            url = `${BASE_URL}/series/${series_id}/${token}`;
+        } else {
+            // Assume it's just a token - we need to figure out the series ID
+            // For backwards compatibility, try the old format first
+            url = `${BASE_URL}/series/0/${chapter_id}`;
+        }
     }
 
     let html = fetch_html(url);
@@ -272,16 +294,54 @@ fn get_chapter_pages(chapter_id, auth) {
 
     let props = next_data["props"];
     let page_props = props["pageProps"];
-    let images = page_props["images"];
 
+    // Check if page is 404
+    let page_type = next_data["page"];
+    if page_type == "/404" {
+        return [];
+    }
+
+    // Images are inside the chapter object
+    let chapter_data = page_props["chapter"];
+    if chapter_data == () {
+        return [];
+    }
+
+    let images = chapter_data["images"];
     if images == () {
         return [];
     }
 
-    let pages = [];
-    let idx = 0;
+    // Get series_id and token from chapter data for building CDN URLs
+    let series_id_num = chapter_data["series_id"];
+    let chapter_token = chapter_data["token"];
+    let edit_time = chapter_data["edit_time"];  // Used as cache-buster
 
-    for img_url in images {
+    // CDN URL pattern: https://cdn.flamecomics.xyz/uploads/images/series/{series_id}/{token}/{filename}
+    let cdn_base = "https://cdn.flamecomics.xyz";
+
+    let pages = [];
+
+    // Images is an object with numeric string keys ("0", "1", etc.)
+    // Each value has: name, size, type, width, height, modified
+    let keys = images.keys();
+    keys.sort(|a, b| {
+        let num_a = parse_int(a);
+        let num_b = parse_int(b);
+        if num_a < num_b { -1 } else if num_a > num_b { 1 } else { 0 }
+    });
+
+    let idx = 0;
+    for key in keys {
+        let img_data = images[key];
+        let filename = img_data["name"];
+
+        // Build CDN URL
+        let img_url = `${cdn_base}/uploads/images/series/${series_id_num}/${chapter_token}/${filename}`;
+        if edit_time != () {
+            img_url = `${img_url}?${edit_time}`;
+        }
+
         pages.push(#{
             index: idx,
             url: img_url,
@@ -299,6 +359,56 @@ fn get_chapter_pages(chapter_id, auth) {
 /// Get latest updates
 fn get_latest_updates(page, auth) {
     search_series("", page, auth)
+}
+
+/// Helper: Build cover URL from series_id and cover filename
+fn build_cover_url(series_id, cover) {
+    if cover == () || cover == "" {
+        return ();
+    }
+    `${CDN_URL}/uploads/images/series/${series_id}/${cover}`
+}
+
+/// Helper: Strip HTML tags from text
+fn strip_html(text) {
+    if text == () {
+        return "";
+    }
+
+    let result = text;
+
+    // Remove common HTML tags
+    result = result.replace("<p>", "");
+    result = result.replace("</p>", "\n");
+    result = result.replace("<br>", "\n");
+    result = result.replace("<br/>", "\n");
+    result = result.replace("<br />", "\n");
+    result = result.replace("&nbsp;", " ");
+    result = result.replace("&amp;", "&");
+    result = result.replace("&lt;", "<");
+    result = result.replace("&gt;", ">");
+    result = result.replace("&quot;", "\"");
+
+    // Remove remaining tags using a simple approach
+    // Find < and remove everything until >
+    loop {
+        let start = result.index_of("<");
+        if start == () {
+            break;
+        }
+        let end = result.index_of(">");
+        if end == () {
+            break;
+        }
+        if end > start {
+            result = result.sub_string(0, start) + result.sub_string(end + 1);
+        } else {
+            break;
+        }
+    }
+
+    // Trim whitespace
+    result.trim()
 }
 
 /// Helper: Parse float from string

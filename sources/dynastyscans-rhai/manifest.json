@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "dynastyscans-rhai",
   "name": "Dynasty Scans",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "Scraper for Dynasty Scans (dynasty-scans.com), a yuri/shoujo-ai manga reader featuring doujins, anthologies, and original series.",
   "author": {
     "name": "Tsubaki Community",
