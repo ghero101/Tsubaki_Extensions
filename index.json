@@ -1,6 +1,6 @@
 {
-  "version": 21,
-  "updated_at": "2026-01-08T20:17:59Z",
+  "version": 22,
+  "updated_at": "2026-01-08T17:00:00Z",
   "addons": [
     {
       "id": "anilist",
@@ -949,44 +949,54 @@
     {
       "id": "roliascan-rhai",
       "name": "RoliaScan",
-      "version": "1.0.2",
-      "description": "Scraper for RoliaScan (roliascan.com), a manga scanlation site.",
+      "version": "1.0.3",
+      "description": "Scraper for RoliaScan (roliascann.com), a manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-0-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-0-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan-rhai/manifest.json",
       "versions": {
         "1.0.2": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-0-2.zip",
           "released_at": "2026-01-07T05:06:46Z",
           "changelog": "Updated"
+        },
+        "1.0.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-0-3.zip",
+          "released_at": "2026-01-08T17:00:00Z",
+          "changelog": "Updated domain to roliascann.com, added API documentation"
         }
       },
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "violetscans-rhai",
       "name": "VioletScans",
-      "version": "1.0.2",
-      "description": "Scraper for VioletScans (violetscans.com), a Madara-based manga scanlation site.",
+      "version": "1.0.3",
+      "description": "Scraper for VioletScans (violetscans.org), a Madara-based manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/manifest.json",
       "versions": {
         "1.0.2": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-2.zip",
           "released_at": "2026-01-07T05:06:46Z",
           "changelog": "Updated"
+        },
+        "1.0.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-3.zip",
+          "released_at": "2026-01-08T17:00:00Z",
+          "changelog": "Fixed browser automation, updated domain to violetscans.org"
         }
       },
-      "latest_version": "1.0.2"
+      "latest_version": "1.0.3"
     },
     {
       "id": "guya-rhai",

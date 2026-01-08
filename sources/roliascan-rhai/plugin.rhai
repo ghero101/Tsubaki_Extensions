@@ -1,7 +1,13 @@
 // RoliaScan Scraper Add-on (Rhai)
-// Manga scanlation site scraper
+// Manga scanlation site scraper (HTTP-only, no browser automation required)
+//
+// Available APIs:
+//   HTTP: http_get(url), http_get_with_headers(url, headers)
+//   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
+//   JSON: json_parse(text)
+//   Utility: url_encode(text), regex_match(pattern, text), regex_find(pattern, text)
 
-const BASE_URL = "https://roliascan.com";
+const BASE_URL = "https://roliascann.com";
 
 fn get_headers() {
     #{

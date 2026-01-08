@@ -1,7 +1,15 @@
 // VioletScans Scraper Add-on (Rhai)
-// Madara-based manga scanlation site
+// Madara-based manga scanlation site with Cloudflare protection
+//
+// Available APIs:
+//   HTTP (fallback): http_get(url), http_get_with_headers(url, headers)
+//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_cloudflare(id, timeout)
+//            browser_wait_for_selector(id, selector, timeout), browser_get_html(id), browser_close(id)
+//   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
+//   JSON: json_parse(text)
+//   Utility: url_encode(text), regex_match(pattern, text), regex_find(pattern, text)
 
-const BASE_URL = "https://violetscans.com";
+const BASE_URL = "https://violetscans.org";
 
 fn get_headers() {
     #{
@@ -11,9 +19,20 @@ fn get_headers() {
     }
 }
 
+/// Fetch HTML using browser automation (bypasses Cloudflare)
+/// Falls back to HTTP if browser not available
 fn fetch_html(url) {
     if browser_is_available() {
-        return browser_get(url);
+        let browser_id = browser_launch();
+        browser_goto(browser_id, url);
+        browser_wait_for_cloudflare(browser_id, 15000);
+
+        // Wait for Madara content to load
+        browser_wait_for_selector(browser_id, ".post-title, .manga-item", 10000);
+
+        let html = browser_get_html(browser_id);
+        browser_close(browser_id);
+        return html;
     }
     http_get_with_headers(url, get_headers())
 }
@@ -25,7 +44,7 @@ fn get_source_info() {
         base_url: BASE_URL,
         language: "en",
         requires_authentication: false,
-        capability_level: "browser_required"
+        capability_level: "browser_automation"
     }
 }
 

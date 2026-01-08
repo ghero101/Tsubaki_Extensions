@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "violetscans-rhai",
   "name": "VioletScans",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for VioletScans manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",
@@ -20,8 +20,9 @@
   "capabilities": {
     "level": "browser_automation",
     "allowed_domains": [
-      "violetscans.com",
-      "www.violetscans.com"
+      "violetscans.org",
+      "www.violetscans.org",
+      "violetscans.com"
     ],
     "requires_cookies": false,
     "requires_javascript": true,
@@ -40,7 +41,7 @@
     "type": "none"
   },
   "source_info": {
-    "base_url": "https://violetscans.com",
+    "base_url": "https://violetscans.org",
     "language": "en",
     "content_rating": "suggestive",
     "tags": [
