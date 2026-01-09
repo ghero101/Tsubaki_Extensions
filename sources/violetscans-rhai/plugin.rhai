@@ -282,38 +282,64 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let html = fetch_html(url);
-    let doc = html_parse(html);
     let pages = [];
     let idx = 0;
 
-    // MangaReader theme reader area
-    let imgs = html_select(doc, "#readerarea img");
-    if imgs.len() == 0 {
-        imgs = html_select(doc, ".reading-content img");
-    }
-    if imgs.len() == 0 {
-        imgs = html_select(doc, ".page-break img");
-    }
-
-    for img in imgs {
-        let src = element_attr(img, "src");
-        if src == () || src == "" {
-            src = element_attr(img, "data-src");
+    // VioletScans uses ts_reader.run() JavaScript to load images
+    // Extract image URLs directly using regex to find the images array
+    // Pattern: "images":["url1","url2",...]
+    let images_match = regex_find("\"images\":\\[([^\\]]+)\\]", html);
+    if images_match != () && images_match != "" {
+        // Extract URLs from the matched string
+        // The match is like: "images":["url1","url2"...]
+        // Find all URLs that look like chapter images
+        let url_pattern = "https:\\\\/\\\\/[^\"]+\\.webp|https:\\\\/\\\\/[^\"]+\\.jpg|https:\\\\/\\\\/[^\"]+\\.png|https:\\\\/\\\\/[^\"]+\\.jpeg";
+        let all_urls = regex_find_all(url_pattern, images_match);
+        if all_urls != () && all_urls.len() > 0 {
+            for img_url in all_urls {
+                // Clean up escaped URLs
+                let clean_url = img_url.replace("\\/", "/");
+                pages.push(#{
+                    index: idx,
+                    url: clean_url,
+                    headers: #{ "Referer": url }
+                });
+                idx += 1;
+            }
         }
-        if src == () || src == "" { continue; }
+    }
 
-        // Skip logos and icons
-        let src_lower = src.to_lower();
-        if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
-            continue;
+    // Fallback: try traditional image selectors if ts_reader not found
+    if pages.len() == 0 {
+        let doc = html_parse(html);
+        let imgs = html_select(doc, "#readerarea img");
+        if imgs.len() == 0 {
+            imgs = html_select(doc, ".reading-content img");
+        }
+        if imgs.len() == 0 {
+            imgs = html_select(doc, ".page-break img");
         }
 
-        pages.push(#{
-            index: idx,
-            url: src.trim(),
-            headers: #{ "Referer": url }
-        });
-        idx += 1;
+        for img in imgs {
+            let src = element_attr(img, "src");
+            if src == () || src == "" {
+                src = element_attr(img, "data-src");
+            }
+            if src == () || src == "" { continue; }
+
+            // Skip logos and icons
+            let src_lower = src.to_lower();
+            if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
+                continue;
+            }
+
+            pages.push(#{
+                index: idx,
+                url: src.trim(),
+                headers: #{ "Referer": url }
+            });
+            idx += 1;
+        }
     }
 
     pages

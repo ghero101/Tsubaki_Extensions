@@ -1,6 +1,6 @@
 {
-  "version": 23,
-  "updated_at": "2026-01-09T05:06:52Z",
+  "version": 24,
+  "updated_at": "2026-01-09T10:30:00Z",
   "addons": [
     {
       "id": "anilist",
@@ -515,16 +515,16 @@
     {
       "id": "roliascan-rhai",
       "name": "RoliaScan",
-      "version": "1.0.9",
+      "version": "1.0.10",
       "description": "Scraper for RoliaScan manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-0-9.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-0-10.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan-rhai/manifest.json",
-      "latest_version": "1.0.9"
+      "latest_version": "1.0.10"
     }
     ,
     {
@@ -560,16 +560,16 @@
     {
       "id": "violetscans-rhai",
       "name": "VioletScans",
-      "version": "1.0.8",
+      "version": "1.0.9",
       "description": "Scraper for VioletScans manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-8.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-9.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/manifest.json",
-      "latest_version": "1.0.8"
+      "latest_version": "1.0.9"
     }
     ,
     {

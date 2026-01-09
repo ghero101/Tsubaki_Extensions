@@ -34,10 +34,11 @@ fn get_source_info() {
 
 fn search_series(query, page, auth) {
     let encoded = url_encode(query);
-    let url = `${BASE_URL}/?s=${encoded}`;
+    // Use the filter endpoint which supports keyword search
+    let url = `${BASE_URL}/filter?keyword=${encoded}`;
 
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/?s=${encoded}`;
+        url = `${BASE_URL}/filter?keyword=${encoded}&page=${page}`;
     }
 
     let html = fetch_html(url);
