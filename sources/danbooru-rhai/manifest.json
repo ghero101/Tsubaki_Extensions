@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "danbooru-rhai",
   "name": "Danbooru",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content. Note: Due to Cloudflare protection, API credentials may be required - configure in addon settings.",
   "author": {
     "name": "Tsubaki Community",

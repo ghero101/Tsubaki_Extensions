@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "demonicscans-rhai",
   "name": "DemonicScans",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for DemonicScans manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",

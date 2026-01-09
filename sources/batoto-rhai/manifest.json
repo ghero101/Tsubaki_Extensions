@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "batoto-rhai",
   "name": "BatoTo",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "BatoTo manga reader - Multi-language manga aggregator with extensive library. Uses browser automation due to Vue.js rendering.",
   "author": {
     "name": "Tsubaki Team",

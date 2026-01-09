@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "hypnohub-rhai",
   "name": "HypnoHub",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Search and browse HypnoHub for hypnosis-themed artwork. Contains adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "realbooru-rhai",
   "name": "RealBooru",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only. Uses HTML scraping since the JSON API is offline.",
   "author": {
     "name": "Tsubaki Community",

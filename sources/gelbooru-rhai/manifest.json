@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "gelbooru-rhai",
   "name": "Gelbooru",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Search and browse Gelbooru for anime-style artwork. Contains adult content - 18+ only. IMPORTANT: API credentials (User ID + API Key) are now REQUIRED to use this addon.",
   "author": {
     "name": "Tsubaki Community",

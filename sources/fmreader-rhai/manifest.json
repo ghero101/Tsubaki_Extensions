@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "fmreader-rhai",
   "name": "FMReader",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "FMReader framework parser - A template for FMReader-based manga sites. Supports multiple sites using the FMReader CMS including KissManga, ReadManga, and similar platforms.",
   "author": {
     "name": "Tsubaki Community",

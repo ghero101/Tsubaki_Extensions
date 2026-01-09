@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangageko-rhai",
   "name": "MangaGeko",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Scraper for MangaGeko (mgeko.cc), a popular manga aggregator site with manga, manhwa, and manhua in English.",
   "author": {
     "name": "Tsubaki Community",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "foolslide-rhai",
   "name": "FoolSlide",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Framework parser for FoolSlide CMS-based manga sites. FoolSlide is an open-source manga reading platform used by many scanlation groups. Configure the base URL to connect to any FoolSlide instance.",
   "author": {
     "name": "Tsubaki Community",

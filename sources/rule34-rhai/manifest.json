@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "rule34-rhai",
   "name": "Rule34",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only. API credentials (User ID + API Key) are REQUIRED.",
   "author": {
     "name": "Tsubaki Community",
