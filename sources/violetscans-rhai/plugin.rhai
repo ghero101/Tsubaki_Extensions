@@ -243,15 +243,22 @@ fn get_chapters(series_id, auth) {
         }
 
         // Extract chapter number from URL (format: series-name-chapter-108)
+        // Note: regex_find returns the full match, so we extract just the number
         let ch_num = `${idx + 1}`;
         let num_match = regex_find("chapter-(\\d+\\.?\\d*)", href);
         if num_match != () && num_match != "" {
-            ch_num = num_match;
-        } else {
-            // Try from title
-            let num_match2 = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
-            if num_match2 != () && num_match2 != "" {
-                ch_num = num_match2;
+            // Extract just the number part after "chapter-"
+            let parts = num_match.split("-");
+            if parts.len() >= 2 {
+                ch_num = parts[1];
+            }
+        }
+        if ch_num == `${idx + 1}` {
+            // Fallback: Try extracting number directly from URL
+            let direct_num = regex_find("-(\\d+)/?$", href);
+            if direct_num != () && direct_num != "" {
+                // Remove leading dash
+                ch_num = direct_num.replace("-", "").replace("/", "");
             }
         }
 
