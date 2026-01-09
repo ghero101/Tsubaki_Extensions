@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "roliascan-rhai",
   "name": "RoliaScan",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Scraper for RoliaScan manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",

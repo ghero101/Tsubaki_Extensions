@@ -282,14 +282,10 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest updates for browsing
 fn get_latest_updates(page, auth) {
-    // Use homepage instead of /manga to avoid huge page size
-    // The homepage has latest updates and popular manga sections
-    let url = `${BASE_URL}/`;
-
-    // RoliaScan homepage doesn't support pagination well,
-    // so we only return results for page 1
+    // RoliaScan uses /manga?page=X for pagination (up to 30 pages)
+    let url = `${BASE_URL}/manga`;
     if page > 1 {
-        return #{ series: [], has_more: false };
+        url = `${BASE_URL}/manga?page=${page}`;
     }
 
     let html = fetch_html(url);
@@ -364,17 +360,17 @@ fn get_latest_updates(page, auth) {
         }
     }
 
-    let has_more = false; // Homepage only has limited results
+    // RoliaScan has up to 30 pages of manga
+    let has_more = page < 30 && series.len() > 0;
     #{ series: series, has_more: has_more }
 }
 
-/// Get popular manga (uses homepage)
+/// Get popular manga (uses manga listing with pagination)
 fn get_popular(page, auth) {
-    // Use homepage instead of /leaderboard to avoid large page sizes
-    let url = `${BASE_URL}/`;
-
+    // RoliaScan uses /manga?page=X for pagination
+    let url = `${BASE_URL}/manga`;
     if page > 1 {
-        return [];
+        url = `${BASE_URL}/manga?page=${page}`;
     }
 
     let html = fetch_html(url);

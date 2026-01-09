@@ -212,17 +212,15 @@ fn get_chapters(series_id, auth) {
     let html = fetch_html(url);
     let doc = html_parse(html);
     let chapters = [];
+    let seen = #{};
 
-    // MangaReader theme chapter list - try multiple selectors
-    let ch_links = html_select(doc, "#chapterlist a");
+    // VioletScans MangaReader theme - chapters are in .bixbox.epcheck container
+    // Structure: <a href="...chapter..."><div class="chbox">...</div></a>
+    // The anchor wraps the chbox, so we need to select anchors containing "chapter" in href
+    let ch_links = html_select(doc, ".bixbox a[href*='chapter']");
     if ch_links.len() == 0 {
-        ch_links = html_select(doc, ".eplister a");
-    }
-    if ch_links.len() == 0 {
-        ch_links = html_select(doc, ".wp-manga-chapter a");
-    }
-    if ch_links.len() == 0 {
-        ch_links = html_select(doc, ".chbox a");
+        // Fallback: try all chapter links in the page
+        ch_links = html_select(doc, "a[href*='-chapter-']");
     }
 
     let idx = 0;
@@ -230,15 +228,28 @@ fn get_chapters(series_id, auth) {
         let href = element_attr(link, "href");
         if href == () || href == "" { continue; }
 
-        let ch_title = element_text(link).trim();
+        // Skip duplicates
+        if seen.contains(href) { continue; }
+        seen[href] = true;
 
-        // Extract chapter number
+        // Get chapter title from .chapternum span or link text
+        let ch_title = "";
+        let ch_spans = html_select(link, ".chapternum");
+        if ch_spans.len() > 0 {
+            ch_title = element_text(ch_spans[0]).trim();
+        }
+        if ch_title == "" {
+            ch_title = element_text(link).trim();
+        }
+
+        // Extract chapter number from URL (format: series-name-chapter-108)
         let ch_num = `${idx + 1}`;
-        let num_match = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
+        let num_match = regex_find("chapter-(\\d+\\.?\\d*)", href);
         if num_match != () && num_match != "" {
             ch_num = num_match;
         } else {
-            let num_match2 = regex_find("(\\d+\\.?\\d*)", ch_title);
+            // Try from title
+            let num_match2 = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
             if num_match2 != () && num_match2 != "" {
                 ch_num = num_match2;
             }

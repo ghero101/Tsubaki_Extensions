@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "violetscans-rhai",
   "name": "VioletScans",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Scraper for VioletScans manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",
