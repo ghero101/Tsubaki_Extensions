@@ -1,10 +1,8 @@
 // VioletScans Scraper Add-on (Rhai)
-// Madara-based manga scanlation site with Cloudflare protection
+// Custom MangaReader WordPress theme (NOT Madara)
 //
 // Available APIs:
-//   HTTP (fallback): http_get(url), http_get_with_headers(url, headers)
-//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_cloudflare(id, timeout)
-//            browser_wait_for_selector(id, selector, timeout), browser_get_html(id), browser_close(id)
+//   HTTP: http_get(url), http_get_with_headers(url, headers)
 //   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
 //   JSON: json_parse(text)
 //   Utility: url_encode(text), regex_match(pattern, text), regex_find(pattern, text)
@@ -19,21 +17,7 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML using browser automation (bypasses Cloudflare)
-/// Falls back to HTTP if browser not available
 fn fetch_html(url) {
-    if browser_is_available() {
-        let browser_id = browser_launch();
-        browser_goto(browser_id, url);
-        browser_wait_for_cloudflare(browser_id, 15000);
-
-        // Wait for Madara content to load
-        browser_wait_for_selector(browser_id, ".post-title, .manga-item", 10000);
-
-        let html = browser_get_html(browser_id);
-        browser_close(browser_id);
-        return html;
-    }
     http_get_with_headers(url, get_headers())
 }
 
@@ -44,37 +28,68 @@ fn get_source_info() {
         base_url: BASE_URL,
         language: "en",
         requires_authentication: false,
-        capability_level: "browser_automation"
+        capability_level: "http_only"
     }
 }
 
 fn search_series(query, page, auth) {
     let encoded = url_encode(query);
-    let url = `${BASE_URL}/?s=${encoded}&post_type=wp-manga`;
+    let url = `${BASE_URL}/?s=${encoded}`;
 
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/?s=${encoded}&post_type=wp-manga`;
+        url = `${BASE_URL}/page/${page}/?s=${encoded}`;
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let series = [];
+    let seen = #{};
 
-    let items = html_select(html, ".c-tabs-item__content, .search-result");
+    // VioletScans search results use anchor tags with h2 titles
+    let items = html_select(doc, "a[href*='/comics/']");
+
     for item in items {
-        let links = html_select(item, ".post-title a, h3 a");
-        if links.len() == 0 { continue; }
+        let href = element_attr(item, "href");
+        if href == () || href == "" { continue; }
 
-        let href = element_attr(links[0], "href");
-        let title = element_text(links[0]).trim();
+        // Skip chapter links and duplicates
+        if href.contains("/chapter") { continue; }
+        if seen.contains(href) { continue; }
+        seen[href] = true;
 
-        let cover = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover = element_attr(imgs[0], "data-src");
-            if cover == () { cover = element_attr(imgs[0], "src"); }
+        // Get title from h2 inside the anchor
+        let title = "";
+        let h2_els = html_select(item, "h2");
+        if h2_els.len() > 0 {
+            title = element_text(h2_els[0]).trim();
+        }
+        if title == "" {
+            let h3_els = html_select(item, "h3");
+            if h3_els.len() > 0 {
+                title = element_text(h3_els[0]).trim();
+            }
+        }
+        if title == "" {
+            let tt_els = html_select(item, ".tt");
+            if tt_els.len() > 0 {
+                title = element_text(tt_els[0]).trim();
+            }
         }
 
-        if title != "" && href != () {
+        // Get cover from img.ts-post-image or any img
+        let cover = ();
+        let imgs = html_select(item, "img.ts-post-image");
+        if imgs.len() == 0 {
+            imgs = html_select(item, "img");
+        }
+        if imgs.len() > 0 {
+            cover = element_attr(imgs[0], "src");
+            if cover == () || cover == "" {
+                cover = element_attr(imgs[0], "data-src");
+            }
+        }
+
+        if title != "" {
             series.push(#{
                 id: href,
                 title: title,
@@ -94,50 +109,84 @@ fn search_series(query, page, auth) {
 fn get_series(id_or_url, auth) {
     let url = id_or_url;
     if !id_or_url.starts_with("http") {
-        url = `${BASE_URL}/manga/${id_or_url}`;
+        url = `${BASE_URL}/comics/${id_or_url}/`;
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
 
+    // Get title from h1 or .entry-title
     let title = "";
-    let h1s = html_select(html, ".post-title h1, h1");
+    let h1s = html_select(doc, "h1.entry-title");
     if h1s.len() > 0 {
         title = element_text(h1s[0]).trim();
     }
-
-    let cover = ();
-    let cover_imgs = html_select(html, ".summary_image img");
-    if cover_imgs.len() > 0 {
-        cover = element_attr(cover_imgs[0], "data-src");
-        if cover == () { cover = element_attr(cover_imgs[0], "src"); }
+    if title == "" {
+        let h1_all = html_select(doc, "h1");
+        if h1_all.len() > 0 {
+            title = element_text(h1_all[0]).trim();
+        }
     }
 
+    // Get cover from .thumb img or .summary_image img
+    let cover = ();
+    let cover_imgs = html_select(doc, ".thumb img");
+    if cover_imgs.len() > 0 {
+        cover = element_attr(cover_imgs[0], "src");
+    }
+    if cover == () {
+        let sum_imgs = html_select(doc, ".summary_image img");
+        if sum_imgs.len() > 0 {
+            cover = element_attr(sum_imgs[0], "src");
+            if cover == () {
+                cover = element_attr(sum_imgs[0], "data-src");
+            }
+        }
+    }
+
+    // Get description from .entry-content p or .summary__content p
     let description = ();
-    let desc_els = html_select(html, ".summary__content p, .description p");
+    let desc_els = html_select(doc, ".entry-content p");
     if desc_els.len() > 0 {
         description = element_text(desc_els[0]).trim();
     }
+    if description == () || description == "" {
+        let sum_els = html_select(doc, ".summary__content p");
+        if sum_els.len() > 0 {
+            description = element_text(sum_els[0]).trim();
+        }
+    }
 
+    // Get genres
     let genres = [];
-    let genre_links = html_select(html, ".genres-content a");
+    let genre_links = html_select(doc, ".mgen a");
+    if genre_links.len() == 0 {
+        genre_links = html_select(doc, ".genres-content a");
+    }
     for link in genre_links {
         let g = element_text(link).trim();
         if g != "" { genres.push(g); }
     }
 
+    // Get authors
     let authors = [];
-    let author_links = html_select(html, ".author-content a");
+    let author_links = html_select(doc, ".author-content a");
+    if author_links.len() == 0 {
+        author_links = html_select(doc, ".fmed a[href*='author']");
+    }
     for link in author_links {
         let a = element_text(link).trim();
         if a != "" { authors.push(a); }
     }
 
+    // Get status
     let status = ();
-    let status_els = html_select(html, ".post-status .summary-content");
+    let status_els = html_select(doc, ".imptdt i");
     if status_els.len() > 0 {
         let s = element_text(status_els[0]).trim().to_lower();
         if s.contains("ongoing") { status = "Ongoing"; }
         else if s.contains("completed") { status = "Completed"; }
+        else if s.contains("hiatus") { status = "Hiatus"; }
     }
 
     #{
@@ -157,21 +206,43 @@ fn get_series(id_or_url, auth) {
 fn get_chapters(series_id, auth) {
     let url = series_id;
     if !series_id.starts_with("http") {
-        url = `${BASE_URL}/manga/${series_id}`;
+        url = `${BASE_URL}/comics/${series_id}/`;
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let chapters = [];
 
-    let ch_items = html_select(html, ".wp-manga-chapter a");
+    // MangaReader theme chapter list - try multiple selectors
+    let ch_links = html_select(doc, "#chapterlist a");
+    if ch_links.len() == 0 {
+        ch_links = html_select(doc, ".eplister a");
+    }
+    if ch_links.len() == 0 {
+        ch_links = html_select(doc, ".wp-manga-chapter a");
+    }
+    if ch_links.len() == 0 {
+        ch_links = html_select(doc, ".chbox a");
+    }
+
     let idx = 0;
-    for link in ch_items {
+    for link in ch_links {
         let href = element_attr(link, "href");
-        if href == () { continue; }
+        if href == () || href == "" { continue; }
 
         let ch_title = element_text(link).trim();
-        let ch_num = regex_find("chapter[\\s-]*(\\d+\\.?\\d*)", ch_title.to_lower());
-        if ch_num == () { ch_num = `${idx + 1}`; }
+
+        // Extract chapter number
+        let ch_num = `${idx + 1}`;
+        let num_match = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
+        if num_match != () && num_match != "" {
+            ch_num = num_match;
+        } else {
+            let num_match2 = regex_find("(\\d+\\.?\\d*)", ch_title);
+            if num_match2 != () && num_match2 != "" {
+                ch_num = num_match2;
+            }
+        }
 
         chapters.push(#{
             id: href,
@@ -193,21 +264,35 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let pages = [];
     let idx = 0;
 
-    let imgs = html_select(html, ".reading-content img, .wp-manga-chapter-img");
+    // MangaReader theme reader area
+    let imgs = html_select(doc, "#readerarea img");
+    if imgs.len() == 0 {
+        imgs = html_select(doc, ".reading-content img");
+    }
+    if imgs.len() == 0 {
+        imgs = html_select(doc, ".page-break img");
+    }
+
     for img in imgs {
-        let src = element_attr(img, "data-src");
-        if src == () { src = element_attr(img, "src"); }
+        let src = element_attr(img, "src");
+        if src == () || src == "" {
+            src = element_attr(img, "data-src");
+        }
         if src == () || src == "" { continue; }
 
-        let clean_src = src.trim();
-        if clean_src.contains("logo") || clean_src.contains("icon") { continue; }
+        // Skip logos and icons
+        let src_lower = src.to_lower();
+        if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
+            continue;
+        }
 
         pages.push(#{
             index: idx,
-            url: clean_src,
+            url: src.trim(),
             headers: #{ "Referer": url }
         });
         idx += 1;
@@ -216,32 +301,64 @@ fn get_chapter_pages(chapter_id, auth) {
     pages
 }
 
-/// Get latest updates for browsing (Madara theme)
+/// Get latest updates for browsing
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/?m_orderby=latest`;
+    // VioletScans uses /comics for manga listing
+    let url = `${BASE_URL}/comics/`;
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/?m_orderby=latest`;
+        url = `${BASE_URL}/comics/page/${page}/`;
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let series = [];
+    let seen = #{};
 
-    let items = html_select(html, ".c-tabs-item__content, .page-item-detail");
+    // VioletScans uses anchor tags with h2 for title and img.ts-post-image for covers
+    let items = html_select(doc, "a[href*='/comics/']");
+
     for item in items {
-        let links = html_select(item, ".post-title a, h3 a");
-        if links.len() == 0 { continue; }
+        let href = element_attr(item, "href");
+        if href == () || href == "" { continue; }
 
-        let href = element_attr(links[0], "href");
-        let title = element_text(links[0]).trim();
+        // Skip chapter links and duplicates
+        if href.contains("/chapter") { continue; }
+        if seen.contains(href) { continue; }
+        seen[href] = true;
 
-        let cover = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover = element_attr(imgs[0], "data-src");
-            if cover == () { cover = element_attr(imgs[0], "src"); }
+        // Get title from h2 inside the anchor
+        let title = "";
+        let h2_els = html_select(item, "h2");
+        if h2_els.len() > 0 {
+            title = element_text(h2_els[0]).trim();
+        }
+        if title == "" {
+            let h3_els = html_select(item, "h3");
+            if h3_els.len() > 0 {
+                title = element_text(h3_els[0]).trim();
+            }
+        }
+        if title == "" {
+            let tt_els = html_select(item, ".tt");
+            if tt_els.len() > 0 {
+                title = element_text(tt_els[0]).trim();
+            }
         }
 
-        if title != "" && href != () {
+        // Get cover from img.ts-post-image or any img
+        let cover = ();
+        let imgs = html_select(item, "img.ts-post-image");
+        if imgs.len() == 0 {
+            imgs = html_select(item, "img");
+        }
+        if imgs.len() > 0 {
+            cover = element_attr(imgs[0], "src");
+            if cover == () || cover == "" {
+                cover = element_attr(imgs[0], "data-src");
+            }
+        }
+
+        if title != "" {
             series.push(#{
                 id: href,
                 title: title,
@@ -255,36 +372,59 @@ fn get_latest_updates(page, auth) {
         }
     }
 
-    let has_more = series.len() >= 10;
-    #{ series: series, has_more: has_more }
+    #{ series: series, has_more: series.len() >= 10 }
 }
 
-/// Get popular manga (Madara theme)
+/// Get popular manga
 fn get_popular(page, auth) {
-    let url = `${BASE_URL}/?m_orderby=views`;
+    // VioletScans doesn't have separate popular view, use main listing
+    let url = `${BASE_URL}/comics/`;
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/?m_orderby=views`;
+        url = `${BASE_URL}/comics/page/${page}/`;
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let series = [];
+    let seen = #{};
 
-    let items = html_select(html, ".c-tabs-item__content, .page-item-detail");
+    // VioletScans uses anchor tags with h2 for title
+    let items = html_select(doc, "a[href*='/comics/']");
+
     for item in items {
-        let links = html_select(item, ".post-title a, h3 a");
-        if links.len() == 0 { continue; }
+        let href = element_attr(item, "href");
+        if href == () || href == "" { continue; }
 
-        let href = element_attr(links[0], "href");
-        let title = element_text(links[0]).trim();
+        // Skip chapter links and duplicates
+        if href.contains("/chapter") { continue; }
+        if seen.contains(href) { continue; }
+        seen[href] = true;
 
-        let cover = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover = element_attr(imgs[0], "data-src");
-            if cover == () { cover = element_attr(imgs[0], "src"); }
+        let title = "";
+        let h2_els = html_select(item, "h2");
+        if h2_els.len() > 0 {
+            title = element_text(h2_els[0]).trim();
+        }
+        if title == "" {
+            let h3_els = html_select(item, "h3");
+            if h3_els.len() > 0 {
+                title = element_text(h3_els[0]).trim();
+            }
         }
 
-        if title != "" && href != () {
+        let cover = ();
+        let imgs = html_select(item, "img.ts-post-image");
+        if imgs.len() == 0 {
+            imgs = html_select(item, "img");
+        }
+        if imgs.len() > 0 {
+            cover = element_attr(imgs[0], "src");
+            if cover == () || cover == "" {
+                cover = element_attr(imgs[0], "data-src");
+            }
+        }
+
+        if title != "" {
             series.push(#{
                 id: href,
                 title: title,

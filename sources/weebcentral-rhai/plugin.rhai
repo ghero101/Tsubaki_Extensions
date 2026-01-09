@@ -13,19 +13,8 @@
 
 const BASE_URL = "https://weebcentral.com";
 
-/// Fetch HTML using browser automation (bypasses Cloudflare)
-/// Falls back to HTTP if browser not available
+/// Fetch HTML using HTTP (WeebCentral content is server-side rendered)
 fn fetch_html(url) {
-    if browser_is_available() {
-        let browser_id = browser_launch();
-        browser_goto(browser_id, url);
-        browser_wait_for_cloudflare(browser_id, 15000);
-        let html = browser_get_html(browser_id);
-        browser_close(browser_id);
-        return html;
-    }
-
-    // Fallback to HTTP (may fail with Cloudflare)
     http_get_with_headers(url, get_headers())
 }
 
@@ -38,7 +27,7 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "browser_automation"
+        capability_level: "http_only"
     }
 }
 
@@ -508,56 +497,63 @@ fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/hot-updates?page=${page}`;
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
 
     let series = [];
+    let seen = #{};
 
-    // Parse update items
-    let items = html_select(html, "article a");
+    // Select article elements with data-tip (contains title)
+    // The mobile view articles contain series links
+    let articles = html_select(doc, "article[data-tip]");
 
-    for item in items {
-        let href = element_attr(item, "href");
-        if href == () || href == "" || !href.contains("/series/") {
+    for article in articles {
+        // Get title from data-tip attribute
+        let title = element_attr(article, "data-tip");
+        if title == () || title == "" {
+            continue;
+        }
+
+        // Find series link inside the article
+        let links = html_select(article, "a[href*='/series/']");
+        if links.len() == 0 {
+            continue;
+        }
+
+        let href = element_attr(links[0], "href");
+        if href == () || href == "" {
             continue;
         }
 
         let id = extract_series_id(href);
-        if id == "" {
+        if id == "" || seen.contains(id) {
             continue;
         }
+        seen[id] = true;
 
-        // Get title
-        let title = "";
-        let title_divs = html_select(item, "div");
-        for div in title_divs {
-            let text = element_text(div).trim();
-            if text.len() > 0 && text.len() < 200 {
-                title = text;
-                break;
-            }
-        }
-        if title == "" {
-            title = element_text(item).trim();
-        }
-
-        // Get cover
+        // Get cover from img or source
         let cover_url = ();
-        let imgs = html_select(item, "img");
+        let imgs = html_select(article, "img");
         if imgs.len() > 0 {
             cover_url = element_attr(imgs[0], "src");
         }
-
-        if title != "" {
-            series.push(#{
-                id: id,
-                title: title,
-                url: href,
-                cover_url: cover_url,
-                updated_at: ()
-            });
+        // Try source tag for webp
+        if cover_url == () || cover_url == "" {
+            let sources = html_select(article, "source");
+            if sources.len() > 0 {
+                cover_url = element_attr(sources[0], "srcset");
+            }
         }
+
+        series.push(#{
+            id: id,
+            title: title,
+            url: href,
+            cover_url: cover_url,
+            updated_at: ()
+        });
     }
 
-    let has_more = series.len() >= 20;
+    let has_more = series.len() >= 10;
 
     #{ series: series, has_more: has_more }
 }

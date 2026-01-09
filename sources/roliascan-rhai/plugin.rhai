@@ -41,27 +41,51 @@ fn search_series(query, page, auth) {
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let series = [];
 
-    let items = html_select(html, ".listupd .bs, .manga-item, article");
-    for item in items {
-        let links = html_select(item, "a");
-        if links.len() == 0 { continue; }
+    // Search for manga links
+    let items = html_select(doc, "a[href*='/manga/']");
+    let seen = #{};
 
-        let href = element_attr(links[0], "href");
-        if href == () { continue; }
+    for item in items {
+        let href = element_attr(item, "href");
+        if href == () || href == "" { continue; }
+        if seen.contains(href) { continue; }
+        if href.contains("/chapter") { continue; }
+
+        seen[href] = true;
+
+        // Get cover image first (we need it to extract alt text for title)
+        let cover = ();
+        let img_alt = "";
+        let imgs = html_select(item, "img");
+        if imgs.len() > 0 {
+            cover = element_attr(imgs[0], "src");
+            if cover == () || cover == "" {
+                cover = element_attr(imgs[0], "data-src");
+            }
+            // Get alt text as fallback for title
+            img_alt = element_attr(imgs[0], "alt");
+            if img_alt == () { img_alt = ""; }
+        }
 
         let title = "";
-        let title_els = html_select(item, ".tt, .title, h3");
+        let title_els = html_select(item, "h3, h4, .title, .tt");
         if title_els.len() > 0 {
             title = element_text(title_els[0]).trim();
         }
-
-        let cover = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover = element_attr(imgs[0], "data-src");
-            if cover == () { cover = element_attr(imgs[0], "src"); }
+        if title == "" {
+            title = element_text(item).trim();
+            if title.len() > 100 { title = ""; }
+        }
+        if title == "" && img_alt != "" {
+            // Extract title from img alt attribute (format: "Title manga cover")
+            title = img_alt;
+            if title.ends_with(" manga cover") {
+                title = title.sub_string(0, title.len() - 12);
+            }
+            title = title.trim();
         }
 
         if title != "" {
@@ -88,30 +112,68 @@ fn get_series(id_or_url, auth) {
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
 
+    // Get title from h1
     let title = "";
-    let h1s = html_select(html, "h1.entry-title, h1");
+    let h1s = html_select(doc, "h1");
     if h1s.len() > 0 {
         title = element_text(h1s[0]).trim();
     }
 
+    // Get cover image
     let cover = ();
-    let cover_imgs = html_select(html, ".thumb img, .cover img");
+    let cover_imgs = html_select(doc, "img.poster, img.coverimage, .thumb img");
     if cover_imgs.len() > 0 {
         cover = element_attr(cover_imgs[0], "src");
     }
-
-    let description = ();
-    let desc_els = html_select(html, ".entry-content p, .summary p");
-    if desc_els.len() > 0 {
-        description = element_text(desc_els[0]).trim();
+    if cover == () {
+        // Fallback - find first image in the page that looks like a cover
+        let all_imgs = html_select(doc, "img");
+        for img in all_imgs {
+            let src = element_attr(img, "src");
+            if src != () && src.contains("cdn2.fandommanga.xyz") {
+                cover = src;
+                break;
+            }
+        }
     }
 
+    // Get description
+    let description = ();
+    let desc_els = html_select(doc, "p");
+    for el in desc_els {
+        let text = element_text(el).trim();
+        if text.len() > 50 && !text.contains("©") && !text.contains("roliascan") {
+            description = text;
+            break;
+        }
+    }
+
+    // Get genres from links
     let genres = [];
-    let genre_links = html_select(html, ".mgen a, .genres a");
+    let genre_links = html_select(doc, "a[href*='/genre/'], a[href*='/tag/']");
     for link in genre_links {
         let g = element_text(link).trim();
-        if g != "" { genres.push(g); }
+        if g != "" && !genres.contains(g) { genres.push(g); }
+    }
+
+    // Get authors
+    let authors = [];
+    let author_links = html_select(doc, "a[href*='/author/']");
+    for link in author_links {
+        let a = element_text(link).trim();
+        if a != "" && !authors.contains(a) { authors.push(a); }
+    }
+
+    // Get status
+    let status = ();
+    let status_links = html_select(doc, "a[href*='/status/']");
+    if status_links.len() > 0 {
+        let s = element_text(status_links[0]).trim().to_lower();
+        if s.contains("ongoing") { status = "Ongoing"; }
+        else if s.contains("completed") { status = "Completed"; }
+        else if s.contains("hiatus") { status = "Hiatus"; }
     }
 
     #{
@@ -120,9 +182,9 @@ fn get_series(id_or_url, auth) {
         alternate_titles: [],
         description: description,
         cover_url: cover,
-        authors: [],
+        authors: authors,
         artists: [],
-        status: (),
+        status: status,
         genres: genres,
         url: url
     }
@@ -135,17 +197,35 @@ fn get_chapters(series_id, auth) {
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let chapters = [];
 
-    let ch_links = html_select(html, "#chapterlist a, .chapter-list a");
+    // Find chapter links
+    let ch_links = html_select(doc, "a[href*='/chapter']");
+    let seen = #{};
     let idx = 0;
+
     for link in ch_links {
         let href = element_attr(link, "href");
-        if href == () { continue; }
+        if href == () || href == "" { continue; }
+        if seen.contains(href) { continue; }
+
+        seen[href] = true;
 
         let ch_title = element_text(link).trim();
-        let ch_num = regex_find("chapter[\\s-]*(\\d+\\.?\\d*)", ch_title.to_lower());
-        if ch_num == () { ch_num = `${idx + 1}`; }
+        if ch_title == "" { continue; }
+
+        // Extract chapter number
+        let ch_num = `${idx + 1}`;
+        let num_match = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
+        if num_match != () && num_match != "" {
+            ch_num = num_match;
+        } else {
+            let num_match2 = regex_find("(\\d+\\.?\\d*)", ch_title);
+            if num_match2 != () && num_match2 != "" {
+                ch_num = num_match2;
+            }
+        }
 
         chapters.push(#{
             id: href,
@@ -167,22 +247,34 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let pages = [];
     let idx = 0;
 
-    let imgs = html_select(html, "#readerarea img, .reading-content img");
+    // Find all images that are manga pages
+    let imgs = html_select(doc, "img");
     for img in imgs {
-        let src = element_attr(img, "data-src");
-        if src == () { src = element_attr(img, "src"); }
+        let src = element_attr(img, "src");
+        if src == () || src == "" {
+            src = element_attr(img, "data-src");
+        }
         if src == () || src == "" { continue; }
-        if src.contains("logo") || src.contains("icon") { continue; }
 
-        pages.push(#{
-            index: idx,
-            url: src,
-            headers: #{ "Referer": url }
-        });
-        idx += 1;
+        // Skip non-manga images
+        let src_lower = src.to_lower();
+        if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
+            continue;
+        }
+
+        // Only include CDN images (actual manga pages)
+        if src.contains("cdn2.fandommanga.xyz") || src.contains("/chapters/") || src.contains("/manga/") {
+            pages.push(#{
+                index: idx,
+                url: src,
+                headers: #{ "Referer": url }
+            });
+            idx += 1;
+        }
     }
 
     pages
@@ -190,36 +282,75 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest updates for browsing
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/?m_orderby=latest`;
+    // Use homepage instead of /manga to avoid huge page size
+    // The homepage has latest updates and popular manga sections
+    let url = `${BASE_URL}/`;
+
+    // RoliaScan homepage doesn't support pagination well,
+    // so we only return results for page 1
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/?m_orderby=latest`;
+        return #{ series: [], has_more: false };
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let series = [];
 
-    let items = html_select(html, ".listupd .bs, .manga-item, article, .page-item-detail");
+    // RoliaScan uses simple a > img + h3/h4 structure
+    let items = html_select(doc, "a[href*='/manga/']");
+    let seen = #{};
+
     for item in items {
-        let links = html_select(item, "a");
-        if links.len() == 0 { continue; }
+        let href = element_attr(item, "href");
+        if href == () || href == "" { continue; }
 
-        let href = element_attr(links[0], "href");
-        if href == () { continue; }
+        // Skip duplicates and non-series links
+        if seen.contains(href) { continue; }
+        if !href.contains("/manga/") { continue; }
+        // Skip chapter links
+        if href.contains("/chapter") { continue; }
+        if href.contains("/read/") { continue; }
 
+        seen[href] = true;
+
+        // Get cover image first (we need it to extract alt text for title)
+        let cover = ();
+        let img_alt = "";
+        let imgs = html_select(item, "img");
+        if imgs.len() > 0 {
+            cover = element_attr(imgs[0], "src");
+            if cover == () || cover == "" {
+                cover = element_attr(imgs[0], "data-src");
+            }
+            // Get alt text as fallback for title
+            img_alt = element_attr(imgs[0], "alt");
+            if img_alt == () { img_alt = ""; }
+        }
+
+        // Get title from h3, h4, .title, or text content
         let title = "";
-        let title_els = html_select(item, ".tt, .title, h3");
+        let title_els = html_select(item, "h3, h4, .title");
         if title_els.len() > 0 {
             title = element_text(title_els[0]).trim();
         }
-
-        let cover = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover = element_attr(imgs[0], "data-src");
-            if cover == () { cover = element_attr(imgs[0], "src"); }
+        if title == "" {
+            // Try getting text after the image
+            title = element_text(item).trim();
+            // Clean up - remove extra whitespace
+            if title.len() > 100 {
+                title = "";
+            }
+        }
+        if title == "" && img_alt != "" {
+            // Extract title from img alt attribute (format: "Title manga cover")
+            title = img_alt;
+            if title.ends_with(" manga cover") {
+                title = title.sub_string(0, title.len() - 12);
+            }
+            title = title.trim();
         }
 
-        if title != "" {
+        if title != "" && cover != () {
             series.push(#{
                 id: href,
                 title: title,
@@ -233,42 +364,68 @@ fn get_latest_updates(page, auth) {
         }
     }
 
-    let has_more = series.len() >= 10;
+    let has_more = false; // Homepage only has limited results
     #{ series: series, has_more: has_more }
 }
 
-/// Get popular manga
+/// Get popular manga (uses homepage)
 fn get_popular(page, auth) {
-    let url = `${BASE_URL}/?m_orderby=views`;
+    // Use homepage instead of /leaderboard to avoid large page sizes
+    let url = `${BASE_URL}/`;
+
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/?m_orderby=views`;
+        return [];
     }
 
     let html = fetch_html(url);
+    let doc = html_parse(html);
     let series = [];
 
-    let items = html_select(html, ".listupd .bs, .manga-item, article, .page-item-detail");
-    for item in items {
-        let links = html_select(item, "a");
-        if links.len() == 0 { continue; }
+    let items = html_select(doc, "a[href*='/manga/']");
+    let seen = #{};
 
-        let href = element_attr(links[0], "href");
-        if href == () { continue; }
+    for item in items {
+        let href = element_attr(item, "href");
+        if href == () || href == "" { continue; }
+        if seen.contains(href) { continue; }
+        if href.contains("/chapter") { continue; }
+        if href.contains("/read/") { continue; }
+
+        seen[href] = true;
+
+        // Get cover image first (we need it to extract alt text for title)
+        let cover = ();
+        let img_alt = "";
+        let imgs = html_select(item, "img");
+        if imgs.len() > 0 {
+            cover = element_attr(imgs[0], "src");
+            if cover == () || cover == "" {
+                cover = element_attr(imgs[0], "data-src");
+            }
+            // Get alt text as fallback for title
+            img_alt = element_attr(imgs[0], "alt");
+            if img_alt == () { img_alt = ""; }
+        }
 
         let title = "";
-        let title_els = html_select(item, ".tt, .title, h3");
+        let title_els = html_select(item, "h3, h4, .title");
         if title_els.len() > 0 {
             title = element_text(title_els[0]).trim();
         }
-
-        let cover = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover = element_attr(imgs[0], "data-src");
-            if cover == () { cover = element_attr(imgs[0], "src"); }
+        if title == "" {
+            title = element_text(item).trim();
+            if title.len() > 100 { title = ""; }
+        }
+        if title == "" && img_alt != "" {
+            // Extract title from img alt attribute (format: "Title manga cover")
+            title = img_alt;
+            if title.ends_with(" manga cover") {
+                title = title.sub_string(0, title.len() - 12);
+            }
+            title = title.trim();
         }
 
-        if title != "" {
+        if title != "" && cover != () {
             series.push(#{
                 id: href,
                 title: title,

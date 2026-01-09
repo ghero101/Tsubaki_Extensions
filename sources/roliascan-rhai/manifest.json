@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "roliascan-rhai",
   "name": "RoliaScan",
-  "version": "1.0.3",
+  "version": "1.0.7",
   "description": "Scraper for RoliaScan manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",
@@ -22,7 +22,9 @@
     "allowed_domains": [
       "roliascann.com",
       "www.roliascann.com",
-      "roliascan.com"
+      "roliascan.com",
+      "cdn2.fandommanga.xyz",
+      "fandommanga.xyz"
     ],
     "requires_cookies": false,
     "requires_javascript": false,

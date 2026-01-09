@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "weebcentral-rhai",
   "name": "WeebCentral",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "Scraper for WeebCentral (weebcentral.com), the successor to MangaSee and MangaLife featuring high-quality manga scans.",
   "author": {
     "name": "Tsubaki Community",
@@ -18,15 +18,16 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "browser_automation",
+    "level": "http_only",
     "allowed_domains": [
       "weebcentral.com",
       "cdn.weebcentral.com",
-      "thumbnail.weebcentral.com"
+      "thumbnail.weebcentral.com",
+      "temp.compsci88.com"
     ],
-    "requires_cookies": true,
-    "requires_javascript": true,
-    "cloudflare_protected": true
+    "requires_cookies": false,
+    "requires_javascript": false,
+    "cloudflare_protected": false
   },
   "features": {
     "search": true,
