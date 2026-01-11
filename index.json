@@ -63,21 +63,6 @@
     }
     ,
     {
-      "id": "comick-rhai",
-      "name": "ComicK",
-      "version": "1.0.5",
-      "description": "Scraper for ComicK (comick.io), a popular manga reader with a clean API and fast CDN.",
-      "author": "Tsubaki Community",
-      "technology": "rhai",
-      "addon_type": "scraper",
-      "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comick-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_1-0-5.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comick-rhai/manifest.json",
-      "latest_version": "1.0.5"
-    }
-    ,
-    {
       "id": "danbooru-rhai",
       "name": "Danbooru",
       "version": "1.0.7",
@@ -495,21 +480,6 @@
       "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-1.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru-rhai/manifest.json",
       "latest_version": "1.1.1"
-    }
-    ,
-    {
-      "id": "reaperscans-rhai",
-      "name": "Reaper Scans [RETIRED]",
-      "version": "1.0.6",
-      "description": "[RETIRED - Site is down] Scraper for Reaper Scans (reaperscans.com). This extension is no longer functional as the website appears to be permanently offline.",
-      "author": "Tsubaki Community",
-      "technology": "rhai",
-      "addon_type": "scraper",
-      "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/reaperscans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/reaperscans-rhai/reaperscans-rhai_1-0-6.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/reaperscans-rhai/manifest.json",
-      "latest_version": "1.0.6"
     }
     ,
     {
