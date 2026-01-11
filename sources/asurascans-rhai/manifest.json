@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "asurascans",
   "name": "Asura Scans",
-  "version": "1.5.3",
+  "version": "1.7.0",
   "description": "Asura Scans - Popular scanlation group for manhwa and manga",
   "author": {
     "name": "Tsubaki Team",
@@ -17,14 +17,14 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "http_only",
+    "level": "browser_automation",
     "allowed_domains": [
       "asuracomic.net",
       "asurascan.net",
       "gg.asuracomic.net"
     ],
     "requires_cookies": false,
-    "requires_javascript": false,
+    "requires_javascript": true,
     "cloudflare_protected": false
   },
   "features": {

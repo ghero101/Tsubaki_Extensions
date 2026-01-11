@@ -1,10 +1,12 @@
 // Asura Scans Scraper Add-on (Rhai)
-// HTTP-based scraper for asuracomic.net (Next.js server-rendered)
+// Browser automation scraper for asuracomic.net (Next.js SPA with client-side pagination)
 //
 // Available APIs:
 //   HTTP: http_get(url), http_get_with_headers(url, headers)
 //   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
 //   Regex: regex_match(pattern, text), regex_find(pattern, text)
+//   Browser: browser_launch_stealth(), browser_goto(), browser_scroll_to_bottom(),
+//            browser_click(), browser_get_html(), browser_close()
 
 const BASE_URL = "https://asuracomic.net";
 
@@ -32,49 +34,39 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only"
+        capability_level: "browser_automation"
     }
 }
 
-/// Search for series matching query
-fn search_series(query, page, auth) {
-    let url = `${BASE_URL}/series?page=${page}`;
-    let html = fetch_html(url);
-
+/// Extract series from HTML document
+fn extract_series_from_html(html, query, seen) {
     let series = [];
-    let query_lower = query.to_lower();
-    let seen = #{};
+    let query_lower = if query != () { query.to_lower() } else { "" };
 
-    // Split HTML by series card anchor tags to extract slug+cover pairs together
-    // Each card starts with <a href="series/SLUG"> and contains <img src="COVER">
-    // Find the main grid section first (skip preload/header images)
-    let grid_start = "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5";
-    let main_html = html;
-    if html.contains(grid_start) {
-        let parts = html.split(grid_start);
-        if parts.len() > 1 {
-            main_html = parts[1];
+    let doc = html_parse(html);
+
+    // Series cards are anchor tags with href containing "series/"
+    let items = html_select(doc, "a[href*='series/']");
+
+    for item in items {
+        let href = element_attr(item, "href");
+        if href == () || href == "" {
+            continue;
         }
-    }
 
-    // Extract card data: split by series links to process each card
-    let card_parts = main_html.split("<a href=\"series/");
-
-    let slugs = [];
-    let covers = [];
-    let titles = [];
-
-    for i in 1..card_parts.len() {
-        let card = card_parts[i];
-
-        // Extract slug (everything before the closing quote)
+        // Extract slug from href (format: "series/slug-id" or full URL)
         let slug = "";
-        let quote_pos = card.index_of("\"");
-        if quote_pos > 0 {
-            slug = card.sub_string(0, quote_pos);
+        if href.contains("/series/") {
+            let parts = href.split("/series/");
+            if parts.len() > 1 {
+                slug = parts[1].split("/")[0].split("?")[0];
+            }
+        } else if href.starts_with("series/") {
+            slug = href.sub_string(7, href.len()).split("/")[0].split("?")[0];
         }
 
-        if slug == "" || slug.contains("/") || slug.len() > 100 {
+        // Validate slug
+        if slug == "" || slug.len() > 100 {
             continue;
         }
 
@@ -83,60 +75,63 @@ fn search_series(query, page, auth) {
             continue;
         }
         seen[slug] = true;
-        slugs.push(slug);
 
-        // Extract cover from this card section (first img src after the anchor)
-        // Look for both webp and gif formats
-        let cover = ();
+        // Get title from nested span with font-bold and block classes
+        let title = "";
 
-        // Try webp first (most common)
-        let webp_match = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/[0-9]+/conversions/[^\"\\\\\\s]+thumb-small\\.webp", card);
-        if webp_match.len() > 0 {
-            cover = webp_match[0];
+        // Try to find the title span (has "block" class)
+        let title_spans = html_select(item, "span.block.font-bold");
+        if title_spans.len() > 0 {
+            title = element_text(title_spans[0]).trim();
         }
 
-        // Try gif if no webp found
-        if cover == () {
-            let gif_match = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/[0-9]+/[^\"\\\\\\s]+\\.gif", card);
-            if gif_match.len() > 0 {
-                cover = gif_match[0];
-            }
-        }
-
-        // Try any image as last resort
-        if cover == () {
-            let any_img = regex_find_all("https://gg\\.asuracomic\\.net/storage/media/[0-9]+/[^\"\\\\\\s]+\\.(webp|gif|jpg|png)", card);
-            if any_img.len() > 0 {
-                cover = any_img[0];
-            }
-        }
-
-        covers.push(cover);
-
-        // Extract title from this card (span with font-bold)
-        let title = slug.replace("-", " ");
-        // Look for the title span pattern
-        if card.contains("font-bold\">") {
-            let title_parts = card.split("font-bold\">");
-            if title_parts.len() > 1 {
-                let title_text = title_parts[1];
-                let end_pos = title_text.index_of("<");
-                if end_pos > 0 && end_pos < 100 {
-                    title = title_text.sub_string(0, end_pos);
+        // Fallback: look for div with font-weight style
+        if title == "" || title == "MANHWA" || title == "MANGA" {
+            let div_els = html_select(item, "div");
+            for div_el in div_els {
+                let div_text = element_text(div_el).trim();
+                if div_text != "" && div_text.len() < 80 && div_text != "MANHWA" && div_text != "MANGA" {
+                    if !div_text.starts_with("Chapter") && !div_text.contains("<!--") {
+                        title = div_text;
+                        break;
+                    }
                 }
             }
         }
-        titles.push(title);
-    }
 
-    // Build series list
-    for idx in 0..slugs.len() {
-        let slug = slugs[idx];
-        let title = if idx < titles.len() { titles[idx] } else { slug.replace("-", " ") };
-        let cover_url = if idx < covers.len() { covers[idx] } else { () };
+        // Last fallback: convert slug to title (remove trailing ID)
+        if title == "" || title == "MANHWA" || title == "MANGA" {
+            let parts = slug.split("-");
+            if parts.len() > 1 {
+                let title_parts = [];
+                for i in 0..(parts.len() - 1) {
+                    title_parts.push(parts[i]);
+                }
+                title = title_parts.reduce(|a, b| a + " " + b);
+                let words = title.split(" ");
+                let capitalized = [];
+                for word in words {
+                    if word.len() > 0 {
+                        let first = word.sub_string(0, 1).to_upper();
+                        let rest = if word.len() > 1 { word.sub_string(1, word.len()) } else { "" };
+                        capitalized.push(first + rest);
+                    }
+                }
+                title = capitalized.reduce(|a, b| a + " " + b);
+            } else {
+                title = slug.replace("-", " ");
+            }
+        }
 
-        // Filter by query
-        if query != "" && !title.to_lower().contains(query_lower) {
+        // Get cover image
+        let cover_url = ();
+        let imgs = html_select(item, "img");
+        if imgs.len() > 0 {
+            cover_url = element_attr(imgs[0], "src");
+        }
+
+        // Filter by query if provided
+        if query != "" && query_lower != "" && !title.to_lower().contains(query_lower) {
             continue;
         }
 
@@ -155,9 +150,44 @@ fn search_series(query, page, auth) {
         });
     }
 
-    // has_more is true if we got a full page of results (15 series)
-    let count = series.len();
-    let has_more = if count >= 15 { true } else { false };
+    series
+}
+
+/// Search for series matching query (uses browser automation for pagination)
+fn search_series(query, page, auth) {
+    // Check if browser is available
+    if !browser_is_available() {
+        // Fallback to HTTP-only (limited to initial page load)
+        let url = `${BASE_URL}/series?page=1`;
+        let html = fetch_html(url);
+        let seen = #{};
+        let series = extract_series_from_html(html, query, seen);
+        return #{ series: series, has_more: false, total: () };
+    }
+
+    // Use browser automation for full catalog access
+    let session_id = browser_launch_stealth();
+
+    // Navigate directly to the requested page
+    let url = `${BASE_URL}/series?page=${page}`;
+    browser_goto(session_id, url);
+
+    // Wait for the series grid to load (JavaScript needs time to render)
+    browser_wait_for_selector(session_id, "div.grid a[href*='series/']", 15000);
+
+    // Get the rendered HTML
+    let html = browser_get_html(session_id);
+
+    // Clean up browser session
+    browser_close(session_id);
+
+    // Extract series from the HTML
+    let seen = #{};
+    let series = extract_series_from_html(html, query, seen);
+
+    // Estimate has_more based on results (site shows ~20 per page)
+    let has_more = series.len() >= 15;
+
     #{ series: series, has_more: has_more, total: () }
 }
 
