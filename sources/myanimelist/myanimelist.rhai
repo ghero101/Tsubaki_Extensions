@@ -788,3 +788,29 @@ fn get_recommendations(manga_id, auth) {
         total: recommendations.len()
     }
 }
+
+
+// Login function - validates client credentials are present
+// MAL uses OAuth2 for user tracking, client credentials enable authenticated API access
+fn login(credentials) {
+    let client_id = if credentials.mal_client_id != () { credentials.mal_client_id } else { "" };
+    let client_secret = if credentials.mal_client_secret != () { credentials.mal_client_secret } else { "" };
+
+    if client_id == "" {
+        return #{
+            success: false,
+            error: "MAL Client ID is required. Get it from https://myanimelist.net/apiconfig"
+        };
+    }
+
+    // MAL client_secret is optional when using PKCE
+    // So we just validate client_id is present
+
+    // Client credentials are valid - they will be used for OAuth2 authorization code flow
+    // Return success so the credentials are stored for later OAuth use
+    #{
+        success: true,
+        session_token: client_id,  // Store client_id as session marker
+        message: "MAL credentials validated. Use OAuth to authorize user tracking."
+    }
+}

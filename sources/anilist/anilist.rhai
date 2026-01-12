@@ -922,3 +922,33 @@ fn get_recommendations(manga_id, auth) {
         total: recommendations.len()
     }
 }
+
+
+// Login function - validates client credentials are present
+// AniList uses OAuth2 for user tracking, but client credentials enable authenticated API access
+fn login(credentials) {
+    let client_id = if credentials.anilist_client_id != () { credentials.anilist_client_id } else { "" };
+    let client_secret = if credentials.anilist_client_secret != () { credentials.anilist_client_secret } else { "" };
+
+    if client_id == "" {
+        return #{
+            success: false,
+            error: "AniList Client ID is required. Get it from https://anilist.co/settings/developer"
+        };
+    }
+
+    if client_secret == "" {
+        return #{
+            success: false,
+            error: "AniList Client Secret is required. Get it from https://anilist.co/settings/developer"
+        };
+    }
+
+    // Client credentials are valid - they will be used for OAuth2 authorization code flow
+    // Return success so the credentials are stored for later OAuth use
+    #{
+        success: true,
+        session_token: client_id,  // Store client_id as session marker
+        message: "AniList credentials validated. Use OAuth to authorize user tracking."
+    }
+}
