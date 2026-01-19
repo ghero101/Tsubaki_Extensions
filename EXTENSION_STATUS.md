@@ -4,12 +4,12 @@ Last tested: 2026-01-19 (Updated)
 
 ## Summary
 
-| Category | Working | Fixable | Down | Total |
-|----------|---------|---------|------|-------|
-| Artwork  | 8       | 0       | 0    | 8     |
-| Metadata | 4       | 0       | 0    | 4     |
-| Scraper  | 15      | 5       | 5    | 25    |
-| **Total**| **27**  | **5**   | **5**| **37**|
+| Category | Working | Browser | Down/Config | Total |
+|----------|---------|---------|-------------|-------|
+| Artwork  | 8       | 0       | 0           | 8     |
+| Metadata | 4       | 0       | 0           | 4     |
+| Scraper  | 15      | 4       | 6           | 25    |
+| **Total**| **27**  | **4**   | **6**       | **37**|
 
 ## Working Scrapers (15/25)
 
@@ -33,29 +33,27 @@ These scrapers return results during browse/sync operations:
 | MangaGeko | mangageko-rhai | ~? | HTTP-only (mgeko.cc works) |
 | MangaTown | mangatown-rhai | ~? | HTTP-only, **verified working** |
 
-## Fixable Scrapers - Need Browser Automation (5/25)
+## Browser Automation Scrapers (4/25)
 
-These sites are **ONLINE** but require browser automation to bypass anti-bot protection:
+These scrapers are configured for browser automation (via tsubaki-browser docker container):
 
-| Extension | ID | Domain Status | Protection Type |
-|-----------|-----|---------------|-----------------|
-| MangaNato | manganato-rhai | Online | Blocks non-browser requests |
-| MangaKakalot | mangakakalot-rhai | Online | Blocks non-browser requests |
-| MangaPark | mangapark-rhai | mpark.to (redirect chain) | Heavy anti-bot, needs browser |
-| BatoTo | batoto-rhai | wto.to | Cloudflare challenge (403 cf-mitigated) |
-| HeyToon | heytoon-rhai | Online | HTTP 404 - endpoint changed |
+| Extension | ID | Domain | Status |
+|-----------|-----|--------|--------|
+| MangaNato | manganato-rhai | manganato.com | **Browser enabled** v1.1.5 |
+| MangaKakalot | mangakakalot-rhai | mangakakalot.com | **Browser enabled** v1.0.5 |
+| MangaPark | mangapark-rhai | mpark.to | **Browser enabled** v1.1.9 |
+| BatoTo | batoto-rhai | mto.to | **Browser enabled** v1.0.3 |
 
-## Sites DOWN or Defunct (5/25)
-
-These sites are **no longer operational**:
+## Sites DOWN or Require Config (6/25)
 
 | Extension | ID | Evidence | Status |
 |-----------|-----|----------|--------|
 | FlixScans | flixscans-rhai | Connection refused (.net & .org) | **DEFUNCT** |
 | MyComicList | mycomiclist-rhai | Domain parked (ad lander) | **DEFUNCT** |
-| FMReader | fmreader-rhai | Template, no default site | Needs user config |
-| FoolSlide | foolslide-rhai | Template, no default site | Needs user config |
-| HeanCMS | heancms-rhai | Template, no default site | Needs user config |
+| HeyToon | heytoon-rhai | HTTP 404 on all endpoints | **DEFUNCT** |
+| FoolSlide | foolslide-rhai | Framework - multiple sites use it | Set `base_url` in settings |
+| HeanCMS | heancms-rhai | Framework - omegascans.org default | Set `base_url` if needed |
+| FMReader | fmreader-rhai | Framework - rawkuma.net default | **Fixed v1.0.4** |
 
 ## Artwork Extensions (8/8 Working)
 
@@ -93,7 +91,14 @@ Several scrapers had broken pagination where the website ignored page parameters
 
 ### Domain Updates
 
-1. **MangaPark v1.1.8**: Updated domain from `mangapark.me` to `mangapark.io`
+1. **MangaPark v1.1.9**: Updated domain from `mangapark.io` to `mpark.to`
+2. **FMReader v1.0.4**: Changed default from `kissmanga.org` (down) to `rawkuma.net`
+
+### Browser Automation Updates
+
+1. **MangaKakalot v1.0.5**: Enabled browser automation for Cloudflare bypass
+2. **MangaNato v1.1.5**: Already had browser automation enabled
+3. **BatoTo v1.0.3**: Already had browser automation enabled
 
 ---
 
