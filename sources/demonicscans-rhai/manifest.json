@@ -53,6 +53,6 @@
     "burst_limit": 5
   },
   "update": {
-    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans-rhai.zip"
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_latest.zip"
   }
 }

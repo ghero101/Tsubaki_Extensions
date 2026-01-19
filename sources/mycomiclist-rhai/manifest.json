@@ -53,6 +53,6 @@
     "burst_limit": 10
   },
   "update": {
-    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mycomiclist-rhai.zip"
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mycomiclist-rhai/mycomiclist-rhai_latest.zip"
   }
 }

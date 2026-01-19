@@ -111,6 +111,6 @@
     "By installing, you confirm you are of legal age in your jurisdiction."
   ],
   "update": {
-    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/gelbooru-rhai.zip"
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/gelbooru-rhai/gelbooru-rhai_latest.zip"
   }
 }
