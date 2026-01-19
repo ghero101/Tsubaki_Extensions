@@ -1,6 +1,6 @@
 ﻿{
-    "version":  31,
-    "updated_at":  "2026-01-19T05:01:36Z",
+    "version":  32,
+    "updated_at":  "2026-01-19T05:23:59Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -333,16 +333,19 @@
                    {
                        "id":  "mangapark-rhai",
                        "name":  "MangaPark",
-                       "version":  "1.1.7",
+                       "version":  "1.1.8",
                        "description":  "Scraper for MangaPark (mangapark.org), featuring a large manga library with multiple versions and scanlation groups.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapark-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapark-rhai/mangapark-rhai_1-1-7.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapark-rhai/mangapark-rhai_1-1-8.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapark-rhai/manifest.json",
-                       "latest_version":  "1.1.7"
+                       "latest_version":  "1.1.8",
+                       "versions":  {
+
+                                    }
                    },
                    {
                        "id":  "mangapill-rhai",
