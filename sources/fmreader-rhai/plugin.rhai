@@ -36,7 +36,7 @@
 //   String: url_encode(text)
 
 // Default base URL - can be overridden via settings
-let BASE_URL = "https://kissmanga.org";
+let BASE_URL = "https://rawkuma.net";
 
 // ============================================================================
 // Configuration - Override via settings
@@ -47,7 +47,7 @@ fn get_base_url() {
     if settings != () && settings.base_url != () && settings.base_url != "" {
         return settings.base_url;
     }
-    "https://kissmanga.org"
+    "https://rawkuma.net"
 }
 
 // Check if browser automation should be used

@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "fmreader-rhai",
   "name": "FMReader",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "FMReader framework parser - A template for FMReader-based manga sites. Supports multiple sites using the FMReader CMS including KissManga, ReadManga, and similar platforms.",
   "author": {
     "name": "Tsubaki Community",
@@ -20,8 +20,9 @@
   "capabilities": {
     "level": "http_only",
     "allowed_domains": [
-      "kissmanga.org",
+      "rawkuma.net",
       "rawkuma.com",
+      "kissmanga.org",
       "manga-raw.club",
       "mangabtt.com",
       "mangatoo.com"
@@ -48,7 +49,7 @@
     "type": "none"
   },
   "source_info": {
-    "base_url": "https://kissmanga.org",
+    "base_url": "https://rawkuma.net",
     "language": "en",
     "supported_languages": [
       "en"

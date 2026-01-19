@@ -1,15 +1,18 @@
 // MangaKakalot Scraper Add-on (Rhai)
-// HTTP-only scraper for mangakakalot.com and related domains
+// Browser automation scraper for mangakakalot.com and related domains
+// Requires browser automation due to Cloudflare protection
 //
 // Available APIs:
 //   HTTP: http_get(url), http_get_with_headers(url, headers)
+//   Browser: browser_launch(), browser_goto(id, url), browser_wait_for_selector(id, sel, timeout)
+//            browser_get_html(id), browser_close(id), browser_is_available()
 //   HTML: html_parse(html), html_select(html, selector), element_text(el), element_attr(el, attr)
 //   url_encode(text) -> string
 
 const BASE_URL = "https://mangakakalot.com";
 const ALT_DOMAINS = ["chapmanganelo.com", "manganelo.com", "readmanganato.com"];
 
-/// Get headers for requests
+/// Get headers for requests (fallback for HTTP-only mode)
 fn get_headers() {
     #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -19,8 +22,19 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML with headers
+/// Fetch HTML using browser automation (required for Cloudflare bypass)
 fn fetch_html(url) {
+    // Use browser automation to bypass Cloudflare
+    if browser_is_available() {
+        let browser_id = browser_launch();
+        browser_goto(browser_id, url);
+        // Wait for content to load
+        browser_wait_for_selector(browser_id, "div.story_item, div.panel-story-info, div.container-chapter-reader, body", 15000);
+        let html = browser_get_html(browser_id);
+        browser_close(browser_id);
+        return html;
+    }
+    // Fallback to HTTP (will likely fail due to Cloudflare)
     http_get_with_headers(url, get_headers())
 }
 
@@ -33,7 +47,7 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only"
+        capability_level: "browser_automation"
     }
 }
 

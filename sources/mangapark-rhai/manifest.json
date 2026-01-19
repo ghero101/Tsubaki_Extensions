@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "id": "mangapark-rhai",
   "name": "MangaPark",
-  "version": "1.1.8",
-  "description": "Scraper for MangaPark (mangapark.io), featuring a large manga library with multiple versions and scanlation groups.",
+  "version": "1.1.9",
+  "description": "Scraper for MangaPark (mpark.to), featuring a large manga library with multiple versions and scanlation groups.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -20,11 +20,13 @@
   "capabilities": {
     "level": "browser_automation",
     "allowed_domains": [
+      "mpark.to",
+      "mangapark.to",
+      "mangapark.io",
       "mangapark.org",
       "mangapark.com",
-      "mangapark.org",
-      "mangapark.io",
-      "v2.mangapark.org"
+      "comicpark.org",
+      "readpark.org"
     ],
     "requires_cookies": true,
     "requires_javascript": true,
@@ -61,7 +63,7 @@
     }
   },
   "source_info": {
-    "base_url": "https://mangapark.io",
+    "base_url": "https://mpark.to",
     "language": "en",
     "content_rating": "suggestive",
     "tags": [

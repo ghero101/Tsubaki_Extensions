@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangakakalot-rhai",
   "name": "MangaKakalot",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Scraper for MangaKakalot (mangakakalot.com), one of the largest manga aggregator sites.",
   "author": {
     "name": "Tsubaki Community",
@@ -18,7 +18,7 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "http_only",
+    "level": "browser_automation",
     "allowed_domains": [
       "mangakakalot.com",
       "mangakakalot.tv",
@@ -26,9 +26,9 @@
       "manganelo.com",
       "readmanganato.com"
     ],
-    "requires_cookies": false,
-    "requires_javascript": false,
-    "cloudflare_protected": false
+    "requires_cookies": true,
+    "requires_javascript": true,
+    "cloudflare_protected": true
   },
   "features": {
     "search": true,
