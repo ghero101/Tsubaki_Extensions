@@ -346,12 +346,12 @@ fn get_chapter_pages(chapter_id, auth) {
 }
 
 /// Get latest updates for browsing
+/// Uses query param pagination with trailing slash
+/// IMPORTANT: WordPress redirects /comics?page=X to /comics/?page=X (trailing slash required)
+/// Note: /comics/page/X has 100% overlap (broken), /comics/?page=X works properly
 fn get_latest_updates(page, auth) {
-    // VioletScans uses /comics for manga listing
-    let url = `${BASE_URL}/comics/`;
-    if page > 1 {
-        url = `${BASE_URL}/comics/page/${page}/`;
-    }
+    // Use query param pagination with trailing slash - this works properly
+    let url = `${BASE_URL}/comics/?page=${page}`;
 
     let html = fetch_html(url);
     let doc = html_parse(html);

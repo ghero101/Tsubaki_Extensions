@@ -1,6 +1,6 @@
 ﻿{
-    "version":  26,
-    "updated_at":  "2026-01-12T23:05:17Z",
+    "version":  31,
+    "updated_at":  "2026-01-19T05:01:36Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -106,16 +106,19 @@
                    {
                        "id":  "flamecomics",
                        "name":  "Flame Comics",
-                       "version":  "1.1.6",
+                       "version":  "1.1.7",
                        "description":  "Flame Comics - Free scanlation group for manhwa and manga",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-1-6.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-1-7.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics-rhai/manifest.json",
-                       "latest_version":  "1.1.6"
+                       "latest_version":  "1.1.7",
+                       "versions":  {
+
+                                    }
                    },
                    {
                        "id":  "flixscans-rhai",
@@ -344,16 +347,19 @@
                    {
                        "id":  "mangapill-rhai",
                        "name":  "MangaPill",
-                       "version":  "1.0.5",
+                       "version":  "1.0.6",
                        "description":  "Scraper for MangaPill (mangapill.com), a popular manga aggregator site with a large collection of manga titles.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapill-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-5.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-6.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapill-rhai/manifest.json",
-                       "latest_version":  "1.0.5"
+                       "latest_version":  "1.0.6",
+                       "versions":  {
+
+                                    }
                    },
                    {
                        "id":  "mangasee-rhai",
@@ -501,30 +507,36 @@
                    {
                        "id":  "violetscans-rhai",
                        "name":  "VioletScans",
-                       "version":  "1.0.9",
+                       "version":  "1.1.0",
                        "description":  "Scraper for VioletScans manga scanlation site.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-0-9.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-1-0.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/manifest.json",
-                       "latest_version":  "1.0.9"
+                       "latest_version":  "1.1.0",
+                       "versions":  {
+
+                                    }
                    },
                    {
                        "id":  "vymanga-rhai",
                        "name":  "VyManga",
-                       "version":  "1.0.3",
+                       "version":  "1.0.4",
                        "description":  "Scraper for VyManga (vymanga.net), a free manga reader with an extensive library of manga, manhwa, and manhua titles.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-3.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-4.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga-rhai/manifest.json",
-                       "latest_version":  "1.0.3"
+                       "latest_version":  "1.0.4",
+                       "versions":  {
+
+                                    }
                    },
                    {
                        "id":  "webtoon-rhai",
@@ -543,16 +555,19 @@
                    {
                        "id":  "weebcentral-rhai",
                        "name":  "WeebCentral",
-                       "version":  "1.0.6",
+                       "version":  "1.0.7",
                        "description":  "Scraper for WeebCentral (weebcentral.com), the successor to MangaSee and MangaLife featuring high-quality manga scans.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/weebcentral-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-0-6.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-0-7.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/weebcentral-rhai/manifest.json",
-                       "latest_version":  "1.0.6"
+                       "latest_version":  "1.0.7",
+                       "versions":  {
+
+                                    }
                    },
                    {
                        "id":  "xbooru-rhai",

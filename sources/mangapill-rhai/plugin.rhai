@@ -840,8 +840,12 @@ fn get_chapter_pages(chapter_id, auth) {
 }
 
 /// Get latest/new manga updates
+/// Uses search endpoint with type filter for proper pagination
+/// Note: /mangas/new ignores page parameter (broken pagination)
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/mangas/new?page=${page}`;
+    // Use search with type=manga filter - this has working pagination
+    // The /mangas/new endpoint ignores page parameter and always returns same results
+    let url = `${BASE_URL}/search?type=manga&page=${page}`;
 
     let headers = get_headers();
 

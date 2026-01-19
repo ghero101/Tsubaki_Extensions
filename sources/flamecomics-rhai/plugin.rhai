@@ -356,9 +356,49 @@ fn get_chapter_pages(chapter_id, auth) {
     pages
 }
 
-/// Get latest updates
+/// Get latest updates - uses the /api/series endpoint which returns all series
+/// FlameComics is a small site with ~145 series total, no real pagination
 fn get_latest_updates(page, auth) {
-    search_series("", page, auth)
+    // Only fetch on page 1 - the API returns all series at once
+    if page > 1 {
+        return #{ series: [], has_more: false };
+    }
+
+    let url = `${BASE_URL}/api/series`;
+    let response = http_get(url);
+
+    if response == "" || response == () {
+        return #{ series: [], has_more: false };
+    }
+
+    let data = json_parse(response);
+    if data == () || data.len() == 0 {
+        return #{ series: [], has_more: false };
+    }
+
+    let series = [];
+    for item in data {
+        let id = item["id"];
+        let title = item["label"];
+        let image = item["image"];
+        let status = item["status"];
+
+        if id == () || title == () {
+            continue;
+        }
+
+        series.push(#{
+            id: `${id}`,
+            title: title,
+            url: `${BASE_URL}/series/${id}`,
+            cover_url: build_cover_url(id, image),
+            status: status,
+            genres: [],
+            tags: []
+        });
+    }
+
+    #{ series: series, has_more: false }
 }
 
 /// Helper: Build cover URL from series_id and cover filename

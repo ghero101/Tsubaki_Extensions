@@ -722,8 +722,11 @@ fn get_chapter_pages(chapter_id, auth) {
 // ============================================================================
 
 /// Get latest updates
+/// Uses search endpoint with empty query - this has proper pagination
+/// Note: The homepage /?page=X doesn't respect pagination (returns same results)
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/?page=${page}`;
+    // Use search endpoint with empty query - this has proper pagination
+    let url = `${BASE_URL}/search?page=${page}`;
 
     let html = fetch_html(url);
 

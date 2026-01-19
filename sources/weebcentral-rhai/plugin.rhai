@@ -493,8 +493,12 @@ fn get_chapter_pages(chapter_id, auth) {
 }
 
 /// Get latest updates
+/// Uses path-based pagination /latest-updates/{page}
+/// Note: /hot-updates?page=X ignores page param (broken pagination)
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/hot-updates?page=${page}`;
+    // Use path-based pagination - this endpoint properly paginates
+    // The /hot-updates?page=X endpoint ignores page parameter
+    let url = `${BASE_URL}/latest-updates/${page}`;
 
     let html = fetch_html(url);
     let doc = html_parse(html);
