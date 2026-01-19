@@ -1,17 +1,17 @@
 # Extension Status Report
 
-Last tested: 2026-01-19
+Last tested: 2026-01-19 (Updated)
 
 ## Summary
 
-| Category | Working | Not Working | Total |
-|----------|---------|-------------|-------|
-| Artwork  | 8       | 0           | 8     |
-| Metadata | 4       | 0           | 4     |
-| Scraper  | 13      | 12          | 25    |
-| **Total**| **25**  | **12**      | **37**|
+| Category | Working | Fixable | Down | Total |
+|----------|---------|---------|------|-------|
+| Artwork  | 8       | 0       | 0    | 8     |
+| Metadata | 4       | 0       | 0    | 4     |
+| Scraper  | 15      | 5       | 5    | 25    |
+| **Total**| **27**  | **5**   | **5**| **37**|
 
-## Working Scrapers (13/25)
+## Working Scrapers (15/25)
 
 These scrapers return results during browse/sync operations:
 
@@ -30,34 +30,32 @@ These scrapers return results during browse/sync operations:
 | Guya | guya-rhai | ~6 | HTTP-only |
 | Webtoon | webtoon-rhai | ~128 | HTTP-only |
 | nhentai | nhentai-rhai | ~25 | HTTP-only, NSFW |
+| MangaGeko | mangageko-rhai | ~? | HTTP-only (mgeko.cc works) |
+| MangaTown | mangatown-rhai | ~? | HTTP-only, **verified working** |
 
-## Non-Working Scrapers (12/25)
+## Fixable Scrapers - Need Browser Automation (5/25)
 
-### Sites Blocking HTTP Requests (Require Browser)
+These sites are **ONLINE** but require browser automation to bypass anti-bot protection:
 
-These sites block non-browser requests or require heavy JavaScript rendering:
+| Extension | ID | Domain Status | Protection Type |
+|-----------|-----|---------------|-----------------|
+| MangaNato | manganato-rhai | Online | Blocks non-browser requests |
+| MangaKakalot | mangakakalot-rhai | Online | Blocks non-browser requests |
+| MangaPark | mangapark-rhai | mpark.to (redirect chain) | Heavy anti-bot, needs browser |
+| BatoTo | batoto-rhai | wto.to | Cloudflare challenge (403 cf-mitigated) |
+| HeyToon | heytoon-rhai | Online | HTTP 404 - endpoint changed |
 
-| Extension | ID | Issue | Potential Fix |
-|-----------|-----|-------|---------------|
-| MangaNato | manganato-rhai | Site blocks requests | Needs browser automation |
-| MangaKakalot | mangakakalot-rhai | Site blocks requests | Needs browser automation |
-| MangaTown | mangatown-rhai | Site blocks requests | Needs browser automation |
-| MangaGeko | mangageko-rhai | Site blocks requests | Needs browser automation |
-| MangaPark | mangapark-rhai | Qwik JS framework | Domain updated v1.1.8, needs JS rendering |
-| BatoTo | batoto-rhai | Vue.js SPA, times out | Needs better browser handling |
-| HeyToon | heytoon-rhai | Site times out | Site may be down or blocking |
-| FlixScans | flixscans-rhai | Site unreachable | Site appears to be down |
-| MyComicList | mycomiclist-rhai | Site unreachable | Site appears to be down |
+## Sites DOWN or Defunct (5/25)
 
-### Framework Scrapers (Require User Configuration)
+These sites are **no longer operational**:
 
-These are template scrapers that require the user to configure a base URL:
-
-| Extension | ID | Default URL | Configuration Required |
-|-----------|-----|-------------|----------------------|
-| FMReader | fmreader-rhai | kissmanga.org | Set `base_url` in settings |
-| FoolSlide | foolslide-rhai | (none) | Set `base_url` to a FoolSlide instance |
-| HeanCMS | heancms-rhai | omegascans.org | Set `base_url` in settings |
+| Extension | ID | Evidence | Status |
+|-----------|-----|----------|--------|
+| FlixScans | flixscans-rhai | Connection refused (.net & .org) | **DEFUNCT** |
+| MyComicList | mycomiclist-rhai | Domain parked (ad lander) | **DEFUNCT** |
+| FMReader | fmreader-rhai | Template, no default site | Needs user config |
+| FoolSlide | foolslide-rhai | Template, no default site | Needs user config |
+| HeanCMS | heancms-rhai | Template, no default site | Needs user config |
 
 ## Artwork Extensions (8/8 Working)
 
@@ -96,6 +94,41 @@ Several scrapers had broken pagination where the website ignored page parameters
 ### Domain Updates
 
 1. **MangaPark v1.1.8**: Updated domain from `mangapark.me` to `mangapark.io`
+
+---
+
+## Domain Investigation (2026-01-19)
+
+### Confirmed Working Domains
+
+| Site | Working Domain | HTTP Status | Notes |
+|------|----------------|-------------|-------|
+| MangaTown | www.mangatown.com | 200 | **Fully working**, manga links verified |
+| MangaGeko | www.mgeko.cc | 200 | Already configured in extension |
+| HeyToon | heytoon.com | 302→404 | Site structure changed, needs investigation |
+
+### Domain Changes Detected
+
+| Site | Old Domain | New Domain | Redirect Chain |
+|------|------------|------------|----------------|
+| MangaPark | mangapark.io | mpark.to | mangapark.to → comicpark.org → ... → mpark.to (20+ redirects) |
+| MangaGeko | mangageko.com | mgeko.com | mangageko.com → mgeko.com (anti-bot page) |
+
+### Cloudflare Protected Sites
+
+| Site | Domain | Protection Evidence |
+|------|--------|---------------------|
+| BatoTo | wto.to | `cf-mitigated: challenge` header, HTTP 403 |
+| mgeko.com | mgeko.com | JS redirect anti-bot page |
+| MangaNato | manganato.com | Connection refused for non-browser |
+| MangaKakalot | mangakakalot.com | Connection refused for non-browser |
+
+### Confirmed Defunct Sites
+
+| Site | Evidence |
+|------|----------|
+| FlixScans | Connection refused on both .net and .org TLDs |
+| MyComicList | Domain parked - redirects to advertising lander |
 
 ## Configuration
 
