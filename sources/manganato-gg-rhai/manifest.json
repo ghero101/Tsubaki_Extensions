@@ -1,9 +1,9 @@
 {
   "manifest_version": 1,
   "id": "manganato-gg-rhai",
-  "name": "MangaNato.gg",
-  "version": "1.0.2",
-  "description": "Scraper for the MangaNato/MangaKakalot mirror cluster (manganato.gg, mangakakalot.gg, nelomanga.net, natomanga.com). Distributes requests across mirrors for reliability.",
+  "name": "MangaNato (Unified)",
+  "version": "1.1.0",
+  "description": "Unified scraper for MangaNato sites including manganato.gg, mangakakalot.gg, nelomanga.net, natomanga.com, and manganato.com. Distributes requests across all mirrors for maximum reliability.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -28,6 +28,11 @@
       "www.nelomanga.net",
       "natomanga.com",
       "www.natomanga.com",
+      "manganato.com",
+      "www.manganato.com",
+      "chapmanganato.to",
+      "chapmanganato.com",
+      "readmanganato.com",
       "img-r1.2xstorage.com",
       "imgs-2.2xstorage.com",
       "storage.waitst.com"

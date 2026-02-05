@@ -1,22 +1,29 @@
-// MangaNato.gg Mirror Cluster Scraper (Rhai)
-// Distributes requests across mirror sites for reliability:
+// MangaNato Unified Scraper (Rhai)
+// Distributes requests across all MangaNato mirror sites for reliability:
 //   - manganato.gg (primary)
 //   - mangakakalot.gg
 //   - nelomanga.net
 //   - natomanga.com
+//   - manganato.com (original, fallback)
 //
-// All mirrors share the same content and URL structure.
+// All .gg mirrors share the same content and URL structure.
+// Original manganato.com uses manga-XXXXX ID format.
 // Image CDN: img-r1.2xstorage.com / imgs-2.2xstorage.com
 //
-// URL Patterns:
+// URL Patterns (.gg sites):
 //   Search:   /search/story/{query}
 //   Series:   /manga/{slug}
 //   Chapter:  /manga/{slug}/chapter-{number}
 //   Cover:    https://img-r1.2xstorage.com/thumb/{slug}.webp
 //   Pages:    https://img-r1.2xstorage.com/{slug}/{chapter}/{page}.webp
+//
+// URL Patterns (manganato.com):
+//   Search:   /search/story/{query}
+//   Series:   /{manga-XXXXX}
+//   Chapter:  https://chapmanganato.to/{manga-XXXXX}/chapter-{number}
 
 // Mirror sites in priority order (inlined in functions due to Rhai scoping)
-// Primary: manganato.gg, Fallbacks: mangakakalot.gg, nelomanga.net, natomanga.com
+// Primary: manganato.gg, Fallbacks: mangakakalot.gg, nelomanga.net, natomanga.com, manganato.com
 
 /// Get the primary mirror URL
 fn get_mirror() {
@@ -29,7 +36,16 @@ fn get_mirror_list() {
         "https://www.manganato.gg",
         "https://www.mangakakalot.gg",
         "https://www.nelomanga.net",
-        "https://www.natomanga.com"
+        "https://www.natomanga.com",
+        "https://manganato.com"
+    ]
+}
+
+/// Get original manganato.com mirrors
+fn get_original_mirrors() {
+    [
+        "https://manganato.com",
+        "https://chapmanganato.to"
     ]
 }
 
@@ -175,9 +191,20 @@ fn fetch_series_page(path) {
 }
 
 /// Extract manga slug from URL path
-/// e.g., /manga/one-piece -> one-piece
+/// Handles both formats:
+///   - /manga/one-piece -> one-piece (manganato.gg style)
+///   - /manga-xy123456 or /{manga-xy123456} -> manga-xy123456 (manganato.com style)
 fn extract_slug(url) {
     let parts = url.split("/");
+
+    // Check for manga-XXXXX format (manganato.com style)
+    for part in parts {
+        if part.starts_with("manga-") && part.len() > 8 {
+            return part;
+        }
+    }
+
+    // Check for /manga/{slug} format (.gg style)
     for i in 0..parts.len() {
         if parts[i] == "manga" && i + 1 < parts.len() {
             // Return the slug, stripping any chapter part
@@ -187,6 +214,7 @@ fn extract_slug(url) {
             }
         }
     }
+
     // Fallback: last non-empty path segment
     let last = "";
     for part in parts {
@@ -195,6 +223,11 @@ fn extract_slug(url) {
         }
     }
     last
+}
+
+/// Check if a slug is in manga-XXXXX format (original manganato.com)
+fn is_original_format(slug) {
+    slug.starts_with("manga-") && slug.len() > 8
 }
 
 /// Extract chapter number from URL or title text
@@ -241,7 +274,7 @@ fn build_cover_url(slug) {
 fn get_source_info() {
     #{
         id: "manganato-gg-rhai",
-        name: "MangaNato.gg",
+        name: "MangaNato (Unified)",
         base_url: get_mirror(),
         language: "en",
         supported_languages: ["en"],
@@ -824,4 +857,10 @@ fn get_latest_updates(page, auth) {
     let has_more = page < 50 && series.len() > 0;
 
     #{ series: series, has_more: has_more }
+}
+
+/// Browse manga (main browse endpoint)
+fn browse(page, filters, auth) {
+    // Default to latest updates for browse
+    get_latest_updates(page, auth)
 }

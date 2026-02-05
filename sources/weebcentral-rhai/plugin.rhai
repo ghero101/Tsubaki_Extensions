@@ -618,3 +618,9 @@ fn get_popular(page, auth) {
 
     #{ series: series, has_more: has_more }
 }
+
+/// Browse manga (main browse endpoint)
+fn browse(page, filters, auth) {
+    // Default to latest updates for browse
+    get_latest_updates(page, auth)
+}

@@ -1,9 +1,11 @@
 {
   "manifest_version": 1,
   "id": "manganato-rhai",
-  "name": "MangaNato",
-  "version": "1.1.5",
-  "description": "Scraper for MangaNato (manganato.com), one of the largest manga aggregator sites with thousands of titles.",
+  "name": "MangaNato (Legacy)",
+  "version": "1.2.0",
+  "description": "[DEPRECATED - Use 'MangaNato (Unified)' instead] Legacy scraper for manganato.com only. The unified extension supports all MangaNato mirrors for better reliability.",
+  "deprecated": true,
+  "superseded_by": "manganato-gg-rhai",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"

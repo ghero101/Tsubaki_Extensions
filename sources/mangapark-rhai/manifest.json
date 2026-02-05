@@ -1,9 +1,9 @@
 {
   "manifest_version": 1,
-  "id": "mangageko-rhai",
-  "name": "MangaGeko",
-  "version": "1.0.4",
-  "description": "Scraper for MangaGeko (mgeko.cc), a popular manga aggregator site with manga, manhwa, and manhua in English.",
+  "id": "mangapark-rhai",
+  "name": "MangaPark",
+  "version": "1.0.0",
+  "description": "Scraper for MangaPark (mangapark.to), a popular manga aggregator with multiple sources per series.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -20,12 +20,13 @@
   "capabilities": {
     "level": "http_only",
     "allowed_domains": [
-      "mgeko.cc",
-      "www.mgeko.cc",
-      "mangageko.com",
-      "www.mangageko.com",
-      "imgsrv4.com",
-      "mangamob.com"
+      "mangapark.to",
+      "www.mangapark.to",
+      "mangapark.net",
+      "www.mangapark.net",
+      "mangapark.io",
+      "xfs-s01.mangapark.to",
+      "xfs-s02.mangapark.to"
     ],
     "requires_cookies": false,
     "requires_javascript": false,
@@ -44,23 +45,25 @@
     "type": "none"
   },
   "source_info": {
-    "base_url": "https://www.mgeko.cc",
+    "base_url": "https://mangapark.to",
     "language": "en",
+    "supported_languages": ["en"],
     "content_rating": "suggestive",
     "tags": [
       "manga",
       "manhwa",
       "manhua",
-      "aggregator"
+      "aggregator",
+      "multi-source"
     ]
   },
   "rate_limiting": {
-    "requests_per_minute": 60,
-    "burst_limit": 10
+    "requests_per_minute": 30,
+    "burst_limit": 5
   },
   "update": {
-    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangageko-rhai/manifest.json",
-    "auto_update": false,
-    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_latest.zip"
+    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapark-rhai/manifest.json",
+    "auto_update": true,
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapark-rhai/mangapark-rhai_latest.zip"
   }
 }

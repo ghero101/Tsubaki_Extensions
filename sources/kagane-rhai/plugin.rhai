@@ -705,6 +705,12 @@ fn get_chapter_pages(chapter_id, auth) {
     pages
 }
 
+/// Browse manga (main browse endpoint)
+fn browse(page, filters, auth) {
+    // Default to latest updates for browse
+    get_latest_updates(page, auth)
+}
+
 /// Get latest updates from homepage
 fn get_latest_updates(page, auth) {
     let url = BASE_URL;

@@ -1,9 +1,9 @@
 {
   "manifest_version": 1,
-  "id": "mangageko-rhai",
-  "name": "MangaGeko",
-  "version": "1.0.4",
-  "description": "Scraper for MangaGeko (mgeko.cc), a popular manga aggregator site with manga, manhwa, and manhua in English.",
+  "id": "flixscans-rhai",
+  "name": "Flix Scans",
+  "version": "1.0.0",
+  "description": "Scraper for Flix Scans (flixscans.org), a manhwa/manhua scanlation site.",
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"
@@ -20,12 +20,10 @@
   "capabilities": {
     "level": "http_only",
     "allowed_domains": [
-      "mgeko.cc",
-      "www.mgeko.cc",
-      "mangageko.com",
-      "www.mangageko.com",
-      "imgsrv4.com",
-      "mangamob.com"
+      "flixscans.org",
+      "www.flixscans.org",
+      "flixscans.com",
+      "www.flixscans.com"
     ],
     "requires_cookies": false,
     "requires_javascript": false,
@@ -44,23 +42,23 @@
     "type": "none"
   },
   "source_info": {
-    "base_url": "https://www.mgeko.cc",
+    "base_url": "https://flixscans.org",
     "language": "en",
+    "supported_languages": ["en"],
     "content_rating": "suggestive",
     "tags": [
-      "manga",
       "manhwa",
       "manhua",
-      "aggregator"
+      "scanlation"
     ]
   },
   "rate_limiting": {
-    "requests_per_minute": 60,
-    "burst_limit": 10
+    "requests_per_minute": 30,
+    "burst_limit": 5
   },
   "update": {
-    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangageko-rhai/manifest.json",
-    "auto_update": false,
-    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_latest.zip"
+    "url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flixscans-rhai/manifest.json",
+    "auto_update": true,
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flixscans-rhai/flixscans-rhai_latest.zip"
   }
 }
