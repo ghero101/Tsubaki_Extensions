@@ -27,7 +27,39 @@ fn get_headers() {
     }
 }
 
-/// Fetch page using browser automation (required due to Cloudflare)
+/// Fetch page via HTTP first, browser as fallback.
+/// MangaFire filter/search/series pages serve full HTML without JS.
+/// Browser is only needed for reader pages (VRF tokens) or if HTTP gets blocked.
+fn fetch_http_first(url) {
+    // Try HTTP first - faster and more reliable for listing pages
+    try {
+        let html = http_get_with_headers(url, get_headers());
+        if html.len() > 1000 {
+            return html;
+        }
+    } catch {
+        // Fall through to browser
+    }
+
+    // Browser fallback for Cloudflare-blocked requests
+    if browser_is_available() {
+        try {
+            let browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 20000);
+            browser_wait_for_selector(browser_id, "body", 10000);
+            let html = browser_get_html(browser_id);
+            browser_close(browser_id);
+            return html;
+        } catch {
+            // Fall through
+        }
+    }
+
+    ""
+}
+
+/// Fetch page using browser automation (required for reader/AJAX pages)
 fn fetch_page(url) {
     if browser_is_available() {
         try {
@@ -43,7 +75,6 @@ fn fetch_page(url) {
         }
     }
 
-    // HTTP fallback (will likely fail due to Cloudflare)
     try {
         return http_get_with_headers(url, get_headers());
     } catch {
@@ -51,7 +82,7 @@ fn fetch_page(url) {
     }
 }
 
-/// Fetch page with specific content wait
+/// Fetch page with specific content wait (browser-first for dynamic content)
 fn fetch_page_wait(url, selector) {
     if browser_is_available() {
         try {
@@ -129,7 +160,8 @@ fn search_series(query, page, auth) {
     let encoded = url_encode(query);
     let url = `${BASE_URL}/filter?keyword=${encoded}&language[]=en&page=${page}`;
 
-    let html = fetch_page_wait(url, "a[href*='/manga/'], div.unit, div.original");
+    // Search requires browser (Cloudflare Turnstile protects keyword queries)
+    let html = fetch_page_wait(url, "div.unit, div.original, a[href*='/manga/']");
 
     if html == "" {
         return #{ series: [], has_more: false, total: 0 };
@@ -139,7 +171,7 @@ fn search_series(query, page, auth) {
     let seen = #{};
 
     // Parse search results - find manga cards
-    // MangaFire uses various container elements for results
+    // MangaFire uses <div class="unit item-{id}"> for each card
     let items = html_select(html, "div.unit");
 
     if items.len() == 0 {
@@ -183,16 +215,16 @@ fn search_series(query, page, auth) {
             continue;
         }
 
-        // Cover image
+        // Cover image - inside <a class="poster"><div><img src="..."></div></a>
         let cover_url = "";
-        let img = element_select_first(item, "img");
-        if img != "" {
-            cover_url = element_attr(img, "src");
-            if cover_url == () {
-                cover_url = element_attr(img, "data-src");
-            }
-            if cover_url == () {
-                cover_url = "";
+        let poster = element_select_first(item, "a.poster img");
+        if poster == "" {
+            poster = element_select_first(item, "img");
+        }
+        if poster != "" {
+            cover_url = element_attr(poster, "src");
+            if cover_url == "" {
+                cover_url = element_attr(poster, "data-src");
             }
         }
 
@@ -275,76 +307,90 @@ fn get_series(id_or_url, auth) {
     }
 
     let url = `${BASE_URL}/manga/${manga_id}`;
-    let html = fetch_page_wait(url, "h1, div.info, div.meta");
+    let html = fetch_http_first(url);
 
     if html == "" {
         throw `Failed to fetch series: ${manga_id}`;
     }
 
-    // Title
+    // Title - from the manga-detail section's h1
     let title = "";
-    let title_els = html_select(html, "h1");
+    let title_els = html_select(html, "div.manga-detail h1");
+    if title_els.len() == 0 {
+        title_els = html_select(html, "h1");
+    }
     if title_els.len() > 0 {
         title = element_text(title_els[0]).trim();
     }
 
-    // Cover image
+    // Cover image - from the manga-detail poster section
     let cover_url = "";
-    let poster_imgs = html_select(html, "div.poster img, img[src*='mfcdn']");
+    let poster_imgs = html_select(html, "div.manga-detail div.poster img");
+    if poster_imgs.len() == 0 {
+        poster_imgs = html_select(html, "aside.content div.poster img");
+    }
     if poster_imgs.len() > 0 {
         cover_url = element_attr(poster_imgs[0], "src");
-        if cover_url == () {
-            cover_url = "";
-        }
     }
 
-    // Description
+    // Description - from og:description meta tag (most reliable)
     let description = ();
-    let desc_els = html_select(html, "#synopsis .modal-content, div.synopsis, div.description");
-    if desc_els.len() > 0 {
-        description = element_text(desc_els[0]).trim();
+    let desc_match = regex_find("og:description[\"']\\s*content=[\"']([^\"']+)", html);
+    if desc_match != "" {
+        description = regex_find("content=[\"']([^\"']+)", desc_match);
+        description = description.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
     }
+    // Also try synopsis section
     if description == () || description == "" {
-        // Try meta tag
-        let desc_match = regex_find("og:description[\"']\\s*content=[\"']([^\"']+)", html);
-        if desc_match != "" {
-            description = regex_find("content=[\"']([^\"']+)", desc_match);
-            description = description.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
+        let desc_els = html_select(html, "#synopsis .modal-content, div.synopsis");
+        if desc_els.len() > 0 {
+            description = element_text(desc_els[0]).trim();
         }
     }
 
-    // Status
+    // Status - from the info section within manga-detail
     let status = ();
-    // Look for status text in the info area
-    let status_match = regex_find("(Releasing|Completed|On Hiatus|Discontinued)", html);
-    if status_match != "" {
-        status = map_status(status_match);
+    let info_els = html_select(html, "div.manga-detail div.info p");
+    if info_els.len() == 0 {
+        info_els = html_select(html, "aside.content div.info p");
+    }
+    for info_el in info_els {
+        let info_text = element_text(info_el).trim();
+        if info_text == "Releasing" || info_text == "Completed" || info_text == "On Hiatus" || info_text == "Discontinued" {
+            status = map_status(info_text);
+            break;
+        }
     }
 
-    // Authors and Artists
+    // Authors - from the meta section only (not nav)
     let authors = [];
     let artists = [];
-    let author_links = html_select(html, "a[href*='/author/']");
-    for link in author_links {
-        let name = element_text(link).trim();
-        if name != "" && !authors.contains(name) {
-            authors.push(name);
+    let meta_els = html_select(html, "div.meta");
+    if meta_els.len() > 0 {
+        let author_links = html_select(html, "div.meta a[href*='/author/']");
+        for link in author_links {
+            let name = element_text(link).trim();
+            if name != "" && !authors.contains(name) {
+                authors.push(name);
+            }
         }
     }
 
-    // Genres
+    // Genres - from the meta section only (not nav bar)
     let genres = [];
-    let genre_links = html_select(html, "a[href*='/genre/']");
-    for link in genre_links {
-        let genre = element_text(link).trim();
-        if genre != "" && !genres.contains(genre) {
-            genres.push(genre);
+    if meta_els.len() > 0 {
+        let genre_links = html_select(html, "div.meta a[href*='/genre/']");
+        for link in genre_links {
+            let genre = element_text(link).trim();
+            if genre != "" && !genres.contains(genre) {
+                genres.push(genre);
+            }
         }
     }
 
-    // Alternate titles
+    // Alternate titles - from the manga-detail info h6 only
     let alt_titles = [];
-    let alt_els = html_select(html, "div.alt-title span, h6");
+    let alt_els = html_select(html, "div.manga-detail div.info h6, aside.content div.info h6");
     for el in alt_els {
         let alt = element_text(el).trim();
         if alt != "" && alt != title && !alt_titles.contains(alt) {
@@ -352,11 +398,14 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Year/published date
+    // Year/published date - from meta section
     let year = ();
-    let year_match = regex_find("(19|20)\\d{2}", html);
-    if year_match != "" {
-        year = year_match;
+    if meta_els.len() > 0 {
+        let meta_text = element_text(meta_els[0]);
+        let year_match = regex_find("(19|20)\\d{2}", meta_text);
+        if year_match != "" {
+            year = year_match;
+        }
     }
 
     #{
@@ -389,8 +438,8 @@ fn get_chapters(series_id, auth) {
 
     let url = `${BASE_URL}/manga/${manga_id}`;
 
-    // Load the series page with browser and wait for chapter list to render
-    let html = fetch_page_wait(url, "a[href*='/read/'], li[data-number], div.chapter-list");
+    // Load the series page - HTTP works for chapter listing
+    let html = fetch_http_first(url);
 
     if html == "" {
         return [];
@@ -654,11 +703,12 @@ fn get_chapter_pages(chapter_id, auth) {
     pages
 }
 
-/// Get latest updates
+/// Get latest updates / browse
 fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/filter?language[]=en&sort=recently_updated&page=${page}`;
 
-    let html = fetch_page_wait(url, "a[href*='/manga/'], div.unit, div.original");
+    // Use HTTP-first since MangaFire filter pages serve full HTML
+    let html = fetch_http_first(url);
 
     if html == "" {
         return #{ series: [], has_more: false };
@@ -667,11 +717,24 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
-    // Parse manga links from the page
-    let manga_links = regex_find_all("href=\"(/manga/[^\"]+)\"", html);
+    // Parse manga cards from the DOM
+    // MangaFire uses <div class="unit item-{id}"> for each card
+    let items = html_select(html, "div.unit");
+    if items.len() == 0 {
+        items = html_select(html, "div.original");
+    }
 
-    for link_match in manga_links {
-        let href = regex_find("/manga/[^\"]+", link_match);
+    for item in items {
+        // Find manga link - in the info section
+        let link = element_select_first(item, "div.info a[href*='/manga/']");
+        if link == "" {
+            link = element_select_first(item, "a[href*='/manga/']");
+        }
+        if link == "" {
+            continue;
+        }
+
+        let href = element_attr(link, "href");
         if href == "" {
             continue;
         }
@@ -682,32 +745,68 @@ fn get_latest_updates(page, auth) {
         }
         seen[manga_id] = true;
 
-        // Try to get title from nearby text
-        let title = manga_id.split(".")[0];
-        title = title.replace("-", " ");
-        // Capitalize
-        let words = title.split(" ");
-        let capitalized = [];
-        for word in words {
-            if word.len() > 0 {
-                let first = word.sub_string(0, 1).to_upper();
-                let rest = if word.len() > 1 { word.sub_string(1) } else { "" };
-                capitalized.push(`${first}${rest}`);
+        // Title - from the info section's direct manga link text
+        let title = element_text(link).trim();
+        if title == "" {
+            // Try the poster's alt text
+            let poster_img = element_select_first(item, "a.poster img");
+            if poster_img != "" {
+                title = element_attr(poster_img, "alt");
+                title = title.trim();
             }
         }
-        title = capitalized.reduce(|a, b| `${a} ${b}`);
-
+        if title == "" {
+            // Fallback: derive from slug
+            title = manga_id.split(".")[0].replace("-", " ");
+        }
         if title == "" {
             continue;
+        }
+
+        // Cover image - inside <a class="poster"><div><img src="..."></div></a>
+        let cover_url = "";
+        let poster_img = element_select_first(item, "a.poster img");
+        if poster_img == "" {
+            poster_img = element_select_first(item, "img");
+        }
+        if poster_img != "" {
+            cover_url = element_attr(poster_img, "src");
+            if cover_url == "" {
+                cover_url = element_attr(poster_img, "data-src");
+            }
         }
 
         series.push(#{
             id: manga_id,
             title: title,
             url: `${BASE_URL}/manga/${manga_id}`,
-            cover_url: "",
+            cover_url: cover_url,
             updated_at: ()
         });
+    }
+
+    // Fallback: regex approach if DOM parsing found nothing
+    if series.len() == 0 {
+        let manga_links = regex_find_all("href=\"(/manga/[^\"]+)\"", html);
+        for link_found in manga_links {
+            let href = regex_find("/manga/[^\"]+", link_found);
+            if href == "" { continue; }
+
+            let manga_id = extract_manga_id(href);
+            if manga_id == "" || seen[manga_id] != () { continue; }
+            seen[manga_id] = true;
+
+            let title = manga_id.split(".")[0].replace("-", " ");
+            if title == "" { continue; }
+
+            series.push(#{
+                id: manga_id,
+                title: title,
+                url: `${BASE_URL}/manga/${manga_id}`,
+                cover_url: "",
+                updated_at: ()
+            });
+        }
     }
 
     let has_more = html.contains(`page=${page + 1}`) && series.len() > 0;

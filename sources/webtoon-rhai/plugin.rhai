@@ -510,10 +510,28 @@ fn get_chapter_pages(chapter_id, auth) {
     let pages = [];
     let idx = 0;
 
-    // Find all content images
-    let img_container = html_select(html, "#_imageList img, .viewer_lst img, #content img._images");
+    // Try multiple selectors to handle Webtoon's variable HTML structure
+    // Priority order: most specific to most general
+    let selectors = [
+        "#_imageList img",           // Primary viewer image list
+        ".viewer_lst img",           // Alternative viewer list
+        "#content img._images",      // Content area images
+        ".viewer_img img",           // Viewer image container
+        ".episode_cont img",         // Episode content images
+        "div[class*='viewer'] img",  // Any viewer div
+        ".content_area img"          // Generic content area
+    ];
+
+    let img_container = [];
+    for selector in selectors {
+        img_container = html_select(html, selector);
+        if img_container.len() > 0 {
+            break;
+        }
+    }
 
     for img in img_container {
+        // Try multiple attributes for the image URL
         let img_url = element_attr(img, "data-url");
         if img_url == () || img_url == "" {
             img_url = element_attr(img, "src");
@@ -521,20 +539,35 @@ fn get_chapter_pages(chapter_id, auth) {
         if img_url == () || img_url == "" {
             img_url = element_attr(img, "data-src");
         }
+        if img_url == () || img_url == "" {
+            img_url = element_attr(img, "data-lazy-src");
+        }
+        if img_url == () || img_url == "" {
+            img_url = element_attr(img, "data-original");
+        }
 
+        // Validate URL before adding
         if img_url != () && img_url != "" && img_url.contains("http") {
-            // Skip thumbnails, icons, etc.
+            // Skip thumbnails, icons, banners, and placeholder images
             if img_url.contains("thumb") || img_url.contains("icon") || img_url.contains("banner") {
                 continue;
             }
+            if img_url.contains("placeholder") || img_url.contains("loading") || img_url.contains("spinner") {
+                continue;
+            }
+            // Must be from Webtoon's image CDN (webtoon-phinf or swebtoon-phinf)
+            if !img_url.contains("phinf.pstatic.net") && !img_url.contains("webtoon") {
+                continue;
+            }
 
+            // Use the actual chapter URL as referer for better CDN acceptance
             pages.push(#{
                 index: idx,
                 url: img_url,
                 headers: #{
-                    "Referer": BASE_URL
+                    "Referer": url
                 },
-                referer: BASE_URL
+                referer: url
             });
             idx += 1;
         }

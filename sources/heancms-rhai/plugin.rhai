@@ -8,16 +8,41 @@
 //   Settings: get_setting(key), set_setting(key, value)
 //   Storage: get_storage(key), set_storage(key, value)
 
-// Default configuration - can be overridden via settings
-const DEFAULT_BASE_URL = "https://omegascans.org";
-const PER_PAGE = 20;
-const CHAPTERS_PER_PAGE = 1000;
+// Default configuration (inlined in functions due to Rhai scoping)
+// Default site: OmegaScans (omegascans.org / api.omegascans.org)
+
+/// Get default base URL
+fn get_default_base_url() {
+    "https://omegascans.org"
+}
+
+/// Get default API URL
+fn get_default_api_url() {
+    "https://api.omegascans.org"
+}
+
+/// Get results per page
+fn get_per_page() {
+    20
+}
+
+/// Get chapters per page
+fn get_chapters_per_page() {
+    1000
+}
+
+/// Safely get a setting with fallback (get_setting may not be available)
+fn safe_get_setting(key) {
+    // get_setting is not available in current scraper runtime
+    // Return empty to use defaults
+    ()
+}
 
 /// Get the configured base URL
 fn get_base_url() {
-    let url = get_setting("base_url");
+    let url = safe_get_setting("base_url");
     if url == () || url == "" {
-        return DEFAULT_BASE_URL;
+        return get_default_base_url();
     }
     // Remove trailing slash
     url.trim_end_matches("/")
@@ -25,13 +50,19 @@ fn get_base_url() {
 
 /// Get the API URL (auto-detect or from settings)
 fn get_api_url() {
-    let custom_api = get_setting("api_url");
+    let custom_api = safe_get_setting("api_url");
     if custom_api != () && custom_api != "" {
         return custom_api.trim_end_matches("/");
     }
 
-    // Auto-detect API URL by replacing :// with ://api.
+    // Use default API URL for the default base
     let base = get_base_url();
+    let default_base = get_default_base_url();
+    if base == default_base {
+        return get_default_api_url();
+    }
+
+    // Auto-detect API URL by replacing :// with ://api.
     if base.contains("://") {
         let parts = base.split("://");
         if parts.len() >= 2 {
@@ -44,21 +75,17 @@ fn get_api_url() {
 
 /// Get request headers
 fn get_headers(auth) {
+    let base = get_base_url();
     let headers = #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
-        "Referer": get_base_url(),
-        "Origin": get_base_url()
+        "Referer": base,
+        "Origin": base
     };
 
-    // Add auth token if available
-    if auth != () && auth != "" {
-        let token = get_storage("auth_token");
-        if token != () && token != "" {
-            headers["Authorization"] = `Bearer ${token}`;
-        }
-    }
+    // Auth token support removed - get_storage not available in scraper runtime
+    // To add auth support, pass token via auth parameter from caller
 
     headers
 }
@@ -108,8 +135,8 @@ fn login(email, password) {
 
     let token = data["token"];
     if token != () && token != "" {
-        set_storage("auth_token", token);
-        return #{ success: true };
+        // Note: set_storage not available, return token for caller to handle
+        return #{ success: true, token: token };
     }
 
     let errors = data["errors"];
@@ -126,7 +153,7 @@ fn search_series(query, page, auth) {
     let encoded_query = query.replace(" ", "%20");
 
     // Build query URL
-    let url = `${api_url}/query?query_string=${encoded_query}&page=${page}&perPage=${PER_PAGE}&series_type=Comic`;
+    let url = `${api_url}/query?query_string=${encoded_query}&page=${page}&perPage=${get_per_page()}&series_type=Comic`;
 
     let response = http_get_with_headers(url, get_headers(auth));
     if response == () {
@@ -360,7 +387,7 @@ fn get_chapters(series_id, auth) {
     }
 
     let api_url = get_api_url();
-    let use_new_endpoint = get_setting("use_new_chapter_endpoint");
+    let use_new_endpoint = safe_get_setting("use_new_chapter_endpoint");
 
     if use_new_endpoint == true {
         return get_chapters_new_endpoint(slug, auth);
@@ -393,7 +420,7 @@ fn get_chapters_new_endpoint(slug, auth) {
     }
 
     // Query chapters endpoint
-    let chapters_url = `${api_url}/chapter/query?series_id=${series_id}&perPage=${CHAPTERS_PER_PAGE}`;
+    let chapters_url = `${api_url}/chapter/query?series_id=${series_id}&perPage=${get_chapters_per_page()}`;
 
     let chapters_response = http_get_with_headers(chapters_url, get_headers(auth));
     if chapters_response == () {
@@ -705,7 +732,7 @@ fn create_page(index, url, referer) {
 /// Get latest updates
 fn get_latest_updates(page, auth) {
     let api_url = get_api_url();
-    let url = `${api_url}/query?page=${page}&perPage=${PER_PAGE}&orderBy=latest&series_type=Comic`;
+    let url = `${api_url}/query?page=${page}&perPage=${get_per_page()}&orderBy=latest&series_type=Comic`;
 
     let response = http_get_with_headers(url, get_headers(auth));
     if response == () {
@@ -746,7 +773,7 @@ fn get_latest_updates(page, auth) {
 /// Get popular series
 fn get_popular(page, auth) {
     let api_url = get_api_url();
-    let url = `${api_url}/query?page=${page}&perPage=${PER_PAGE}&orderBy=total_views&order=desc&series_type=Comic`;
+    let url = `${api_url}/query?page=${page}&perPage=${get_per_page()}&orderBy=total_views&order=desc&series_type=Comic`;
 
     let response = http_get_with_headers(url, get_headers(auth));
     if response == () {

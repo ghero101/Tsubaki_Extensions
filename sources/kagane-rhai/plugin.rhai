@@ -24,23 +24,39 @@ fn get_headers() {
     }
 }
 
-/// Fetch page using browser automation (required for DRM/Cloudflare)
+/// Fetch page using FlareSolverr for Cloudflare bypass (primary method)
+/// Falls back to browser automation, then plain HTTP
 fn fetch_page(url) {
+    // Method 1: FlareSolverr - dedicated Cloudflare bypass service
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 60000);
+            if html.len() > 500 {
+                return html;
+            }
+        } catch {
+            // Fall through to browser
+        }
+    }
+
+    // Method 2: Browser automation with stealth mode
     if browser_is_available() {
         try {
-            let browser_id = browser_launch();
+            let browser_id = browser_launch_stealth();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 25000);
-            browser_wait_for_selector(browser_id, "body", 10000);
+            browser_wait_for_cloudflare(browser_id, 35000);
+            browser_wait_for_selector(browser_id, "body", 15000);
             let html = browser_get_html(browser_id);
             browser_close(browser_id);
-            return html;
+            if html.len() > 500 {
+                return html;
+            }
         } catch {
             // Fall through to HTTP
         }
     }
 
-    // HTTP fallback (will likely fail due to Cloudflare/DRM)
+    // Method 3: HTTP fallback (will likely fail due to Cloudflare/DRM)
     try {
         return http_get_with_headers(url, get_headers());
     } catch {
@@ -49,21 +65,38 @@ fn fetch_page(url) {
 }
 
 /// Fetch page waiting for specific content
+/// FlareSolverr returns fully-rendered pages, so selector wait is only needed for browser fallback
 fn fetch_page_wait(url, selector) {
+    // Method 1: FlareSolverr - returns fully rendered page
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 60000);
+            if html.len() > 500 {
+                return html;
+            }
+        } catch {
+            // Fall through to browser
+        }
+    }
+
+    // Method 2: Browser automation with selector wait
     if browser_is_available() {
         try {
-            let browser_id = browser_launch();
+            let browser_id = browser_launch_stealth();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 25000);
-            browser_wait_for_selector(browser_id, selector, 20000);
+            browser_wait_for_cloudflare(browser_id, 35000);
+            browser_wait_for_selector(browser_id, selector, 25000);
             let html = browser_get_html(browser_id);
             browser_close(browser_id);
-            return html;
+            if html.len() > 500 {
+                return html;
+            }
         } catch {
             // Fall through
         }
     }
 
+    // Method 3: HTTP fallback
     try {
         return http_get_with_headers(url, get_headers());
     } catch {
@@ -157,6 +190,7 @@ fn search_series(query, page, auth) {
     let seen = #{};
 
     // Find all series links in the page
+    // Kagane uses empty <a> overlay elements with aria-label for the title
     let series_links = html_select(html, "a[href*='/series/']");
 
     for link in series_links {
@@ -176,31 +210,32 @@ fn search_series(query, page, auth) {
         }
         seen[sid] = true;
 
-        // Title
-        let title = element_text(link).trim();
-        if title == "" {
-            title = element_attr(link, "title");
-            if title == () {
-                title = "";
+        // Title: Kagane uses aria-label="Open series {Title}" on the <a> tag
+        let title = "";
+        let aria = element_attr(link, "aria-label");
+        if aria != () && aria != "" {
+            if aria.starts_with("Open series ") {
+                title = aria.sub_string(12);
+            } else {
+                title = aria;
             }
-            title = title.trim();
+        }
+        if title == "" {
+            title = element_text(link).trim();
+        }
+        if title == "" {
+            let t = element_attr(link, "title");
+            if t != () {
+                title = t.trim();
+            }
         }
         if title == "" || title.len() < 2 {
             continue;
         }
 
-        // Cover image - look for nearby img
-        let cover_url = "";
-        let img = element_select_first(link, "img");
-        if img != "" {
-            cover_url = element_attr(img, "src");
-            if cover_url == () {
-                cover_url = element_attr(img, "data-src");
-            }
-            if cover_url == () {
-                cover_url = "";
-            }
-        }
+        // Cover: Use Komga-style thumbnail API endpoint
+        // The image proxy with FlareSolverr cookies may be able to fetch these
+        let cover_url = `${BASE_URL}/api/v1/series/${sid}/thumbnail`;
 
         series.push(#{
             id: sid,
@@ -274,7 +309,7 @@ fn get_series(id_or_url, auth) {
         throw `Failed to fetch series: ${sid}`;
     }
 
-    // Title - try multiple selectors
+    // Title - Kagane uses h1 for the series title
     let title = "";
     let title_els = html_select(html, "h1");
     if title_els.len() > 0 {
@@ -286,65 +321,67 @@ fn get_series(id_or_url, auth) {
             title = element_text(title_els2[0]).trim();
         }
     }
-    // Try og:title meta
+    // Fallback: try <title> tag (format: "Title - Read Online for Free - Kagane")
     if title == "" {
-        let og_title = regex_find("og:title[\"']\\s*content=[\"']([^\"']+)", html);
-        if og_title != "" {
-            title = regex_find("content=[\"']([^\"']+)", og_title);
-            title = title.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
+        let title_match = regex_find("<title>([^<]+)</title>", html);
+        if title_match != "" {
+            title = title_match.replace("<title>", "").replace("</title>", "");
+            let dash_idx = title.index_of(" - ");
+            if dash_idx > 0 {
+                title = title.sub_string(0, dash_idx).trim();
+            }
         }
     }
 
-    // Cover image
-    let cover_url = "";
-    let cover_imgs = html_select(html, "img[src*='kagane'], div.poster img, div.cover img, img.cover, img.thumbnail");
-    if cover_imgs.len() > 0 {
-        cover_url = element_attr(cover_imgs[0], "src");
-        if cover_url == () {
-            cover_url = "";
-        }
-    }
-    // Try og:image
-    if cover_url == "" {
-        let og_img = regex_find("og:image[\"']\\s*content=[\"']([^\"']+)", html);
-        if og_img != "" {
-            cover_url = regex_find("content=[\"']([^\"']+)", og_img);
-            cover_url = cover_url.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
-        }
-    }
+    // Cover image - Use Komga-style thumbnail API endpoint
+    // The image proxy with FlareSolverr cookies may be able to fetch these
+    let cover_url = `${BASE_URL}/api/v1/series/${sid}/thumbnail`;
 
-    // Description
+    // Description - from <meta name="description" content="...">
     let description = ();
-    let desc_els = html_select(html, "div.description, div.synopsis, div.summary, p.description");
-    if desc_els.len() > 0 {
-        description = element_text(desc_els[0]).trim();
+    let desc_match = regex_find("name=\"description\"\\s+content=\"([^\"]+)\"", html);
+    if desc_match != "" {
+        description = desc_match.replace("name=\"description\" content=\"", "").replace("\"", "").trim();
     }
+    // Fallback: try div selectors
     if description == () || description == "" {
-        let desc_match = regex_find("og:description[\"']\\s*content=[\"']([^\"']+)", html);
-        if desc_match != "" {
-            description = regex_find("content=[\"']([^\"']+)", desc_match);
-            description = description.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
+        let desc_els = html_select(html, "div.description, div.synopsis, div.summary");
+        if desc_els.len() > 0 {
+            description = element_text(desc_els[0]).trim();
         }
     }
 
-    // Status
+    // Status - Kagane shows status as "ONGOING", "COMPLETED" etc. in spans
     let status = ();
-    let status_match = regex_find("(Ongoing|Completed|Hiatus|Cancelled|Releasing|Finished)", html);
+    let status_match = regex_find("(?i)(ONGOING|COMPLETED|HIATUS|CANCELLED|RELEASING|FINISHED)", html);
     if status_match != "" {
         status = map_status(status_match);
     }
 
-    // Genres/tags
+    // Genres - Kagane uses spans with aria-label="Search by genre: {Genre}"
     let genres = [];
-    let genre_links = html_select(html, "a[href*='genre'], a[href*='tag'], span.genre, span.tag");
-    for link in genre_links {
-        let genre = element_text(link).trim();
-        if genre != "" && genre.len() < 50 && !genres.contains(genre) {
-            genres.push(genre);
+    let genre_spans = html_select(html, "span[aria-label*='genre']");
+    for span in genre_spans {
+        let aria = element_attr(span, "aria-label");
+        if aria != () && aria != "" {
+            let genre = aria.replace("Search by genre: ", "").trim();
+            if genre != "" && genre.len() < 50 && !genres.contains(genre) {
+                genres.push(genre);
+            }
+        }
+    }
+    // Fallback: try text content
+    if genres.len() == 0 {
+        let tag_links = html_select(html, "a[href*='genre'], span.genre, span.tag");
+        for link in tag_links {
+            let genre = element_text(link).trim();
+            if genre != "" && genre.len() < 50 && !genres.contains(genre) {
+                genres.push(genre);
+            }
         }
     }
 
-    // Authors
+    // Authors - try various selectors
     let authors = [];
     let author_links = html_select(html, "a[href*='author'], a[href*='artist'], span.author");
     for link in author_links {
@@ -414,7 +451,13 @@ fn get_chapters(series_id, auth) {
         let ch_id = extract_chapter_id(href);
         if ch_id == "" {
             // Try extracting from the full URL
-            let parts = href.split("/");
+            // Handle hash fragments: /reader/{ID}#chapter-1-...
+            let clean_href = href;
+            let hash_idx = href.index_of("#");
+            if hash_idx > 0 {
+                clean_href = href.sub_string(0, hash_idx);
+            }
+            let parts = clean_href.split("/");
             let last = parts[parts.len() - 1];
             if last.len() > 5 {
                 ch_id = last;
@@ -426,7 +469,16 @@ fn get_chapters(series_id, auth) {
         }
         seen[ch_id] = true;
 
-        let chapter_title = element_text(link).trim();
+        // Extract chapter title from <h3> inside the link (avoids getting page counts/views)
+        let chapter_title = "";
+        let h3 = element_select_first(link, "h3");
+        if h3 != "" {
+            chapter_title = element_text(h3).trim();
+        }
+        // Fallback to full text
+        if chapter_title == "" {
+            chapter_title = element_text(link).trim();
+        }
 
         // Extract chapter number from title text
         let chapter_num = "0";
@@ -518,13 +570,27 @@ fn get_chapter_pages(chapter_id, auth) {
         url = `${BASE_URL}/series/${chapter_id}`;
     }
 
-    // Navigate to reader with browser - DRM may require solving challenges
+    // Navigate to reader - DRM may require solving Cloudflare challenges
     let html = "";
-    if browser_is_available() {
+
+    // Method 1: FlareSolverr for Cloudflare bypass
+    if flaresolverr_is_available() {
         try {
-            let browser_id = browser_launch();
+            html = flaresolverr_get(url, 60000);
+            if html.len() < 500 {
+                html = "";
+            }
+        } catch {
+            html = "";
+        }
+    }
+
+    // Method 2: Browser automation with stealth for reader pages
+    if html == "" && browser_is_available() {
+        try {
+            let browser_id = browser_launch_stealth();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 25000);
+            browser_wait_for_cloudflare(browser_id, 35000);
             // Wait for reader images or canvas elements to load
             browser_wait_for_selector(browser_id, "img.page, img[src*='chapter'], div.reader img, canvas, div.page img", 25000);
             html = browser_get_html(browser_id);
@@ -534,6 +600,7 @@ fn get_chapter_pages(chapter_id, auth) {
         }
     }
 
+    // Method 3: HTTP fallback
     if html == "" {
         try {
             html = http_get_with_headers(url, get_headers());
@@ -655,6 +722,7 @@ fn get_latest_updates(page, auth) {
     let seen = #{};
 
     // Find series links on the homepage
+    // Kagane uses empty <a> overlay elements with aria-label for the title
     let series_links = html_select(html, "a[href*='/series/']");
 
     for link in series_links {
@@ -674,27 +742,33 @@ fn get_latest_updates(page, auth) {
         }
         seen[sid] = true;
 
-        let title = element_text(link).trim();
-        if title == "" {
-            title = element_attr(link, "title");
-            if title == () {
-                title = "";
+        // Title: Kagane uses aria-label="Open series {Title}" on the <a> tag
+        let title = "";
+        let aria = element_attr(link, "aria-label");
+        if aria != () && aria != "" {
+            if aria.starts_with("Open series ") {
+                title = aria.sub_string(12);  // Remove "Open series " prefix
+            } else {
+                title = aria;
             }
-            title = title.trim();
+        }
+        // Fallback: try text content or title attr
+        if title == "" {
+            title = element_text(link).trim();
+        }
+        if title == "" {
+            let t = element_attr(link, "title");
+            if t != () {
+                title = t.trim();
+            }
         }
         if title == "" || title.len() < 2 {
             continue;
         }
 
-        // Cover
-        let cover_url = "";
-        let img = element_select_first(link, "img");
-        if img != "" {
-            cover_url = element_attr(img, "src");
-            if cover_url == () {
-                cover_url = "";
-            }
-        }
+        // Cover: Use Komga-style thumbnail API endpoint
+        // The image proxy with FlareSolverr cookies may be able to fetch these
+        let cover_url = `${BASE_URL}/api/v1/series/${sid}/thumbnail`;
 
         series.push(#{
             id: sid,

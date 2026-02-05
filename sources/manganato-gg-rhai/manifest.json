@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "manganato-gg-rhai",
   "name": "MangaNato.gg",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Scraper for the MangaNato/MangaKakalot mirror cluster (manganato.gg, mangakakalot.gg, nelomanga.net, natomanga.com). Distributes requests across mirrors for reliability.",
   "author": {
     "name": "Tsubaki Community",

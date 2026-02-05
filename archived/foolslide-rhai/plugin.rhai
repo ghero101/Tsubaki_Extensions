@@ -15,46 +15,71 @@
 //   Regex: regex_find(pattern, text), regex_find_all(pattern, text)
 //   String: url_encode(text)
 
-// Default base URL - should be configured via settings
+// Base URL - MUST be configured via settings before use
 // Example FoolSlide sites: reader.sensescans.com, jaiminisbox.com/reader, etc.
-let BASE_URL = "https://reader.example.com";
+let BASE_URL = "";
+
+/// Safely get a setting with fallback
+fn safe_get_setting(key) {
+    try {
+        let val = get_setting(key);
+        return val;
+    } catch {
+        return ();
+    }
+}
+
+/// Get the configured base URL
+fn get_configured_url() {
+    let url = safe_get_setting("base_url");
+    if url != () && url != "" {
+        // Remove trailing slash
+        if url.ends_with("/") {
+            return url.sub_string(0, url.len() - 1);
+        }
+        return url;
+    }
+    ""
+}
+
+/// Check if extension is properly configured
+fn is_configured() {
+    let url = get_configured_url();
+    url != "" && url.starts_with("http")
+}
 
 /// Returns metadata about this source
 fn get_source_info() {
+    let base = get_configured_url();
+    if base == "" {
+        base = "https://example.com";
+    }
     #{
         id: "foolslide-rhai",
         name: "FoolSlide",
-        base_url: BASE_URL,
+        base_url: base,
         language: "en",
         supported_languages: ["en", "es", "fr", "de", "it", "pt", "ru", "pl", "id", "vi"],
         requires_authentication: false,
-        capability_level: "http_only"
+        capability_level: "http_only",
+        requires_configuration: true
     }
 }
 
 /// Get headers for API requests
 fn get_headers() {
+    let base = get_configured_url();
     #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept": "application/json, text/html, */*",
         "Accept-Language": "en-US,en;q=0.5",
-        "Referer": BASE_URL
-    }
-}
-
-/// Set the base URL for the FoolSlide instance
-/// This should be called by the host with the configured URL
-fn set_base_url(url) {
-    // Remove trailing slash if present
-    if url.ends_with("/") {
-        BASE_URL = url.sub_string(0, url.len() - 1);
-    } else {
-        BASE_URL = url;
+        "Referer": base
     }
 }
 
 /// Build full URL from relative path
 fn make_full_url(path) {
+    let base = get_configured_url();
     if path.starts_with("http") {
         return path;
     }
@@ -62,9 +87,9 @@ fn make_full_url(path) {
         return `https:${path}`;
     }
     if path.starts_with("/") {
-        return `${BASE_URL}${path}`;
+        return `${base}${path}`;
     }
-    `${BASE_URL}/${path}`
+    `${base}/${path}`
 }
 
 /// Extract comic ID from various formats
@@ -112,6 +137,7 @@ fn map_status(status) {
 /// Parse FoolSlide API response for comics list
 fn parse_comics_response(response) {
     let series = [];
+    let base = get_configured_url();
 
     if response == () {
         return series;
@@ -164,7 +190,7 @@ fn parse_comics_response(response) {
             // FoolSlide stores thumbnails in content/comics/[stub]_[uniqid]/[thumbnail]
             let thumb = comic["thumbnail"];
             if comic.contains("uniqid") && stub != "" {
-                cover_url = `${BASE_URL}/content/comics/${stub}_${comic["uniqid"]}/${thumb}`;
+                cover_url = `${base}/content/comics/${stub}_${comic["uniqid"]}/${thumb}`;
             } else if thumb.starts_with("http") || thumb.starts_with("/") {
                 cover_url = make_full_url(thumb);
             }
@@ -187,9 +213,9 @@ fn parse_comics_response(response) {
         }
 
         // Build URL
-        let url = `${BASE_URL}/series/${stub}`;
+        let url = `${base}/series/${stub}`;
         if stub == "" {
-            url = `${BASE_URL}/comic/${id}`;
+            url = `${base}/comic/${id}`;
         }
 
         series.push(#{
@@ -213,17 +239,22 @@ fn parse_comics_response(response) {
 /// Search for series matching query
 /// FoolSlide doesn't have a native search API, so we fetch all comics and filter client-side
 fn search_series(query, page, auth) {
+    if !is_configured() {
+        throw "FoolSlide extension requires configuration. Please set the base URL in extension settings.";
+    }
+
+    let base = get_configured_url();
     // FoolSlide API: /api/reader/comics
     // Parameters: page, per_page (max 100), orderby
     let per_page = 100;
-    let url = `${BASE_URL}/api/reader/comics?page=${page}&per_page=${per_page}`;
+    let url = `${base}/api/reader/comics?page=${page}&per_page=${per_page}`;
 
     let response_text = http_get_with_headers(url, get_headers());
     let response = json_parse(response_text);
 
     if response == () {
         // Fallback: try alternate endpoint format
-        url = `${BASE_URL}/api/reader/comics.json?page=${page}&per_page=${per_page}`;
+        url = `${base}/api/reader/comics.json?page=${page}&per_page=${per_page}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
@@ -254,23 +285,27 @@ fn search_series(query, page, auth) {
 
 /// Get detailed series information
 fn get_series(id_or_url, auth) {
+    if !is_configured() {
+        throw "FoolSlide extension requires configuration. Please set the base URL in extension settings.";
+    }
+    let base = get_configured_url();
     let series_id = extract_comic_id(id_or_url);
 
     // Try by stub first, then by id
-    let url = `${BASE_URL}/api/reader/comic?stub=${series_id}`;
+    let url = `${base}/api/reader/comic?stub=${series_id}`;
     let response_text = http_get_with_headers(url, get_headers());
     let response = json_parse(response_text);
 
     // If stub didn't work, try by id
     if response == () || (response.contains("error") && response["error"] != ()) {
-        url = `${BASE_URL}/api/reader/comic?id=${series_id}`;
+        url = `${base}/api/reader/comic?id=${series_id}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
 
     // Fallback: try alternate endpoint format
     if response == () {
-        url = `${BASE_URL}/api/reader/comic.json?stub=${series_id}`;
+        url = `${base}/api/reader/comic.json?stub=${series_id}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
@@ -318,7 +353,7 @@ fn get_series(id_or_url, auth) {
     if comic.contains("thumbnail") && comic["thumbnail"] != "" {
         let thumb = comic["thumbnail"];
         if comic.contains("uniqid") && stub != "" {
-            cover_url = `${BASE_URL}/content/comics/${stub}_${comic["uniqid"]}/${thumb}`;
+            cover_url = `${base}/content/comics/${stub}_${comic["uniqid"]}/${thumb}`;
         } else if thumb.starts_with("http") || thumb.starts_with("/") {
             cover_url = make_full_url(thumb);
         }
@@ -355,9 +390,9 @@ fn get_series(id_or_url, auth) {
     }
 
     // Build series URL
-    let series_url = `${BASE_URL}/series/${stub}`;
+    let series_url = `${base}/series/${stub}`;
     if stub == "" {
-        series_url = `${BASE_URL}/comic/${id}`;
+        series_url = `${base}/comic/${id}`;
     }
 
     #{
@@ -383,23 +418,27 @@ fn get_series(id_or_url, auth) {
 
 /// Get all chapters for a series
 fn get_chapters(series_id, auth) {
+    if !is_configured() {
+        throw "FoolSlide extension requires configuration. Please set the base URL in extension settings.";
+    }
+    let base = get_configured_url();
     let comic_id = extract_comic_id(series_id);
 
     // Fetch comic with chapters
-    let url = `${BASE_URL}/api/reader/comic?stub=${comic_id}`;
+    let url = `${base}/api/reader/comic?stub=${comic_id}`;
     let response_text = http_get_with_headers(url, get_headers());
     let response = json_parse(response_text);
 
     // If stub didn't work, try by id
     if response == () || (response.contains("error") && response["error"] != ()) {
-        url = `${BASE_URL}/api/reader/comic?id=${comic_id}`;
+        url = `${base}/api/reader/comic?id=${comic_id}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
 
     // Fallback: try alternate endpoint format
     if response == () {
-        url = `${BASE_URL}/api/reader/comic.json?stub=${comic_id}`;
+        url = `${base}/api/reader/comic.json?stub=${comic_id}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
@@ -503,7 +542,7 @@ fn get_chapters(series_id, auth) {
         }
         let vol_str = if volume != () { volume } else { "0" };
         let sub_str = if chapter.contains("subchapter") && chapter["subchapter"] != () { chapter["subchapter"] } else { "0" };
-        let chapter_url = `${BASE_URL}/read/${comic_stub}/${language}/${vol_str}/${ch_num}/${sub_str}`;
+        let chapter_url = `${base}/read/${comic_stub}/${language}/${vol_str}/${ch_num}/${sub_str}`;
 
         chapters.push(#{
             id: ch_id,
@@ -527,14 +566,18 @@ fn get_chapters(series_id, auth) {
 
 /// Get page URLs for a chapter
 fn get_chapter_pages(chapter_id, auth) {
+    if !is_configured() {
+        throw "FoolSlide extension requires configuration. Please set the base URL in extension settings.";
+    }
+    let base = get_configured_url();
     // Fetch chapter by ID
-    let url = `${BASE_URL}/api/reader/chapter?id=${chapter_id}`;
+    let url = `${base}/api/reader/chapter?id=${chapter_id}`;
     let response_text = http_get_with_headers(url, get_headers());
     let response = json_parse(response_text);
 
     // Fallback: try alternate endpoint format
     if response == () {
-        url = `${BASE_URL}/api/reader/chapter.json?id=${chapter_id}`;
+        url = `${base}/api/reader/chapter.json?id=${chapter_id}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
@@ -591,7 +634,7 @@ fn get_chapter_pages(chapter_id, auth) {
         // FoolSlide page URL format: content/comics/[comic_dir]/[chapter_dir]/[filename]
         if !img_url.starts_with("http") {
             if comic_dir != "" && chapter_dir != "" {
-                img_url = `${BASE_URL}/content/comics/${comic_dir}/${chapter_dir}/${img_url}`;
+                img_url = `${base}/content/comics/${comic_dir}/${chapter_dir}/${img_url}`;
             } else {
                 img_url = make_full_url(img_url);
             }
@@ -613,16 +656,20 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest chapter updates
 fn get_latest_updates(page, auth) {
+    if !is_configured() {
+        throw "FoolSlide extension requires configuration. Please set the base URL in extension settings.";
+    }
+    let base = get_configured_url();
     // FoolSlide API: /api/reader/chapters with ordering
     let per_page = 50;
-    let url = `${BASE_URL}/api/reader/chapters?page=${page}&per_page=${per_page}&orderby=created`;
+    let url = `${base}/api/reader/chapters?page=${page}&per_page=${per_page}&orderby=created`;
 
     let response_text = http_get_with_headers(url, get_headers());
     let response = json_parse(response_text);
 
     // Fallback: try alternate endpoint format
     if response == () {
-        url = `${BASE_URL}/api/reader/chapters.json?page=${page}&per_page=${per_page}&orderby=created`;
+        url = `${base}/api/reader/chapters.json?page=${page}&per_page=${per_page}&orderby=created`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }
@@ -663,7 +710,7 @@ fn get_latest_updates(page, auth) {
             if comic.contains("thumbnail") && comic["thumbnail"] != "" {
                 let thumb = comic["thumbnail"];
                 if comic.contains("uniqid") && comic_stub != "" {
-                    cover_url = `${BASE_URL}/content/comics/${comic_stub}_${comic["uniqid"]}/${thumb}`;
+                    cover_url = `${base}/content/comics/${comic_stub}_${comic["uniqid"]}/${thumb}`;
                 }
             }
         }
@@ -685,7 +732,7 @@ fn get_latest_updates(page, auth) {
             series.push(#{
                 id: series_id,
                 title: title,
-                url: `${BASE_URL}/series/${comic_stub}`,
+                url: `${base}/series/${comic_stub}`,
                 cover_url: cover_url,
                 updated_at: updated_at
             });
@@ -699,16 +746,20 @@ fn get_latest_updates(page, auth) {
 
 /// Get popular/all series
 fn get_popular(page, auth) {
+    if !is_configured() {
+        throw "FoolSlide extension requires configuration. Please set the base URL in extension settings.";
+    }
+    let base = get_configured_url();
     // FoolSlide doesn't have popularity metrics, so return all comics
     let per_page = 50;
-    let url = `${BASE_URL}/api/reader/comics?page=${page}&per_page=${per_page}`;
+    let url = `${base}/api/reader/comics?page=${page}&per_page=${per_page}`;
 
     let response_text = http_get_with_headers(url, get_headers());
     let response = json_parse(response_text);
 
     // Fallback: try alternate endpoint format
     if response == () {
-        url = `${BASE_URL}/api/reader/comics.json?page=${page}&per_page=${per_page}`;
+        url = `${base}/api/reader/comics.json?page=${page}&per_page=${per_page}`;
         response_text = http_get_with_headers(url, get_headers());
         response = json_parse(response_text);
     }

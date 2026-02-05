@@ -1,17 +1,19 @@
 # Extension Status Report
 
-Last tested: 2026-01-19 (Updated)
+Last tested: 2026-01-24 (Comprehensive update - tested all framework and browser extensions)
 
 ## Summary
 
-| Category | Working | Browser | Down/Config | Total |
-|----------|---------|---------|-------------|-------|
-| Artwork  | 8       | 0       | 0           | 8     |
-| Metadata | 4       | 0       | 0           | 4     |
-| Scraper  | 15      | 4       | 6           | 25    |
-| **Total**| **27**  | **4**   | **6**       | **37**|
+| Category | Working | Browser | Framework | Total |
+|----------|---------|---------|-----------|-------|
+| Artwork  | 8       | 0       | 0         | 8     |
+| Metadata | 4       | 0       | 0         | 4     |
+| Scraper  | 16      | 6       | 3         | 25    |
+| **Total**| **28**  | **6**   | **3**     | **37**|
 
-## Working Scrapers (15/25)
+> **Note:** 3 defunct extensions (FlixScans, MyComicList, HeyToon) have been moved to `/archived`
+
+## Working Scrapers (16/22)
 
 These scrapers return results during browse/sync operations:
 
@@ -19,6 +21,7 @@ These scrapers return results during browse/sync operations:
 |-----------|-----|--------------|-------|
 | Asura Scans | asurascans | ~15 | HTTP-only |
 | MangaDex | mangadex-rhai | ~25 | HTTP-only, multi-language |
+| MangaSee | mangasee-rhai | ~? | HTTP-only, uses embedded JSON |
 | MangaPill | mangapill-rhai | ~50 | HTTP-only, **pagination fixed v1.0.6** |
 | WeebCentral | weebcentral-rhai | ~32 | HTTP-only, **pagination fixed v1.0.7** |
 | Flame Comics | flamecomics | ~145 | Uses /api/series, **fixed v1.1.7** |
@@ -33,27 +36,71 @@ These scrapers return results during browse/sync operations:
 | MangaGeko | mangageko-rhai | ~? | HTTP-only (mgeko.cc works) |
 | MangaTown | mangatown-rhai | ~? | HTTP-only, **verified working** |
 
-## Browser Automation Scrapers (4/25)
+## Browser Automation Scrapers (6/22)
 
 These scrapers are configured for browser automation (via tsubaki-browser docker container):
 
-| Extension | ID | Domain | Status |
-|-----------|-----|--------|--------|
-| MangaNato | manganato-rhai | manganato.com | **Browser enabled** v1.1.5 |
-| MangaKakalot | mangakakalot-rhai | mangakakalot.com | **Browser enabled** v1.0.5 |
-| MangaPark | mangapark-rhai | mpark.to | **Browser enabled** v1.1.9 |
-| BatoTo | batoto-rhai | mto.to | **Browser enabled** v1.0.3 |
+| Extension | ID | Domain | HTTP Test | Status |
+|-----------|-----|--------|-----------|--------|
+| MangaNato | manganato-rhai | manganato.com | Connection blocked | **Browser required** |
+| MangaKakalot | mangakakalot-rhai | mangakakalot.com | Connection blocked | **Browser required** |
+| MangaPark | mangapark-rhai | mpark.to | 302 redirect loop | **Browser required** |
+| BatoTo | batoto-rhai | mto.to | 502 Bad Gateway | **Browser required** (try wto.to) |
+| BatCave | batcave-rhai | batcave.biz | 403 Cloudflare | **Browser required** |
+| DemonicScans | demonicscans-rhai | demonicscans.org | 403 Cloudflare | **Browser required** |
 
-## Sites DOWN or Require Config (6/25)
+### Browser Site Notes
 
-| Extension | ID | Evidence | Status |
-|-----------|-----|----------|--------|
-| FlixScans | flixscans-rhai | Connection refused (.net & .org) | **DEFUNCT** |
-| MyComicList | mycomiclist-rhai | Domain parked (ad lander) | **DEFUNCT** |
-| HeyToon | heytoon-rhai | HTTP 404 on all endpoints | **DEFUNCT** |
-| FoolSlide | foolslide-rhai | Framework - multiple sites use it | Set `base_url` in settings |
-| HeanCMS | heancms-rhai | Framework - omegascans.org default | Set `base_url` if needed |
-| FMReader | fmreader-rhai | Framework - rawkuma.net default | **Fixed v1.0.4** |
+All browser automation sites block non-browser HTTP requests. This is expected behavior.
+
+**Connection Patterns Observed (2026-01-24):**
+- `manganato.com`, `mangakakalot.com`: TCP connection refused (aggressive blocking)
+- `mpark.to`: Infinite redirect loop to self
+- `mto.to`: 502 Bad Gateway (may be down, try `wto.to`)
+- `wto.to`: 403 with `cf-mitigated: challenge` header (Cloudflare)
+- `batcave.biz`, `demonicscans.org`: 403 Cloudflare challenge
+
+**To use these scrapers:**
+1. Enable browser automation: `MANGA_SCRAPER_USE_BROWSER=1` in `.env`
+2. Ensure tsubaki-browser container is running
+3. Restart tsubaki-scraper service
+
+## Framework Extensions (3/22 - Require Config)
+
+| Extension | ID | Default Site | API Test | Status |
+|-----------|-----|--------------|----------|--------|
+| HeanCMS | heancms-rhai | omegascans.org | ✅ API returns 250 series | **Working** |
+| FMReader | fmreader-rhai | rawkuma.net | ✅ Site accessible | See note below |
+| FoolSlide | foolslide-rhai | None (required) | N/A | Set `base_url` in settings |
+
+### Framework Notes
+
+**HeanCMS (heancms-rhai)**
+- API endpoint: `https://api.omegascans.org/query`
+- Tested: Returns 250 series with full metadata
+- Other HeanCMS sites: ReaperScans, QuantumScans, etc.
+
+**FMReader (fmreader-rhai)**
+- Default site rawkuma.net uses WordPress/Madara theme, NOT FMReader CMS
+- The plugin may need adjustment for Madara-based sites
+- Original FMReader sites (kissmanga.org) are down
+
+**FoolSlide (foolslide-rhai)**
+- No default site configured
+- Working FoolSlide sites:
+  - `reader.deathtollscans.net` ✅ (HTTP 200)
+  - `reader.sensescans.com` ❌ (Connection refused)
+  - `reader.kireicake.com` ❌ (Connection refused)
+
+## Archived Extensions (Defunct)
+
+The following extensions have been moved to `/archived` as their sites are no longer operational:
+
+| Extension | Reason | Archived Date |
+|-----------|--------|---------------|
+| FlixScans | Connection refused (.net & .org) | 2026-01-24 |
+| MyComicList | Domain parked (ad lander) | 2026-01-24 |
+| HeyToon | HTTP 404 on all endpoints | 2026-01-24 |
 
 ## Artwork Extensions (8/8 Working)
 
@@ -128,12 +175,13 @@ Several scrapers had broken pagination where the website ignored page parameters
 | MangaNato | manganato.com | Connection refused for non-browser |
 | MangaKakalot | mangakakalot.com | Connection refused for non-browser |
 
-### Confirmed Defunct Sites
+### Confirmed Defunct Sites (Archived)
 
-| Site | Evidence |
-|------|----------|
-| FlixScans | Connection refused on both .net and .org TLDs |
-| MyComicList | Domain parked - redirects to advertising lander |
+| Site | Evidence | Status |
+|------|----------|--------|
+| FlixScans | Connection refused on both .net and .org TLDs | **Archived** |
+| MyComicList | Domain parked - redirects to advertising lander | **Archived** |
+| HeyToon | HTTP 404 on all endpoints | **Archived** |
 
 ## Configuration
 

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "comix-rhai",
   "name": "Comix",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scraper for Comix (comix.to), a modern manga/manhwa/manhua reader with a large library and multiple scanlation groups.",
   "author": {
     "name": "Tsubaki Community",
@@ -42,7 +42,9 @@
   "source_info": {
     "base_url": "https://comix.to",
     "language": "en",
-    "supported_languages": ["en"],
+    "supported_languages": [
+      "en"
+    ],
     "content_rating": "suggestive",
     "tags": [
       "manga",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "heancms-rhai",
   "name": "HeanCMS",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "Framework parser for HeanCMS-based manga sites (OmegaScans, ReaperScans, QuantumScans, etc.). Configure the base URL in settings to use with your preferred HeanCMS site.",
   "author": {
     "name": "Tsubaki Community",
@@ -20,6 +20,19 @@
   "capabilities": {
     "level": "http_only",
     "allowed_domains": [
+      "omegascans.org",
+      "api.omegascans.org",
+      "media.omegascans.org",
+      "reaperscans.com",
+      "api.reaperscans.com",
+      "media.reaperscans.com",
+      "quantumscans.org",
+      "api.quantumscans.org",
+      "luminousscans.com",
+      "api.luminousscans.com",
+      "flamecomics.com",
+      "api.flamecomics.com",
+      "2xstorage.com",
       "*"
     ],
     "requires_cookies": false,

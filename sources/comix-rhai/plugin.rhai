@@ -76,12 +76,12 @@ fn fetch_browser_wait(url, selector) {
 /// Extract hash_id and slug from a title URL
 /// /title/3rdr3-i-became-the-rogue-first-prince -> hash_id=3rdr3, slug=i-became-the-rogue-first-prince
 fn parse_title_url(url) {
-    let match = regex_find("/title/([^/?#]+)", url);
-    if match == "" {
+    let found = regex_find("/title/([^/?#]+)", url);
+    if found == "" {
         return #{ hash_id: "", slug: "", full: "" };
     }
 
-    let full = match.replace("/title/", "");
+    let full = found.replace("/title/", "");
 
     // Hash ID is the part before the first hyphen followed by the slug
     // But the hash itself can vary in length (e.g., "3rdr3", "xy12z")
@@ -131,11 +131,30 @@ fn extract_manga_json(html, hash_id) {
         status = status_match.replace("\"status\":\"", "").replace("\"", "");
     }
 
-    // Extract poster/cover
+    // Extract poster/cover - handle both old string format and new object format
+    // Old: "poster":"path/to/image"
+    // New: "poster":{"small":"...","medium":"...","large":"..."}
     let poster = "";
-    let poster_match = regex_find("\"poster\":\"([^\"]+)\"", html);
-    if poster_match != "" {
-        poster = poster_match.replace("\"poster\":\"", "").replace("\"", "");
+
+    // First try new object format - extract "large" or "medium" field
+    let poster_large = regex_find("\"poster\":\\{[^}]*\"large\":\"([^\"]+)\"", html);
+    if poster_large != "" {
+        poster = regex_find("\"large\":\"([^\"]+)\"", poster_large);
+        poster = poster.replace("\"large\":\"", "").replace("\"", "");
+    }
+    if poster == "" {
+        let poster_medium = regex_find("\"poster\":\\{[^}]*\"medium\":\"([^\"]+)\"", html);
+        if poster_medium != "" {
+            poster = regex_find("\"medium\":\"([^\"]+)\"", poster_medium);
+            poster = poster.replace("\"medium\":\"", "").replace("\"", "");
+        }
+    }
+    // Fallback to old string format
+    if poster == "" {
+        let poster_match = regex_find("\"poster\":\"([^\"]+)\"", html);
+        if poster_match != "" {
+            poster = poster_match.replace("\"poster\":\"", "").replace("\"", "");
+        }
     }
 
     // Extract year
@@ -206,6 +225,18 @@ fn search_series(query, page, auth) {
     let series = [];
     let seen = #{};
 
+    // Extract cover URLs from DOM images for lookup
+    // Structure: <img alt="Title" src="https://static.comix.to/...">
+    let cover_map = #{};
+    let cover_imgs = html_select(html, "img[src*='static.comix.to']");
+    for img in cover_imgs {
+        let alt = element_attr(img, "alt");
+        let src = element_attr(img, "src");
+        if alt != () && alt != "" && src != () && src != "" {
+            cover_map[alt.to_lower()] = src;
+        }
+    }
+
     // Find all title links in the rendered page
     // Pattern: <a href="/title/{hash_id}-{slug}">
     let title_links = regex_find_all("href=\"(/title/[^\"]+)\"", html);
@@ -242,28 +273,23 @@ fn search_series(query, page, auth) {
                     capitalized.push(`${first}${rest}`);
                 }
             }
-            title = capitalized.reduce(|a, b| `${a} ${b}`);
+            title = capitalized.reduce(|a, b| `${a} ${b}`).trim();
         }
 
         if title == "" {
             continue;
         }
 
-        // Build cover URL
+        // Build cover URL - try DOM lookup by title, then JSON data
         let cover_url = "";
-        if json_data != () && json_data.poster != "" {
-            cover_url = `${CDN_URL}/${json_data.poster}@280.jpg`;
-        }
-
-        // Try to find cover from img tags near the link
-        if cover_url == "" {
-            let img_pattern = "static\\.comix\\.to/[^\"]+";
-            let img_matches = regex_find_all(img_pattern, html);
-            for img in img_matches {
-                if img.contains("@280") || img.contains("@100") {
-                    cover_url = `https://${img}`;
-                    break;
-                }
+        let title_key = title.to_lower();
+        if cover_map[title_key] != () {
+            cover_url = cover_map[title_key];
+        } else if json_data != () && json_data.poster != "" {
+            if json_data.poster.starts_with("http") {
+                cover_url = json_data.poster;
+            } else {
+                cover_url = `${CDN_URL}/${json_data.poster}@280.jpg`;
             }
         }
 
@@ -333,7 +359,12 @@ fn get_series(id_or_url, auth) {
     // Cover URL
     let cover_url = "";
     if json_data != () && json_data.poster != "" {
-        cover_url = `${CDN_URL}/${json_data.poster}`;
+        // Check if poster is already a full URL (new format)
+        if json_data.poster.starts_with("http") {
+            cover_url = json_data.poster;
+        } else {
+            cover_url = `${CDN_URL}/${json_data.poster}`;
+        }
     }
     // Also try from DOM
     if cover_url == "" {
@@ -638,6 +669,17 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
+    // Extract cover URLs from DOM images for lookup
+    let cover_map = #{};
+    let cover_imgs = html_select(html, "img[src*='static.comix.to']");
+    for img in cover_imgs {
+        let alt = element_attr(img, "alt");
+        let src = element_attr(img, "src");
+        if alt != () && alt != "" && src != () && src != "" {
+            cover_map[alt.to_lower()] = src;
+        }
+    }
+
     // Find title links in the rendered browse page
     let title_links = regex_find_all("href=\"(/title/[^\"]+)\"", html);
 
@@ -669,16 +711,24 @@ fn get_latest_updates(page, auth) {
                     capitalized.push(`${first}${rest}`);
                 }
             }
-            title = capitalized.reduce(|a, b| `${a} ${b}`);
+            title = capitalized.reduce(|a, b| `${a} ${b}`).trim();
         }
 
         if title == "" {
             continue;
         }
 
+        // Build cover URL - try DOM lookup by title, then JSON data
         let cover_url = "";
-        if json_data != () && json_data.poster != "" {
-            cover_url = `${CDN_URL}/${json_data.poster}@280.jpg`;
+        let title_key = title.to_lower();
+        if cover_map[title_key] != () {
+            cover_url = cover_map[title_key];
+        } else if json_data != () && json_data.poster != "" {
+            if json_data.poster.starts_with("http") {
+                cover_url = json_data.poster;
+            } else {
+                cover_url = `${CDN_URL}/${json_data.poster}@280.jpg`;
+            }
         }
 
         series.push(#{

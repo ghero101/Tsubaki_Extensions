@@ -25,22 +25,40 @@ const BASE_URL = "https://mto.to";
 /// Falls back to HTTP if browser not available
 fn fetch_html(url) {
     if browser_is_available() {
-        let browser_id = browser_launch();
+        try {
+            let browser_id = browser_launch();
 
-        // Navigate to the page
-        browser_goto(browser_id, url);
+            // Navigate to the page
+            browser_goto(browser_id, url);
 
-        // Wait for Vue.js content to render
-        // Look for common content elements
-        browser_wait_for_selector(browser_id, "div.item-cover, div.series-cover, div.chapter-page", 10000);
+            // Wait for body to be ready, then give Vue time to render
+            try {
+                browser_wait_for_selector(browser_id, "body", 5000);
+            } catch {}
 
-        // Get the rendered HTML
-        let html = browser_get_html(browser_id);
+            // Wait additional time for Vue.js to render content
+            // Try multiple selectors that might indicate content is loaded
+            try {
+                browser_wait_for_selector(browser_id, "a[href*='/title/'], a[href*='/chapter/'], div.item, div.main", 10000);
+            } catch {
+                // If specific selectors fail, just wait a bit for Vue to render
+                try {
+                    browser_wait_for_selector(browser_id, "div, main, article", 5000);
+                } catch {}
+            }
 
-        // Close browser session to free resources
-        browser_close(browser_id);
+            // Get the rendered HTML
+            let html = browser_get_html(browser_id);
 
-        return html;
+            // Close browser session to free resources
+            browser_close(browser_id);
+
+            if html != "" && html.len() > 500 {
+                return html;
+            }
+        } catch {
+            // Browser failed, fall through to HTTP
+        }
     }
 
     // Fallback to HTTP (will likely return empty Vue shell)
@@ -49,30 +67,47 @@ fn fetch_html(url) {
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5"
     };
-    http_get_with_headers(url, headers)
+    try {
+        return http_get_with_headers(url, headers);
+    } catch {
+        return "";
+    }
 }
 
 /// Fetch HTML and also get script execution results (for chapter pages)
 fn fetch_html_with_script(url, script) {
     if browser_is_available() {
-        let browser_id = browser_launch();
+        try {
+            let browser_id = browser_launch();
 
-        // Navigate to the page
-        browser_goto(browser_id, url);
+            // Navigate to the page
+            browser_goto(browser_id, url);
 
-        // Wait for content to load
-        browser_wait_for_selector(browser_id, "div.chapter-page, img.page-img", 10000);
+            // Wait for content to load - try multiple selectors
+            try {
+                browser_wait_for_selector(browser_id, "div.chapter-page, img.page-img, div.viewer, div.reader", 15000);
+            } catch {
+                try {
+                    browser_wait_for_selector(browser_id, "body", 5000);
+                } catch {}
+            }
 
-        // Execute script to extract data
-        let script_result = browser_execute_script(browser_id, script);
+            // Execute script to extract data
+            let script_result = "";
+            try {
+                script_result = browser_execute_script(browser_id, script);
+            } catch {}
 
-        // Get the rendered HTML
-        let html = browser_get_html(browser_id);
+            // Get the rendered HTML
+            let html = browser_get_html(browser_id);
 
-        // Close browser session
-        browser_close(browser_id);
+            // Close browser session
+            browser_close(browser_id);
 
-        return #{ html: html, script_result: script_result };
+            return #{ html: html, script_result: script_result };
+        } catch {
+            return #{ html: "", script_result: "" };
+        }
     }
 
     return #{ html: "", script_result: "" };

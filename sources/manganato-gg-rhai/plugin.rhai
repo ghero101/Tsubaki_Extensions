@@ -15,38 +15,32 @@
 //   Cover:    https://img-r1.2xstorage.com/thumb/{slug}.webp
 //   Pages:    https://img-r1.2xstorage.com/{slug}/{chapter}/{page}.webp
 
-// Mirror sites in priority order
-const MIRRORS = [
-    "https://www.manganato.gg",
-    "https://www.mangakakalot.gg",
-    "https://www.nelomanga.net",
-    "https://www.natomanga.com"
-];
+// Mirror sites in priority order (inlined in functions due to Rhai scoping)
+// Primary: manganato.gg, Fallbacks: mangakakalot.gg, nelomanga.net, natomanga.com
 
-const IMG_CDN = "https://img-r1.2xstorage.com";
-const IMG_CDN_BACKUP = "https://imgs-2.2xstorage.com";
-
-// Simple counter for round-robin distribution
-// In Rhai we use a global-ish approach with a helper
-let _mirror_index = 0;
-
-/// Get the next mirror URL using round-robin
+/// Get the primary mirror URL
 fn get_mirror() {
-    let idx = _mirror_index % MIRRORS.len();
-    _mirror_index += 1;
-    MIRRORS[idx]
+    "https://www.manganato.gg"
 }
 
-/// Get all mirrors starting from a specific one for fallback
+/// Get all mirrors for fallback (try each one)
 fn get_mirror_list() {
-    let idx = _mirror_index % MIRRORS.len();
-    _mirror_index += 1;
-    let mirrors = [];
-    for i in 0..MIRRORS.len() {
-        let m = (idx + i) % MIRRORS.len();
-        mirrors.push(MIRRORS[m]);
-    }
-    mirrors
+    [
+        "https://www.manganato.gg",
+        "https://www.mangakakalot.gg",
+        "https://www.nelomanga.net",
+        "https://www.natomanga.com"
+    ]
+}
+
+/// Get image CDN URL
+fn get_img_cdn() {
+    "https://img-r1.2xstorage.com"
+}
+
+/// Get backup image CDN URL
+fn get_img_cdn_backup() {
+    "https://imgs-2.2xstorage.com"
 }
 
 /// Build request headers
@@ -121,7 +115,7 @@ fn fetch_url(url) {
     if html == "" || html.len() < 500 {
         let referer = regex_find("https?://[^/]+", url);
         if referer == "" {
-            referer = MIRRORS[0];
+            referer = get_mirror();
         }
         try {
             html = http_get_with_headers(url, get_headers(referer));
@@ -237,7 +231,8 @@ fn extract_chapter_number(url, title) {
 
 /// Build cover URL from slug
 fn build_cover_url(slug) {
-    `${IMG_CDN}/thumb/${slug}.webp`
+    let cdn = get_img_cdn();
+    `${cdn}/thumb/${slug}.webp`
 }
 
 // === Addon Interface Functions ===
@@ -247,7 +242,7 @@ fn get_source_info() {
     #{
         id: "manganato-gg-rhai",
         name: "MangaNato.gg",
-        base_url: MIRRORS[0],
+        base_url: get_mirror(),
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
@@ -535,7 +530,7 @@ fn get_series(id_or_url, auth) {
         tags: [],
         year: (),
         content_rating: "suggestive",
-        url: `${MIRRORS[0]}/manga/${slug}`,
+        url: `${get_mirror()}/manga/${slug}`,
         extra: #{}
     }
 }
@@ -632,7 +627,7 @@ fn get_chapter_pages(chapter_id, auth) {
 
     // Fetch the chapter reader page
     let html = "";
-    let used_mirror = MIRRORS[0];
+    let used_mirror = get_mirror();
     let mirrors = get_mirror_list();
 
     for mirror in mirrors {
@@ -689,7 +684,7 @@ fn get_chapter_pages(chapter_id, auth) {
         let image_paths = regex_find_all("\"([^\"]+)\"", array_content);
 
         // Find CDN URLs from the page
-        let cdn_url = IMG_CDN;
+        let cdn_url = get_img_cdn();
         let cdn_match = regex_find("(https://[^\"']+2xstorage\\.com[^\"']*)", html);
         if cdn_match != "" {
             // Extract just the base CDN URL
