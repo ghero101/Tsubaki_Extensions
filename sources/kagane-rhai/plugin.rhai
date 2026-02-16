@@ -32,24 +32,74 @@ fn has_real_content(html) {
 }
 
 // ============================================================================
-// Fetch Helpers — Browser FIRST
+// Fetch Helpers — Hybrid: FlareSolverr cookies + Browser rendering
 // ============================================================================
 
-/// Fetch a page using browser automation first (required for Next.js rendering).
-/// Falls back to FlareSolverr then HTTP, but these will return the empty shell.
+/// Launch browser, inject Cloudflare cookies, navigate, and wait for content.
+/// Returns #{ browser_id, html } with browser still open, or throws on failure.
+fn browser_with_cookies(url, wait_selector, cookies) {
+    let browser_id = browser_launch_stealth();
+
+    // Navigate to the URL first (Cloudflare challenge page loads, but
+    // the tab URL is now on kagane.org domain so cookies bind correctly)
+    try {
+        browser_goto(browser_id, url);
+    } catch {}
+
+    // Inject FlareSolverr's Cloudflare cookies via CDP
+    browser_set_cookies(browser_id, cookies);
+
+    // Reload the page — Cloudflare sees valid cf_clearance → passes through
+    browser_goto(browser_id, url);
+
+    // Wait for React to render actual content
+    try {
+        browser_wait_for_selector(browser_id, wait_selector, 25000);
+    } catch {
+        try {
+            browser_wait_for_selector(browser_id, "a[aria-label], div[data-slot='card'], h1", 15000);
+        } catch {}
+    }
+
+    let html = browser_get_html(browser_id);
+    #{ browser_id: browser_id, html: html }
+}
+
+/// Fetch a page using the hybrid approach:
+/// 1. FlareSolverr solves Cloudflare → extract cookies
+/// 2. Stealth browser + injected cookies → renders React content
+/// Falls back to browser-only, then FlareSolverr-only, then HTTP.
 fn fetch_page(url, wait_selector) {
-    // Method 1: Browser automation (ONLY method that renders React content)
+    // Method 1: Hybrid — FlareSolverr cookies + Browser rendering
+    if browser_is_available() && flaresolverr_is_available() {
+        try {
+            let solver = flaresolverr_get_cookies(url, 60000);
+            let cookies = solver.cookies;
+
+            if cookies.len() > 0 {
+                let result = browser_with_cookies(url, wait_selector, cookies);
+                let html = result.html;
+                try { browser_close(result.browser_id); } catch {}
+
+                if html != "" && has_real_content(html) {
+                    return html;
+                }
+            }
+        } catch {
+            // Hybrid failed, try browser-only
+        }
+    }
+
+    // Method 2: Browser-only (stealth, relies on built-in anti-detection)
     if browser_is_available() {
         try {
             let browser_id = browser_launch_stealth();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 35000);
 
-            // Wait for React to render actual content
             try {
                 browser_wait_for_selector(browser_id, wait_selector, 25000);
             } catch {
-                // Selector might not match exactly, wait for any real content
                 try {
                     browser_wait_for_selector(browser_id, "a[aria-label], div[data-slot='card'], h1", 15000);
                 } catch {}
@@ -61,27 +111,23 @@ fn fetch_page(url, wait_selector) {
             if html != "" && has_real_content(html) {
                 return html;
             }
-        } catch {
-            // Browser failed, fall through
-        }
+        } catch {}
     }
 
-    // Method 2: FlareSolverr fallback (solves Cloudflare but returns pre-render shell)
+    // Method 3: FlareSolverr-only (solves Cloudflare but returns pre-render shell)
     if flaresolverr_is_available() {
         try {
             let html = flaresolverr_get(url, 60000);
             if html != "" && has_real_content(html) {
                 return html;
             }
-        } catch {
-            // Fall through to HTTP
-        }
+        } catch {}
     }
 
-    // Method 3: HTTP fallback (will get Cloudflare blocked or empty shell)
+    // Method 4: HTTP fallback (will get Cloudflare blocked or empty shell)
     try {
         let headers = #{
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
             "Referer": BASE_URL
@@ -95,6 +141,30 @@ fn fetch_page(url, wait_selector) {
 /// Fetch a page and also execute a JavaScript snippet in the browser context.
 /// Returns #{ html, script_result }.
 fn fetch_page_with_script(url, wait_selector, script) {
+    // Method 1: Hybrid — FlareSolverr cookies + Browser rendering + script
+    if browser_is_available() && flaresolverr_is_available() {
+        try {
+            let solver = flaresolverr_get_cookies(url, 60000);
+            let cookies = solver.cookies;
+
+            if cookies.len() > 0 {
+                let result = browser_with_cookies(url, wait_selector, cookies);
+                let browser_id = result.browser_id;
+
+                let script_result = "";
+                try {
+                    script_result = browser_execute_script(browser_id, script);
+                } catch {}
+
+                let html = browser_get_html(browser_id);
+                try { browser_close(browser_id); } catch {}
+
+                return #{ html: html, script_result: script_result };
+            }
+        } catch {}
+    }
+
+    // Method 2: Browser-only
     if browser_is_available() {
         try {
             let browser_id = browser_launch_stealth();

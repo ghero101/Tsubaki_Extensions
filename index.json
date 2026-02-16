@@ -884,7 +884,7 @@
         {
             "id": "kagane-rhai",
             "name": "Kagane",
-            "version": "1.4.0",
+            "version": "1.5.0",
             "description": "Scraper for Kagane (kagane.org), a manga reading site with a large collection including exclusive content.",
             "author": "Tsubaki Community",
             "technology": "rhai",
@@ -893,7 +893,7 @@
             "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane-rhai/icon.png",
             "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_latest.zip",
             "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane-rhai/manifest.json",
-            "latest_version": "1.4.0",
+            "latest_version": "1.5.0",
             "versions": {
                 "1.0.0": {
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-0-0.zip",
@@ -909,6 +909,11 @@
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-4-0.zip",
                     "changelog": "Rewrite for browser-first fetching. Fixes all endpoints for Next.js client-rendered site.",
                     "released_at": "2026-02-16T00:00:00Z"
+                },
+                "1.5.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-5-0.zip",
+                    "changelog": "Hybrid Cloudflare bypass: FlareSolverr cookies injected into browser via CDP for reliable content rendering.",
+                    "released_at": "2026-02-16T12:00:00Z"
                 }
             }
         },
