@@ -844,16 +844,16 @@
                    {
                        "id":  "kagane-rhai",
                        "name":  "Kagane",
-                       "version":  "1.3.1",
+                       "version":  "1.4.0",
                        "description":  "Scraper for Kagane (kagane.org), a manga reading site with a large collection including exclusive content.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-3-1.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_latest.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane-rhai/manifest.json",
-                       "latest_version":  "1.3.1",
+                       "latest_version":  "1.4.0",
                        "versions":  {
                                         "1.0.0":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-0-0.zip",
@@ -864,6 +864,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-3-1.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-02-05T12:00:00Z"
+                                                  },
+                                        "1.4.0":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-4-0.zip",
+                                                      "changelog":  "Rewrite for browser-first fetching. Fixes all endpoints for Next.js client-rendered site.",
+                                                      "released_at":  "2026-02-16T00:00:00Z"
                                                   }
                                     }
                    },
