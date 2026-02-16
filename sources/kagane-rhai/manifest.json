@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "kagane-rhai",
   "name": "Kagane",
-  "version": "1.5.0",
+  "version": "1.7.0",
   "description": "Scraper for Kagane (kagane.org), a manga reading site with a large collection including exclusive content.",
   "author": {
     "name": "Tsubaki Community",
@@ -21,7 +21,8 @@
     "level": "browser_automation",
     "allowed_domains": [
       "kagane.org",
-      "www.kagane.org"
+      "www.kagane.org",
+      "yuzuki.kagane.org"
     ],
     "requires_cookies": true,
     "requires_javascript": true,
