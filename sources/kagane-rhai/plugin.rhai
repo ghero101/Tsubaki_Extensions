@@ -494,14 +494,20 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Cover image
+    // Cover image — check cover_image_id first, then series_covers array
     let cover = "";
     let cover_id = data["cover_image_id"];
     if cover_id != () && cover_id != "" {
         cover = `${API_BASE}/image/${cover_id}/compressed`;
     }
     if cover == "" {
-        cover = `${API_BASE}/image/${sid}/compressed`;
+        let covers = data["series_covers"];
+        if covers != () && type_of(covers) == "array" && covers.len() > 0 {
+            let img_id = covers[0]["image_id"];
+            if img_id != () && img_id != "" {
+                cover = `${API_BASE}/image/${img_id}/compressed`;
+            }
+        }
     }
 
     // Content rating
