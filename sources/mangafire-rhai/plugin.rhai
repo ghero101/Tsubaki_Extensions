@@ -27,54 +27,80 @@ fn get_headers() {
     }
 }
 
-/// Fetch page via HTTP first, browser as fallback.
-/// MangaFire filter/search/series pages serve full HTML without JS.
-/// Browser is only needed for reader pages (VRF tokens) or if HTTP gets blocked.
+/// Check if HTML is a CloudFlare challenge page (not real content)
+fn is_cloudflare_challenge(html) {
+    if html.contains("Just a moment") && html.contains("_cf_chl_opt") {
+        return true;
+    }
+    if html.contains("challenge-platform") && html.contains("Enable JavaScript") {
+        return true;
+    }
+    false
+}
+
+/// Fetch page via HTTP first, FlareSolverr second, browser last.
+/// MangaFire filter/browse/series pages serve full HTML without JS.
 fn fetch_http_first(url) {
-    // Try HTTP first - faster and more reliable for listing pages
+    // Tier 1: HTTP first
     try {
         let html = http_get_with_headers(url, get_headers());
-        if html.len() > 1000 {
+        if html.len() > 1000 && !is_cloudflare_challenge(html) {
             return html;
         }
-    } catch {
-        // Fall through to browser
+    } catch {}
+
+    // Tier 2: FlareSolverr - reliable CF bypass
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 1000 && !is_cloudflare_challenge(html) {
+                return html;
+            }
+        } catch {}
     }
 
-    // Browser fallback for Cloudflare-blocked requests
+    // Tier 3: Browser
     if browser_is_available() {
         try {
             let browser_id = browser_launch();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 20000);
-            browser_wait_for_selector(browser_id, "body", 10000);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, "body", 8000);
             let html = browser_get_html(browser_id);
             browser_close(browser_id);
             return html;
-        } catch {
-            // Fall through
-        }
+        } catch {}
     }
 
     ""
 }
 
-/// Fetch page using browser automation (required for reader/AJAX pages)
+/// Fetch page for reader/AJAX (FlareSolverr first, then browser)
 fn fetch_page(url) {
+    // Tier 1: FlareSolverr
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 1000 && !is_cloudflare_challenge(html) {
+                return html;
+            }
+        } catch {}
+    }
+
+    // Tier 2: Browser
     if browser_is_available() {
         try {
             let browser_id = browser_launch();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 20000);
-            browser_wait_for_selector(browser_id, "body", 10000);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, "body", 8000);
             let html = browser_get_html(browser_id);
             browser_close(browser_id);
             return html;
-        } catch {
-            // Fall through to HTTP
-        }
+        } catch {}
     }
 
+    // Tier 3: HTTP
     try {
         return http_get_with_headers(url, get_headers());
     } catch {
@@ -82,22 +108,32 @@ fn fetch_page(url) {
     }
 }
 
-/// Fetch page with specific content wait (browser-first for dynamic content)
+/// Fetch page with specific content wait (FlareSolverr first, then browser)
 fn fetch_page_wait(url, selector) {
+    // Tier 1: FlareSolverr
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 1000 && !is_cloudflare_challenge(html) {
+                return html;
+            }
+        } catch {}
+    }
+
+    // Tier 2: Browser with selector wait
     if browser_is_available() {
         try {
             let browser_id = browser_launch();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 20000);
-            browser_wait_for_selector(browser_id, selector, 15000);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, selector, 12000);
             let html = browser_get_html(browser_id);
             browser_close(browser_id);
             return html;
-        } catch {
-            // Fall through to HTTP
-        }
+        } catch {}
     }
 
+    // Tier 3: HTTP
     try {
         return http_get_with_headers(url, get_headers());
     } catch {
@@ -160,8 +196,8 @@ fn search_series(query, page, auth) {
     let encoded = url_encode(query);
     let url = `${BASE_URL}/filter?keyword=${encoded}&language[]=en&page=${page}`;
 
-    // Search requires browser (Cloudflare Turnstile protects keyword queries)
-    let html = fetch_page_wait(url, "div.unit, div.original, a[href*='/manga/']");
+    // Try HTTP first - MangaFire filter pages often serve full HTML
+    let html = fetch_http_first(url);
 
     if html == "" {
         return #{ series: [], has_more: false, total: 0 };
@@ -579,17 +615,28 @@ fn get_chapter_pages(chapter_id, auth) {
         url = `${BASE_URL}${chapter_id}`;
     }
 
-    // Navigate to the reader page with browser
-    // MangaFire loads images dynamically via AJAX with VRF tokens
-    // Browser automation handles this automatically
+    // Reader pages need JS for VRF tokens and image loading
     let html = "";
-    if browser_is_available() {
+
+    // Tier 1: FlareSolverr - bypasses CF and renders JS
+    if flaresolverr_is_available() {
+        try {
+            html = flaresolverr_get(url, 30000);
+            if html.len() < 1000 || is_cloudflare_challenge(html) {
+                html = "";
+            }
+        } catch {
+            html = "";
+        }
+    }
+
+    // Tier 2: Browser automation
+    if html == "" && browser_is_available() {
         try {
             let browser_id = browser_launch();
             browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 20000);
-            // Wait for reader images to load
-            browser_wait_for_selector(browser_id, "img.page-img, img[src*='mfcdn'], div.reader img, canvas", 20000);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, "img.page-img, img[src*='mfcdn'], div.reader img, canvas", 15000);
             html = browser_get_html(browser_id);
             browser_close(browser_id);
         } catch {
@@ -597,8 +644,8 @@ fn get_chapter_pages(chapter_id, auth) {
         }
     }
 
+    // Tier 3: HTTP fallback
     if html == "" {
-        // HTTP fallback (images likely won't load without JS)
         try {
             html = http_get_with_headers(url, get_headers());
         } catch {

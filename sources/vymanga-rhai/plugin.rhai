@@ -24,24 +24,101 @@ const BASE_URL = "https://vymanga.net";
 // Helper Functions
 // ============================================================================
 
-/// Fetch HTML using browser automation (bypasses Cloudflare)
-/// Falls back to HTTP if browser not available
+/// Check if HTML is a CloudFlare challenge page (not real content)
+fn is_cloudflare_challenge(html) {
+    if html.contains("Just a moment") && html.contains("_cf_chl_opt") {
+        return true;
+    }
+    if html.contains("challenge-platform") && html.contains("Enable JavaScript") {
+        return true;
+    }
+    false
+}
+
+/// Fetch HTML with multi-tier fallback:
+/// 1. HTTP (fastest, works for non-CF pages like search)
+/// 2. FlareSolverr (bypasses CloudFlare challenges)
+/// 3. Browser automation (last resort)
 fn fetch_html(url) {
-    if browser_is_available() {
-        let browser_id = browser_launch();
-        browser_goto(browser_id, url);
-        browser_wait_for_cloudflare(browser_id, 15000);
-
-        // Wait for content to load
-        browser_wait_for_selector(browser_id, "a[href*='/manga/'], .book-list, .comic-thumb, h1", 10000);
-
-        let html = browser_get_html(browser_id);
-        browser_close(browser_id);
-        return html;
+    // Tier 1: Try HTTP first - fastest for non-CF pages
+    try {
+        let html = http_get_with_headers(url, get_headers());
+        if html.len() > 1000 && !is_cloudflare_challenge(html) {
+            return html;
+        }
+    } catch {
+        // Fall through
     }
 
-    // Fallback to HTTP (may fail with Cloudflare)
-    http_get_with_headers(url, get_headers())
+    // Tier 2: FlareSolverr - reliable CloudFlare bypass
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 1000 && !is_cloudflare_challenge(html) {
+                return html;
+            }
+        } catch {
+            // Fall through
+        }
+    }
+
+    // Tier 3: Browser automation - last resort
+    if browser_is_available() {
+        try {
+            let browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, "a[href*='/manga/'], .book-list, .comic-thumb, h1", 10000);
+            let html = browser_get_html(browser_id);
+            browser_close(browser_id);
+            return html;
+        } catch {
+            // Fall through
+        }
+    }
+
+    ""
+}
+
+/// Fetch HTML for reader pages (need images to be loaded).
+/// Uses FlareSolverr for CF bypass, browser for JS-rendered content.
+fn fetch_html_browser(url) {
+    // Tier 1: FlareSolverr - gets past CF, but images may be lazy-loaded
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 1000 && !is_cloudflare_challenge(html) {
+                // Check if the page has actual image content
+                if html.contains("cdnxyz") || html.contains("vycdn") || html.contains("data-src") || html.contains("blogspot.com/drive-storage") {
+                    return html;
+                }
+            }
+        } catch {
+            // Fall through
+        }
+    }
+
+    // Tier 2: Browser automation - can render JS and load lazy images
+    if browser_is_available() {
+        try {
+            let browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, "img[src*='cdn'], img[data-src], .reading-content img", 10000);
+            let html = browser_get_html(browser_id);
+            browser_close(browser_id);
+            return html;
+        } catch {
+            // Fall through
+        }
+    }
+
+    // Tier 3: HTTP fallback
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
 }
 
 /// Get headers for requests (used for HTTP fallback)
@@ -210,7 +287,8 @@ fn is_valid_page_url(url) {
     }
 
     // CDN URLs
-    if url_lower.contains("cdnxyz") || url_lower.contains("vycdn") {
+    if url_lower.contains("cdnxyz") || url_lower.contains("vycdn") ||
+       url_lower.contains("blogspot.com/drive-storage") || url_lower.contains("bp.blogspot.com") {
         return true;
     }
 
@@ -306,6 +384,46 @@ fn search_series(query, page, auth) {
             if parts.len() > 0 {
                 title = parts[0].trim();
             }
+        }
+
+        // If title is empty after cleanup, derive from slug
+        if title == "" || title.len() < 2 {
+            title = slug.split("-");
+            // Join by spaces and capitalize
+            let rebuilt = "";
+            for word in title {
+                if rebuilt != "" { rebuilt += " "; }
+                if word.len() > 0 {
+                    // Remove trailing hash codes (4-char alphanumeric at end of slug)
+                    rebuilt += word;
+                }
+            }
+            title = rebuilt.trim();
+            // Remove trailing short hash (e.g. "solo leveling 78ay" -> "solo leveling")
+            if title.len() > 5 {
+                let last_space = 0;
+                for i in 0..title.len() {
+                    if title[i] == ' ' { last_space = i; }
+                }
+                let last_word = title.sub_string(last_space + 1);
+                // If last word is short and looks like a hash (alphanumeric mix), remove it
+                if last_word.len() <= 4 && last_word.len() >= 2 {
+                    let has_digit = false;
+                    let has_alpha = false;
+                    for c in last_word.chars() {
+                        if c >= '0' && c <= '9' { has_digit = true; }
+                        if c >= 'a' && c <= 'z' { has_alpha = true; }
+                    }
+                    if has_digit && has_alpha {
+                        title = title.sub_string(0, last_space).trim();
+                    }
+                }
+            }
+        }
+
+        // Final check
+        if title == "" || title.len() < 2 {
+            continue;
         }
 
         // Get cover image
@@ -531,11 +649,17 @@ fn get_chapters(series_id, auth) {
     let chapters = [];
     let seen = #{};
 
-    // Find chapter links - they contain the series slug and additional path
-    let slug = extract_manga_slug(url);
+    // VyManga uses list-group-item links with external redirect URLs.
+    // Structure: <a class="list-chapter" href="https://aovheroes.com/rds/..." id="chapter-200">
+    //              <span>Chapter 200 : Side Story 21 - The End</span>
+    //              <p class="text-right font-italic small">Jun 26, 2025</p>
+    //            </a>
+    let chapter_links = html_select(html, "a.list-chapter");
 
-    // Select all links that look like chapter links
-    let chapter_links = html_select(html, "a[href*='/manga/']");
+    // Fallback: try id-based selector if class-based finds nothing
+    if chapter_links.len() == 0 {
+        chapter_links = html_select(html, "a[id^='chapter-']");
+    }
 
     for link in chapter_links {
         let href = element_attr(link, "href");
@@ -543,63 +667,75 @@ fn get_chapters(series_id, auth) {
             continue;
         }
 
-        // Check if this is a chapter link (has additional path after slug)
-        let path_after_manga = "";
-        if href.contains("/manga/") {
-            let parts = href.split("/manga/");
+        // Get chapter ID from the id attribute (e.g., "chapter-200")
+        let ch_id = element_attr(link, "id");
+        if ch_id == () || ch_id == "" {
+            continue;
+        }
+
+        // Skip duplicates (some chapters appear twice - in first/last buttons and in list)
+        if seen.contains(ch_id) {
+            continue;
+        }
+        seen[ch_id] = true;
+
+        // Extract chapter number from id attribute
+        let ch_num = "0";
+        if ch_id.contains("chapter-") {
+            let parts = ch_id.split("chapter-");
             if parts.len() > 1 {
-                path_after_manga = parts[1];
+                ch_num = parts[1];
             }
         }
 
-        // Chapter links have format: /manga/series-slug/chapter-slug
-        // So they must have at least one "/" in the path after /manga/
-        if !path_after_manga.contains("/") {
-            continue;
+        // Get chapter text from span element
+        let chapter_text = "";
+        let spans = html_select(link, "span");
+        if spans.len() > 0 {
+            chapter_text = element_text(spans[0]).trim();
+        }
+        if chapter_text == "" {
+            chapter_text = element_text(link).trim();
         }
 
-        // Extract chapter slug (everything after the series slug)
-        let path_parts = path_after_manga.split("/");
-        if path_parts.len() < 2 {
-            continue;
-        }
-
-        let chapter_slug = path_parts[1].split("?")[0];
-        if chapter_slug == "" {
-            continue;
-        }
-
-        // Skip duplicates
-        if seen.contains(chapter_slug) {
-            continue;
-        }
-        seen[chapter_slug] = true;
-
-        // Get chapter text
-        let chapter_text = element_text(link).trim();
-
-        // Extract chapter number
-        let ch_num = extract_chapter_number(href, chapter_text);
-
-        // Get title if different from chapter number
+        // Extract title from chapter text (e.g., "Chapter 200 : Side Story 21 - The End")
         let title = ();
-        if chapter_text != "" && !chapter_text.to_lower().starts_with("ch") {
-            title = chapter_text;
+        if chapter_text.contains(":") {
+            let colon_parts = chapter_text.split(":");
+            if colon_parts.len() > 1 {
+                // Join everything after the first colon
+                let title_text = "";
+                for i in 1..colon_parts.len() {
+                    if title_text != "" { title_text += ":"; }
+                    title_text += colon_parts[i];
+                }
+                title_text = title_text.trim();
+                if title_text != "" && title_text.len() > 1 {
+                    title = title_text;
+                }
+            }
         }
 
-        // Build full URL
-        let chapter_url = make_full_url(href);
+        // Extract published date from <p> element
+        let published_at = ();
+        let date_els = html_select(link, "p");
+        if date_els.len() > 0 {
+            let date_text = element_text(date_els[0]).trim();
+            if date_text != "" {
+                published_at = date_text;
+            }
+        }
 
         chapters.push(#{
-            id: chapter_url,
+            id: href,
             series_id: series_id,
             number: ch_num,
             title: title,
             volume: (),
             language: "en",
             scanlator: (),
-            url: chapter_url,
-            published_at: (),
+            url: href,
+            published_at: published_at,
             page_count: (),
             extra: #{}
         });
@@ -616,15 +752,18 @@ fn get_chapter_pages(chapter_id, auth) {
         url = `${BASE_URL}${chapter_id}`;
     }
 
-    let html = fetch_html(url);
+    // Reader pages need browser for lazy-loaded images
+    let html = fetch_html_browser(url);
 
     let pages = [];
     let idx = 0;
     let seen_urls = #{};
 
     // Try multiple selectors for page images
-    // VyManga typically uses a reader container with images
+    // VyManga serves reading pages via redirect (aov-news.com) with entry-content container
+    // and blogspot.com/drive-storage image URLs
     let selectors = [
+        ".entry-content img",
         ".reading-content img",
         ".chapter-content img",
         ".reader-content img",
@@ -642,16 +781,18 @@ fn get_chapter_pages(chapter_id, auth) {
             let img_url = element_attr(img, "src");
 
             // Try various data attributes for lazy loading
-            if img_url == () || img_url == "" || img_url.contains("blank.gif") {
+            // Also skip data: URIs (base64 placeholder images)
+            // Skip placeholder images: blank.gif, data URIs, loading spinners
+            if img_url == () || img_url == "" || img_url.contains("blank.gif") || img_url.starts_with("data:") || img_url.contains("loading") {
                 img_url = element_attr(img, "data-src");
             }
-            if img_url == () || img_url == "" || img_url.contains("blank.gif") {
+            if img_url == () || img_url == "" || img_url.contains("blank.gif") || img_url.starts_with("data:") || img_url.contains("loading") {
                 img_url = element_attr(img, "data-lazy");
             }
-            if img_url == () || img_url == "" || img_url.contains("blank.gif") {
+            if img_url == () || img_url == "" || img_url.contains("blank.gif") || img_url.starts_with("data:") || img_url.contains("loading") {
                 img_url = element_attr(img, "data-original");
             }
-            if img_url == () || img_url == "" || img_url.contains("blank.gif") {
+            if img_url == () || img_url == "" || img_url.contains("blank.gif") || img_url.starts_with("data:") || img_url.contains("loading") {
                 img_url = element_attr(img, "data-lazy-src");
             }
 
@@ -689,7 +830,7 @@ fn get_chapter_pages(chapter_id, auth) {
 
         for img in all_imgs {
             let img_url = element_attr(img, "src");
-            if img_url == () || img_url == "" || img_url.contains("blank.gif") {
+            if img_url == () || img_url == "" || img_url.contains("blank.gif") || img_url.starts_with("data:") || img_url.contains("loading") {
                 img_url = element_attr(img, "data-src");
             }
 
@@ -762,8 +903,22 @@ fn get_latest_updates(page, auth) {
         seen[slug] = true;
 
         let title = element_text(link).trim();
+
+        // Try title attribute or img alt
         if title == "" || title.len() < 2 {
-            continue;
+            let title_attr = element_attr(link, "title");
+            if title_attr != () && title_attr != "" {
+                title = title_attr.trim();
+            }
+        }
+        if title == "" || title.len() < 2 {
+            let imgs_inner = html_select(link, "img");
+            if imgs_inner.len() > 0 {
+                let alt = element_attr(imgs_inner[0], "alt");
+                if alt != () && alt != "" {
+                    title = alt.trim();
+                }
+            }
         }
 
         // Clean title
@@ -774,7 +929,12 @@ fn get_latest_updates(page, auth) {
             }
         }
 
-        if title == "" {
+        // Slug-based fallback
+        if title == "" || title.len() < 2 {
+            title = slug.replace("-", " ").trim();
+        }
+
+        if title == "" || title.len() < 2 {
             continue;
         }
 
@@ -853,8 +1013,22 @@ fn get_popular(page, auth) {
         seen[slug] = true;
 
         let title = element_text(link).trim();
+
+        // Try title attribute or img alt
         if title == "" || title.len() < 2 {
-            continue;
+            let title_attr = element_attr(link, "title");
+            if title_attr != () && title_attr != "" {
+                title = title_attr.trim();
+            }
+        }
+        if title == "" || title.len() < 2 {
+            let imgs_inner = html_select(link, "img");
+            if imgs_inner.len() > 0 {
+                let alt = element_attr(imgs_inner[0], "alt");
+                if alt != () && alt != "" {
+                    title = alt.trim();
+                }
+            }
         }
 
         // Clean title
@@ -865,7 +1039,12 @@ fn get_popular(page, auth) {
             }
         }
 
-        if title == "" {
+        // Slug-based fallback
+        if title == "" || title.len() < 2 {
+            title = slug.replace("-", " ").trim();
+        }
+
+        if title == "" || title.len() < 2 {
             continue;
         }
 

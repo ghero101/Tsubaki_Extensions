@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangafire-rhai",
   "name": "MangaFire",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scraper for MangaFire (mangafire.to), a popular manga aggregator with multi-language support and a large catalog.",
   "author": {
     "name": "Tsubaki Community",

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "vymanga-rhai",
   "name": "VyManga",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "Scraper for VyManga (vymanga.net), a free manga reader with an extensive library of manga, manhwa, and manhua titles.",
   "author": {
     "name": "Tsubaki Community",
@@ -23,7 +23,10 @@
       "vymanga.net",
       "vymanga.org",
       "cdnxyz.xyz",
-      "vycdn.net"
+      "vycdn.net",
+      "aovheroes.com",
+      "aov-news.com",
+      "bp.blogspot.com"
     ],
     "requires_cookies": true,
     "requires_javascript": true,

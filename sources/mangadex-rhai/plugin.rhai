@@ -195,7 +195,14 @@ fn map_status(status) {
 /// Build content rating query parameters based on settings.
 /// Returns the query string portion for content ratings.
 fn build_content_rating_params() {
-    let include_adult = if settings.include_adult_content != () { settings.include_adult_content } else { false };
+    let include_adult = false;
+    try {
+        if settings.include_adult_content != () {
+            include_adult = settings.include_adult_content;
+        }
+    } catch {
+        // Settings not available or field missing - default to safe only
+    }
 
     // Always include safe and suggestive
     let params = "contentRating[]=safe&contentRating[]=suggestive";
@@ -273,11 +280,21 @@ fn get_source_info() {
     }
 }
 
+/// Helper: safely get preferred language from settings
+fn get_preferred_language() {
+    try {
+        if settings.preferred_language != () {
+            return settings.preferred_language;
+        }
+    } catch {}
+    return "en";
+}
+
 /// Search for series matching a query.
 /// Note: 'settings' is injected as a scope variable by the host
 fn search_series(query, page, auth) {
     let offset = (page - 1) * 25;
-    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let preferred_lang = get_preferred_language();
     let content_rating_params = build_content_rating_params();
 
     let url = `${BASE_URL}/manga?title=${url_encode(query)}&limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&${content_rating_params}`;
@@ -314,7 +331,7 @@ fn get_series_details(id_or_url, auth) {
         id = id_or_url.split("/")[4];
     }
 
-    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let preferred_lang = get_preferred_language();
     let url = `${BASE_URL}/manga/${id}?includes[]=cover_art&includes[]=author&includes[]=artist`;
 
     let response_text = auth_http_get(url, auth);
@@ -332,7 +349,7 @@ fn get_chapters(series_id, auth) {
     let chapters = [];
     let offset = 0;
     let limit = 500; // Max limit for this endpoint
-    let lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let lang = get_preferred_language();
     let content_rating_params = build_content_rating_params();
 
     while true {
@@ -341,7 +358,10 @@ fn get_chapters(series_id, auth) {
         let response_text = auth_http_get(url, auth);
         let response = json_parse(response_text);
 
-        if response.result != "ok" || response.data.len() == 0 {
+        if response == () || response.result != "ok" {
+            break;
+        }
+        if response.data == () || response.data.len() == 0 {
             break;
         }
 
@@ -398,13 +418,18 @@ fn get_chapter_pages(chapter_id, auth) {
     let response_text = auth_http_get(url, auth);
     let response = json_parse(response_text);
 
-    if response.result != "ok" {
+    if response == () || response.result != "ok" {
         return [];
     }
 
-    let server_base_url = response.baseUrl;
     let chapter_data = response.chapter;
+    if chapter_data == () {
+        return [];
+    }
     let hash = chapter_data.hash;
+    if hash == () {
+        return [];
+    }
 
     // Build headers that look like a real browser
     let image_headers = #{
@@ -439,7 +464,7 @@ fn get_chapter_pages(chapter_id, auth) {
 /// Get latest updates (for browse).
 fn get_latest_updates(page, auth) {
     let offset = (page - 1) * 25;
-    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let preferred_lang = get_preferred_language();
     let content_rating_params = build_content_rating_params();
 
     let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[updatedAt]=desc&${content_rating_params}`;
@@ -463,7 +488,7 @@ fn get_latest_updates(page, auth) {
 /// Get popular manga (alternative browse).
 fn get_popular(page, auth) {
     let offset = (page - 1) * 25;
-    let preferred_lang = if settings.preferred_language != () { settings.preferred_language } else { "en" };
+    let preferred_lang = get_preferred_language();
     let content_rating_params = build_content_rating_params();
 
     let url = `${BASE_URL}/manga?limit=25&offset=${offset}&includes[]=cover_art&includes[]=author&includes[]=artist&order[followedCount]=desc&${content_rating_params}`;

@@ -34,7 +34,7 @@ fn fetch_html(url) {
 /// Returns metadata about this source
 fn get_source_info() {
     #{
-        id: "flamecomics",
+        id: "flamecomics-rhai",
         name: "Flame Comics",
         base_url: BASE_URL,
         language: "en",
