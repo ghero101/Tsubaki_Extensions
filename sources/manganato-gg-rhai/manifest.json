@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "manganato-gg-rhai",
   "name": "MangaNato (Unified)",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Unified scraper for MangaNato sites including manganato.gg, mangakakalot.gg, nelomanga.net, natomanga.com, and manganato.com. Distributes requests across all mirrors for maximum reliability.",
   "author": {
     "name": "Tsubaki Community",
@@ -18,7 +18,7 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "browser_automation",
+    "level": "http_only",
     "allowed_domains": [
       "manganato.gg",
       "www.manganato.gg",
@@ -38,7 +38,7 @@
       "storage.waitst.com"
     ],
     "requires_cookies": false,
-    "requires_javascript": true,
+    "requires_javascript": false,
     "cloudflare_protected": false
   },
   "features": {

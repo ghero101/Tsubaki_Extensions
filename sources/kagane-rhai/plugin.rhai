@@ -5,7 +5,7 @@
 //   - Series metadata & chapters: Direct Yuzuki API (https://yuzuki.kagane.org/api/v2/)
 //   - Browse/homepage: FlareSolverr renders the Cloudflare-protected page
 //   - Search: Direct Yuzuki API (POST /search/series)
-//   - Chapter pages: DRM-protected (Encrypted Media Extensions) — not extractable
+//   - Chapter pages: Browser with Widevine DRM → extract CDN URLs from performance log
 //
 // URL Patterns:
 //   Homepage:  /
@@ -647,9 +647,57 @@ fn get_chapters(series_id, auth) {
 }
 
 /// Get page URLs for a chapter.
-/// NOTE: Kagane uses DRM (Encrypted Media Extensions / Widevine) to protect
-/// chapter images. Headless browsers cannot decrypt the content. This function
-/// returns an empty list.
+/// Uses browser with Widevine DRM to trigger the token exchange flow,
+/// then extracts CDN image URLs from the performance resource log.
+/// Requires: browserless Chrome with Widevine CDM + FlareSolverr for CF bypass.
 fn get_chapter_pages(chapter_id, auth) {
-    []
+    // Parse "{series_id}/{book_id}"
+    let parts = chapter_id.split("/");
+    if parts.len() < 2 { return []; }
+    let series_id = parts[0];
+    let book_id = parts[1];
+
+    // Use the puppeteer-based extraction service running in the browser container.
+    // Direct headless_chrome CDP automation doesn't work because Cloudflare Rocket Loader
+    // intercepts and blocks script execution, preventing Next.js from hydrating and
+    // the Widevine DRM flow from starting. Puppeteer (running locally in the browser
+    // container) handles this correctly.
+    let reader_url = `${BASE_URL}/series/${series_id}/reader/${book_id}`;
+    let extract_url = "http://tsubaki-browser:3001/extract-pages";
+
+    let body = `{"reader_url":"${reader_url}","book_id":"${book_id}"}`;
+    let response = http_post(extract_url, body);
+
+    if response == "" || response == "()" {
+        throw "Empty response from page extraction service";
+    }
+
+    let result = json_parse(response);
+
+    if result == () || type_of(result) != "map" {
+        throw `Invalid response from extraction service: ${response}`;
+    }
+
+    // Check for errors
+    if result.contains("error") {
+        throw `Extraction service error: ${result.error}`;
+    }
+
+    let urls = result.urls;
+    if urls == () || type_of(urls) != "array" || urls.len() == 0 {
+        throw "No CDN URLs returned from extraction service";
+    }
+
+    // Build page list
+    let pages = [];
+    let i = 0;
+    for url in urls {
+        pages.push(#{
+            url: url,
+            index: i
+        });
+        i += 1;
+    }
+
+    pages
 }

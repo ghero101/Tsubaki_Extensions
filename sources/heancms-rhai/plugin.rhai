@@ -38,6 +38,14 @@ fn safe_get_setting(key) {
     ()
 }
 
+/// Remove trailing slashes from a string
+fn strip_trailing_slash(s) {
+    while s.ends_with("/") {
+        s = s.sub_string(0, s.len() - 1);
+    }
+    s
+}
+
 /// Get the configured base URL
 fn get_base_url() {
     let url = safe_get_setting("base_url");
@@ -45,14 +53,14 @@ fn get_base_url() {
         return get_default_base_url();
     }
     // Remove trailing slash
-    url.trim_end_matches("/")
+    strip_trailing_slash(url)
 }
 
 /// Get the API URL (auto-detect or from settings)
 fn get_api_url() {
     let custom_api = safe_get_setting("api_url");
     if custom_api != () && custom_api != "" {
-        return custom_api.trim_end_matches("/");
+        return strip_trailing_slash(custom_api);
     }
 
     // Use default API URL for the default base
@@ -359,7 +367,7 @@ fn extract_slug_from_url(url) {
         let parts = url.split("/series/");
         if parts.len() > 1 {
             let slug = parts[1];
-            slug = slug.trim_end_matches("/");
+            slug = strip_trailing_slash(slug);
             // Remove any query params
             let slug_parts = slug.split("?");
             return slug_parts[0];
@@ -386,11 +394,10 @@ fn get_chapters(series_id, auth) {
         slug = extract_slug_from_url(series_id);
     }
 
-    let api_url = get_api_url();
-    let use_new_endpoint = safe_get_setting("use_new_chapter_endpoint");
-
-    if use_new_endpoint == true {
-        return get_chapters_new_endpoint(slug, auth);
+    // Try the new /chapter/query endpoint first (works on current HeanCMS sites)
+    let chapters = get_chapters_new_endpoint(slug, auth);
+    if chapters.len() > 0 {
+        return chapters;
     }
 
     // Fallback: get chapters from series response (seasons)
@@ -553,7 +560,7 @@ fn parse_chapter_dto(ch, series_slug) {
     let chapter_url = `${base_url}/series/${series_slug}/${chapter_slug}`;
 
     #{
-        id: chapter_slug,
+        id: `${series_slug}/${chapter_slug}`,
         series_id: series_slug,
         number: chapter_num,
         title: chapter_title,
@@ -565,6 +572,7 @@ fn parse_chapter_dto(ch, series_slug) {
         page_count: (),
         extra: #{
             is_free: is_free,
+            is_premium: !is_free,
             internal_id: chapter_id
         }
     }
@@ -615,7 +623,7 @@ fn get_chapter_pages(chapter_id, auth) {
             if parts.len() > 1 {
                 chapter_path = parts[1];
                 // Remove trailing slash
-                chapter_path = chapter_path.trim_end_matches("/");
+                chapter_path = strip_trailing_slash(chapter_path);
             }
         }
         referer_url = chapter_id;
