@@ -20,9 +20,14 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML using HTTP
+/// Fetch HTML using HTTP (plain client to avoid TLS impersonation issues with Next.js)
 fn fetch_html(url) {
-    http_get_with_headers(url, get_headers())
+    let html = http_get_with_headers(url, get_headers());
+    // If impersonation client got a Next.js error page, retry with plain client
+    if html.contains("__next_error__") {
+        return http_get_plain(url, get_headers());
+    }
+    html
 }
 
 /// Returns metadata about this source
@@ -153,42 +158,45 @@ fn extract_series_from_html(html, query, seen) {
     series
 }
 
-/// Search for series matching query (uses browser automation for pagination)
+/// Search for series matching query (HTTP with browser fallback)
 fn search_series(query, page, auth) {
-    // Check if browser is available
-    if !browser_is_available() {
-        // Fallback to HTTP-only (limited to initial page load)
-        let url = `${BASE_URL}/series?page=1`;
-        let html = fetch_html(url);
-        let seen = #{};
-        let series = extract_series_from_html(html, query, seen);
-        return #{ series: series, has_more: false, total: () };
+    // Build search URL — Asura supports ?name= for server-side filtering
+    let url = if query != "" {
+        `${BASE_URL}/series?name=${query}&page=${page}`
+    } else {
+        `${BASE_URL}/series?page=${page}`
+    };
+
+    // Try HTTP first (faster, server handles filtering)
+    let html = fetch_html(url);
+    let seen = #{};
+    let series = extract_series_from_html(html, "", seen);  // No client-side filter needed
+    if series.len() > 0 {
+        let has_more = series.len() >= 15;
+        return #{ series: series, has_more: has_more, total: () };
     }
 
-    // Use browser automation for full catalog access
-    let session_id = browser_launch_stealth();
+    // Browser fallback if HTTP returned no results
+    if browser_is_available() {
+        try {
+            let session_id = browser_launch_stealth();
+            browser_goto(session_id, url);
+            try { browser_wait_for_selector(session_id, "a[href*='series/']", 15000); } catch {}
+            let html = browser_get_html(session_id);
+            browser_close(session_id);
 
-    // Navigate directly to the requested page
-    let url = `${BASE_URL}/series?page=${page}`;
-    browser_goto(session_id, url);
+            let seen = #{};
+            let series = extract_series_from_html(html, "", seen);
+            if series.len() > 0 {
+                let has_more = series.len() >= 15;
+                return #{ series: series, has_more: has_more, total: () };
+            }
+        } catch {
+            // Browser failed too
+        }
+    }
 
-    // Wait for the series grid to load (JavaScript needs time to render)
-    browser_wait_for_selector(session_id, "div.grid a[href*='series/']", 15000);
-
-    // Get the rendered HTML
-    let html = browser_get_html(session_id);
-
-    // Clean up browser session
-    browser_close(session_id);
-
-    // Extract series from the HTML
-    let seen = #{};
-    let series = extract_series_from_html(html, query, seen);
-
-    // Estimate has_more based on results (site shows ~20 per page)
-    let has_more = series.len() >= 15;
-
-    #{ series: series, has_more: has_more, total: () }
+    #{ series: [], has_more: false, total: () }
 }
 
 /// Get detailed series information
@@ -207,23 +215,31 @@ fn get_series(id_or_url, auth) {
     }
 
     let html = fetch_html(url);
+
     let doc = html_parse(html);
 
-    // Extract title from the bold span (main title element)
+    // Extract title — try CSS selectors then regex fallbacks
     let title = "";
     let title_els = html_select(doc, "span.text-xl.font-bold");
     if title_els.len() > 0 {
         title = element_text(title_els[0]).trim();
     }
-    // Fallback: try title tag
     if title == "" {
-        let title_tags = html_select(doc, "title");
-        if title_tags.len() > 0 {
-            title = element_text(title_tags[0]).trim();
-            // Remove " - Asura Scans" suffix
+        // Regex fallback: <span class="text-xl font-bold">TITLE</span>
+        title = regex_find("<span[^>]*text-xl[^>]*font-bold[^>]*>([^<]+)</span>", html);
+        if title.contains(">") {
+            let parts = title.split(">");
+            if parts.len() > 1 { title = parts[parts.len() - 1]; }
+        }
+        title = title.replace("</span>", "").trim();
+    }
+    if title == "" {
+        // Fallback: <title> tag
+        let title_match = regex_find("<title>([^<]+)</title>", html);
+        if title_match != "" {
+            title = title_match.replace("<title>", "").replace("</title>", "").trim();
             if title.contains(" - Asura") {
-                let parts = title.split(" - Asura");
-                title = parts[0].trim();
+                title = title.split(" - Asura")[0].trim();
             }
         }
     }
@@ -234,44 +250,81 @@ fn get_series(id_or_url, auth) {
     if cover_els.len() > 0 {
         cover_url = element_attr(cover_els[0], "src");
     }
-    // Fallback: try rounded image
-    if cover_url == () {
-        let rounded_imgs = html_select(doc, "img.rounded");
-        if rounded_imgs.len() > 0 {
-            cover_url = element_attr(rounded_imgs[0], "src");
+    if cover_url == () || cover_url == "" {
+        // Regex fallback: img with alt="poster"
+        let cover_match = regex_find("alt=\"poster\"[^>]*src=\"([^\"]+)\"", html);
+        if cover_match == "" {
+            cover_match = regex_find("src=\"([^\"]+)\"[^>]*alt=\"poster\"", html);
+        }
+        if cover_match != "" {
+            cover_url = regex_find("src=\"([^\"]+)\"", cover_match);
+            if cover_url.starts_with("src=\"") {
+                cover_url = cover_url.replace("src=\"", "").replace("\"", "");
+            }
+        }
+    }
+    if cover_url == () || cover_url == "" {
+        // Second fallback: first optimized.webp image (series cover)
+        let img_match = regex_find("https://gg\\.asuracomic\\.net/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
+        if img_match != "" {
+            cover_url = img_match;
         }
     }
 
-    // Extract description from the synopsis paragraph
+    // Extract description — try multiple selectors then regex
     let description = ();
-    let desc_els = html_select(doc, "span.font-medium.text-sm.text-\\[\\#A2A2A2\\]");
+    let desc_els = html_select(doc, "span.font-medium.text-sm");
     if desc_els.len() > 0 {
         description = element_text(desc_els[0]).trim();
     }
-
-    // Extract status from the status row
-    let status = ();
-    for h3 in html_select(doc, "h3.text-sm") {
-        let text = element_text(h3).trim().to_lower();
-        if text == "ongoing" {
-            status = "Ongoing";
-            break;
-        } else if text == "completed" {
-            status = "Completed";
-            break;
-        } else if text == "hiatus" {
-            status = "Hiatus";
-            break;
+    if description == () || description == "" {
+        // Regex: text after "Synopsis" heading
+        let synopsis_match = regex_find("Synopsis[^<]*</[^>]+>\\s*<[^>]+>([^<]{20,})", html);
+        if synopsis_match != "" {
+            // Extract just the text content
+            description = regex_find(">([^<]{20,})", synopsis_match);
+            if description.starts_with(">") {
+                description = description.sub_string(1, description.len()).trim();
+            }
         }
     }
 
-    // Extract genres from genre buttons
+    // Extract status
+    let status = ();
+    let status_els = html_select(doc, "span.status");
+    for el in status_els {
+        let text = element_text(el).trim().to_lower();
+        if text == "ongoing" { status = "Ongoing"; break; }
+        if text == "completed" { status = "Completed"; break; }
+        if text == "hiatus" { status = "Hiatus"; break; }
+    }
+    if status == () {
+        // Regex fallback: <span class="status ...">Ongoing</span>
+        let status_match = regex_find("class=\"status[^\"]*\">([^<]+)<", html);
+        if status_match != "" {
+            let s = status_match.split(">")[1].split("<")[0].trim().to_lower();
+            if s == "ongoing" { status = "Ongoing"; }
+            if s == "completed" { status = "Completed"; }
+            if s == "hiatus" { status = "Hiatus"; }
+        }
+    }
+
+    // Extract genres from genre links
     let genres = [];
-    // Look for buttons after the "Genres" heading
-    for btn in html_select(doc, "button.bg-\\[\\#343434\\]") {
-        let genre = element_text(btn).trim();
+    for link in html_select(doc, "a[href*='genres=']") {
+        let genre = element_text(link).trim();
         if genre != "" && genre.len() < 30 && !genres.contains(genre) {
             genres.push(genre);
+        }
+    }
+    if genres.len() == 0 {
+        // Regex fallback: genre links
+        let genre_matches = regex_find_all("genres=\\d+\"[^>]*>\\s*([^<]+)<", html);
+        for g in genre_matches {
+            let genre = g.split(">")[1].split("<")[0].trim();
+            if genre != "" && genre.len() < 30 && !genres.contains(genre) {
+                genres.push(genre);
+            }
         }
     }
 
@@ -314,10 +367,22 @@ fn get_chapters(series_id, auth) {
     let chapters = [];
     let seen = #{};
 
-    // Find all chapter links - they're in format "slug/chapter/N" or full URLs
-    for link in html_select(doc, "a[href*='/chapter/']") {
+    // Find all chapter links via CSS selector
+    let chapter_links = html_select(doc, "a[href*='chapter/']");
+
+    // Fallback: regex extraction if CSS selector yields nothing
+    if chapter_links.len() == 0 {
+        let href_matches = regex_find_all("href=\"([^\"]*chapter/[^\"]+)\"", html);
+        for href in href_matches {
+            let clean_href = href.replace("href=\"", "").replace("\"", "");
+            // Wrap in a minimal <a> tag so the loop below can process it
+            chapter_links.push(`<a href="${clean_href}"></a>`);
+        }
+    }
+
+    for link in chapter_links {
         let href = element_attr(link, "href");
-        if href == () {
+        if href == () || href == "" {
             continue;
         }
 
@@ -326,44 +391,26 @@ fn get_chapters(series_id, auth) {
         let parts = href.split("/chapter/");
         if parts.len() > 1 {
             chapter_num = parts[1].split("/")[0].split("?")[0];
+        } else {
+            let parts2 = href.split("chapter/");
+            if parts2.len() > 1 {
+                chapter_num = parts2[1].split("/")[0].split("?")[0];
+            }
         }
 
-        // Skip empty or invalid chapter numbers
-        if chapter_num == "" {
-            continue;
-        }
-
-        // Skip if already seen
-        if seen.contains(chapter_num) {
-            continue;
-        }
+        if chapter_num == "" { continue; }
+        if seen.contains(chapter_num) { continue; }
         seen[chapter_num] = true;
 
-        // Build full URL - handle relative URLs like "slug/chapter/N"
+        // Build full URL
         let chapter_url = href;
         if !href.starts_with("http") {
             if href.starts_with("/") {
                 chapter_url = `${BASE_URL}${href}`;
-            } else if href.contains("/chapter/") {
-                // Relative URL like "slug/chapter/N" - need to add /series/ prefix
+            } else if href.contains("chapter/") {
                 chapter_url = `${BASE_URL}/series/${href}`;
             } else {
                 chapter_url = `${BASE_URL}/${href}`;
-            }
-        }
-
-        // Extract title from h3 inside the link
-        let title = ();
-        let h3_els = html_select(link, "h3");
-        if h3_els.len() > 0 {
-            let h3_text = element_text(h3_els[0]).trim();
-            // Extract any title text after chapter number
-            if h3_text.contains("{") {
-                // Has a title like "{S2 Start}"
-                let title_parts = h3_text.split("{");
-                if title_parts.len() > 1 {
-                    title = "{" + title_parts[1];
-                }
             }
         }
 
@@ -371,7 +418,7 @@ fn get_chapters(series_id, auth) {
             id: chapter_url,
             series_id: series_id,
             number: chapter_num,
-            title: title,
+            title: (),
             volume: (),
             language: "en",
             scanlator: "Asura Scans",

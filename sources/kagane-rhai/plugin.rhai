@@ -32,10 +32,46 @@ fn api_headers() {
     }
 }
 
-/// GET from Yuzuki API (no Cloudflare protection).
+/// Extract JSON content from FlareSolverr HTML wrapper.
+/// FlareSolverr renders API JSON inside HTML (typically in a <pre> tag).
+fn extract_json_from_html(html) {
+    // Chrome renders JSON in a <pre> tag. Find content after <pre...> tag.
+    let pre_start = html.index_of("<pre");
+    if pre_start >= 0 {
+        let after_pre = html.sub_string(pre_start);
+        // Find the closing > of the <pre> tag
+        let gt_pos = after_pre.index_of(">");
+        if gt_pos >= 0 {
+            let content = after_pre.sub_string(gt_pos + 1);
+            let end_pos = content.index_of("</pre>");
+            if end_pos >= 0 {
+                content = content.sub_string(0, end_pos);
+            }
+            content = content.trim();
+            if content.starts_with("{") || content.starts_with("[") {
+                return content;
+            }
+        }
+    }
+    // Fallback: find first { in the document
+    let brace_pos = html.index_of("{");
+    if brace_pos >= 0 {
+        return html.sub_string(brace_pos);
+    }
+    html
+}
+
+/// GET from Yuzuki API (with Cloudflare fallback via FlareSolverr).
 fn api_get(path) {
     let url = `${API_BASE}${path}`;
     let body = http_get_with_headers(url, api_headers());
+    // Detect Cloudflare: empty body (rquest returns empty on blocked) or challenge HTML
+    if body.len() == 0 || body.contains("Just a moment") {
+        // Use FlareSolverr to fetch the URL directly
+        let fs_html = flaresolverr_get(url, 60000);
+        let extracted = extract_json_from_html(fs_html);
+        body = extracted;
+    }
     json_parse(body)
 }
 
@@ -43,6 +79,12 @@ fn api_get(path) {
 fn api_post(path, json_body) {
     let url = `${API_BASE}${path}`;
     let body = http_post_json_with_headers(url, json_body, api_headers());
+    // Detect Cloudflare: empty body or challenge HTML
+    if body.len() == 0 || body.contains("Just a moment") {
+        // FlareSolverr only supports GET, but most API data is accessible via GET too
+        let fs_html = flaresolverr_get(url, 60000);
+        body = extract_json_from_html(fs_html);
+    }
     json_parse(body)
 }
 
@@ -434,8 +476,8 @@ fn get_series(id_or_url, auth) {
     let data = ();
     try {
         data = api_get(`/series/${sid}`);
-    } catch {
-        throw `Failed to fetch series from API: ${sid}`;
+    } catch(err) {
+        throw `Failed to fetch series from API: ${sid} - ${err}`;
     }
 
     if data == () {
