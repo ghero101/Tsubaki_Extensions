@@ -536,6 +536,48 @@ fn get_series(id_or_url, auth) {
         }
     }
 
+    // Tags (separate from genres)
+    let tags = [];
+    let tag_list = data["tags"];
+    if tag_list != () && type_of(tag_list) == "array" {
+        for t in tag_list {
+            let tag_name = t["tag_name"];
+            if tag_name != () && tag_name != "" {
+                tags.push(tag_name);
+            }
+        }
+    }
+
+    // Staff → authors and artists
+    let authors = [];
+    let artists = [];
+    let staff_list = data["series_staff"];
+    if staff_list != () && type_of(staff_list) == "array" {
+        for staff in staff_list {
+            let name = staff["name"];
+            let role = staff["role"];
+            if name != () && name != "" {
+                if role != () {
+                    let role_lower = role.to_lower();
+                    if role_lower.contains("artist") || role_lower.contains("illustrat") {
+                        artists.push(name);
+                    }
+                    if role_lower.contains("author") || role_lower.contains("writer") || role_lower.contains("story") {
+                        authors.push(name);
+                    }
+                    // If role doesn't match known categories, add as author
+                    if !role_lower.contains("artist") && !role_lower.contains("illustrat")
+                        && !role_lower.contains("author") && !role_lower.contains("writer")
+                        && !role_lower.contains("story") {
+                        authors.push(name);
+                    }
+                } else {
+                    authors.push(name);
+                }
+            }
+        }
+    }
+
     // Cover image — check cover_image_id first, then series_covers array
     let cover = "";
     let cover_id = data["cover_image_id"];
@@ -571,21 +613,46 @@ fn get_series(id_or_url, auth) {
         year = start_year;
     }
 
+    // Build extra metadata for downstream auto-linking
+    let extra = #{};
+    extra["source_name"] = "Kagane";
+    extra["auto_match_metadata"] = true;
+
+    // Include alt titles with language labels for better matching
+    let labeled_alt_titles = [];
+    if alt_list != () && type_of(alt_list) == "array" {
+        for alt in alt_list {
+            let at = alt["title"];
+            let al = alt["label"];
+            if at != () && at != "" {
+                let entry = #{};
+                entry["title"] = at;
+                if al != () && al != "" {
+                    entry["label"] = al;
+                }
+                labeled_alt_titles.push(entry);
+            }
+        }
+    }
+    if labeled_alt_titles.len() > 0 {
+        extra["labeled_alt_titles"] = labeled_alt_titles;
+    }
+
     #{
         id: sid,
         title: title,
         alternate_titles: alternate_titles,
         description: description,
         cover_url: cover,
-        authors: [],
-        artists: [],
+        authors: authors,
+        artists: artists,
         status: status,
         genres: genres,
-        tags: [],
+        tags: tags,
         year: year,
         content_rating: content_rating,
         url: `${BASE_URL}/series/${sid}`,
-        extra: #{}
+        extra: extra
     }
 }
 
@@ -692,6 +759,10 @@ fn get_chapters(series_id, auth) {
 /// Uses browser with Widevine DRM to trigger the token exchange flow,
 /// then extracts CDN image URLs from the performance resource log.
 /// Requires: browserless Chrome with Widevine CDM + FlareSolverr for CF bypass.
+///
+/// The extraction service (extract_server.js) already retries navigation on
+/// Cloudflare errors internally. This function adds an outer retry layer for
+/// transient HTTP failures or when the service reports site unavailability.
 fn get_chapter_pages(chapter_id, auth) {
     // Parse "{series_id}/{book_id}"
     let parts = chapter_id.split("/");
@@ -699,47 +770,76 @@ fn get_chapter_pages(chapter_id, auth) {
     let series_id = parts[0];
     let book_id = parts[1];
 
-    // Use the puppeteer-based extraction service running in the browser container.
-    // Direct headless_chrome CDP automation doesn't work because Cloudflare Rocket Loader
-    // intercepts and blocks script execution, preventing Next.js from hydrating and
-    // the Widevine DRM flow from starting. Puppeteer (running locally in the browser
-    // container) handles this correctly.
     let reader_url = `${BASE_URL}/series/${series_id}/reader/${book_id}`;
     let extract_url = "http://tsubaki-browser:3001/extract-pages";
-
     let body = `{"reader_url":"${reader_url}","book_id":"${book_id}"}`;
-    let response = http_post(extract_url, body);
 
-    if response == "" || response == "()" {
-        throw "Empty response from page extraction service";
+    let max_retries = 3;
+    let retry = 0;
+    let last_error = "";
+
+    while retry < max_retries {
+        if retry > 0 {
+            // Short backoff between outer retries since extract_server handles its own retries
+            let wait = if retry == 1 { 10000 } else { 20000 };
+            browser_sleep(wait);
+        }
+
+        try {
+            let response = http_post(extract_url, body);
+
+            if response == "" || response == "()" {
+                last_error = "Empty response from page extraction service";
+                retry += 1;
+                continue;
+            }
+
+            let result = json_parse(response);
+
+            if result == () || type_of(result) != "map" {
+                last_error = `Invalid response from extraction service`;
+                retry += 1;
+                continue;
+            }
+
+            // Check for error field (HTTP 500 from extract_server)
+            if result.contains("error") {
+                last_error = `Extraction service error: ${result.error}`;
+                retry += 1;
+                continue;
+            }
+
+            let urls = result.urls;
+            if urls != () && type_of(urls) == "array" && urls.len() > 0 {
+                // Success — build page list
+                let pages = [];
+                let i = 0;
+                for url in urls {
+                    pages.push(#{
+                        url: url,
+                        index: i
+                    });
+                    i += 1;
+                }
+                return pages;
+            }
+
+            // 0 URLs returned — check the reason from extract_server
+            let reason = if result.contains("reason") { result.reason } else { "unknown" };
+
+            if reason == "site_unavailable" || reason == "cloudflare_blocked" {
+                last_error = "Kagane is temporarily unavailable (Cloudflare error). Waiting before retry...";
+            } else if reason == "navigation_error" {
+                last_error = "Page navigation failed. The site may be experiencing issues.";
+            } else {
+                last_error = "No page images found. The reader page may not have loaded correctly.";
+            }
+        } catch(err) {
+            last_error = `Extraction service call failed: ${err}`;
+        }
+
+        retry += 1;
     }
 
-    let result = json_parse(response);
-
-    if result == () || type_of(result) != "map" {
-        throw `Invalid response from extraction service: ${response}`;
-    }
-
-    // Check for errors
-    if result.contains("error") {
-        throw `Extraction service error: ${result.error}`;
-    }
-
-    let urls = result.urls;
-    if urls == () || type_of(urls) != "array" || urls.len() == 0 {
-        throw "No CDN URLs returned from extraction service";
-    }
-
-    // Build page list
-    let pages = [];
-    let i = 0;
-    for url in urls {
-        pages.push(#{
-            url: url,
-            index: i
-        });
-        i += 1;
-    }
-
-    pages
+    throw `Failed to get pages after ${max_retries} attempts. ${last_error}`;
 }
