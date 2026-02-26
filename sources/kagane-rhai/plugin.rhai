@@ -365,47 +365,37 @@ fn browse(page, filters, auth) {
     get_latest_updates(page, auth)
 }
 
-/// Get latest updates from homepage (FlareSolverr renders the page).
+/// Get latest updates via Yuzuki API (sorted by updated_at descending).
 fn get_latest_updates(page, auth) {
-    let url = BASE_URL;
-    if page > 1 {
-        url = `${BASE_URL}/?page=${page}`;
-    }
-
-    let html = fetch_page(url, "a[href*='/series/']");
-    if html == "" || !has_real_content(html) {
-        return #{ series: [], has_more: false };
-    }
-
-    let series = extract_series_list(html);
-    #{ series: series, has_more: series.len() > 0 && page < 20 }
-}
-
-/// Search for manga via Yuzuki API.
-fn search_series(query, page, auth) {
     let api_page = page - 1;
     if api_page < 0 { api_page = 0; }
 
-    let body = `{"title":"${query}","page":${api_page},"size":20}`;
+    let body = `{}`;
     let data = ();
     try {
-        data = api_post("/search/series", body);
+        data = api_post(`/search/series?page=${api_page}&size=20&sort=updated_at,desc`, body);
     } catch {
-        return #{ series: [], has_more: false, total: 0 };
+        return #{ series: [], has_more: false };
     }
 
     if data == () {
-        return #{ series: [], has_more: false, total: 0 };
+        return #{ series: [], has_more: false };
     }
 
     let content = data["content"];
     if content == () || type_of(content) != "array" {
-        return #{ series: [], has_more: false, total: 0 };
+        return #{ series: [], has_more: false };
     }
 
-    let total = data["total_elements"];
     let is_last = data["last"];
+    let series = parse_series_list(content);
+    let has_more = if is_last != () { !is_last } else { series.len() >= 20 };
 
+    #{ series: series, has_more: has_more }
+}
+
+/// Parse a list of series items from the API response content array.
+fn parse_series_list(content) {
     let series = [];
     for item in content {
         let sid = item["series_id"];
@@ -455,7 +445,34 @@ fn search_series(query, page, auth) {
             description: ()
         });
     }
+    series
+}
 
+/// Search for manga via Yuzuki API.
+fn search_series(query, page, auth) {
+    let api_page = page - 1;
+    if api_page < 0 { api_page = 0; }
+
+    let body = `{"title":"${query}"}`;
+    let data = ();
+    try {
+        data = api_post(`/search/series?page=${api_page}&size=20`, body);
+    } catch {
+        return #{ series: [], has_more: false, total: 0 };
+    }
+
+    if data == () {
+        return #{ series: [], has_more: false, total: 0 };
+    }
+
+    let content = data["content"];
+    if content == () || type_of(content) != "array" {
+        return #{ series: [], has_more: false, total: 0 };
+    }
+
+    let total = data["total_elements"];
+    let is_last = data["last"];
+    let series = parse_series_list(content);
     let has_more = if is_last != () { !is_last } else { series.len() >= 20 };
 
     #{ series: series, has_more: has_more, total: total }
