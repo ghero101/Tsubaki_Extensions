@@ -84,11 +84,84 @@ fn build_result(post) {
     }
 }
 
+/// Parse comma-separated tag string into array of trimmed tags
+fn parse_tag_list(tag_string) {
+    if tag_string == () || tag_string == "" {
+        return [];
+    }
+    let tags = [];
+    let parts = tag_string.split(",");
+    for part in parts {
+        let trimmed = part.trim();
+        if trimmed != "" {
+            let tag = trimmed.to_lower().replace(" ", "_");
+            tags.push(tag);
+        }
+    }
+    tags
+}
+
+/// Build query with rating filter and included/excluded tags from settings
+fn apply_filters(query, s) {
+    if s == () {
+        return query;
+    }
+
+    let result_query = query;
+
+    // Apply rating filter - HypnoHub uses Gelbooru-style rating:safe, rating:questionable, rating:explicit
+    let rating = s["rating_filter"];
+    if rating != () && rating != "all" && rating != "" {
+        result_query = result_query + " rating:" + rating;
+    }
+
+    // Get always include tags
+    let include_tags = parse_tag_list(s["always_include_tags"]);
+    for tag in include_tags {
+        if result_query != "" {
+            result_query = result_query + " " + tag;
+        } else {
+            result_query = tag;
+        }
+    }
+
+    // Get always exclude tags
+    let exclude_tags = parse_tag_list(s["always_exclude_tags"]);
+
+    // Add safe mode exclusions if enabled
+    let safe_mode = s["safe_mode"];
+    if safe_mode == true {
+        let safe_exclude = ["gore", "guro", "scat", "torture", "death", "vore", "snuff"];
+        for tag in safe_exclude {
+            let already = false;
+            for existing in exclude_tags {
+                if existing == tag { already = true; break; }
+            }
+            if !already {
+                exclude_tags.push(tag);
+            }
+        }
+    }
+
+    // Append excluded tags with minus prefix
+    for tag in exclude_tags {
+        if result_query != "" {
+            result_query = result_query + " -" + tag;
+        } else {
+            result_query = "-" + tag;
+        }
+    }
+
+    result_query
+}
+
 /// Search HypnoHub for content matching tags
 fn search_series(query, page, auth) {
+    let s = if settings != () { settings } else { #{} };
     let limit = 40;
     let pid = page;
-    let search_tags = url_encode(query);
+    let filtered_query = apply_filters(query, s);
+    let search_tags = url_encode(filtered_query);
 
     let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${limit}`;
 
@@ -127,10 +200,18 @@ fn search_series(query, page, auth) {
 
 /// Get latest updates (used for browse)
 fn get_latest_updates(page, auth) {
+    let s = if settings != () { settings } else { #{} };
     let limit = 40;
     let pid = page;
 
-    let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&pid=${pid}&limit=${limit}`;
+    // Apply filters for browse
+    let filtered_query = apply_filters("", s);
+    let tags_param = "";
+    if filtered_query != "" {
+        tags_param = "&tags=" + url_encode(filtered_query);
+    }
+
+    let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&pid=${pid}&limit=${limit}${tags_param}`;
 
     let response_text = http_get(url);
 

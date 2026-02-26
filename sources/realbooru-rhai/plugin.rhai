@@ -315,11 +315,78 @@ fn parse_listing_html(html_content) {
     results
 }
 
+/// Parse comma-separated tag string into array of trimmed tags
+fn parse_tag_list(tag_string) {
+    if tag_string == () || tag_string == "" {
+        return [];
+    }
+    let tags = [];
+    let parts = tag_string.split(",");
+    for part in parts {
+        let trimmed = part.trim();
+        if trimmed != "" {
+            let tag = trimmed.to_lower().replace(" ", "_");
+            tags.push(tag);
+        }
+    }
+    tags
+}
+
+/// Build query with included/excluded tags from settings
+fn apply_filters(query, s) {
+    if s == () {
+        return query;
+    }
+
+    let result_query = query;
+
+    // Get always include tags
+    let include_tags = parse_tag_list(s["always_include_tags"]);
+    for tag in include_tags {
+        if result_query != "" {
+            result_query = result_query + " " + tag;
+        } else {
+            result_query = tag;
+        }
+    }
+
+    // Get always exclude tags
+    let exclude_tags = parse_tag_list(s["always_exclude_tags"]);
+
+    // Add safe mode exclusions if enabled
+    let safe_mode = s["safe_mode"];
+    if safe_mode == true {
+        let safe_exclude = ["gore", "guro", "scat", "torture", "death", "vore", "snuff"];
+        for tag in safe_exclude {
+            let already = false;
+            for existing in exclude_tags {
+                if existing == tag { already = true; break; }
+            }
+            if !already {
+                exclude_tags.push(tag);
+            }
+        }
+    }
+
+    // Append excluded tags with minus prefix
+    for tag in exclude_tags {
+        if result_query != "" {
+            result_query = result_query + " -" + tag;
+        } else {
+            result_query = "-" + tag;
+        }
+    }
+
+    result_query
+}
+
 /// Search RealBooru for content matching tags (HTML scraping version)
 fn search_series(query, page, auth) {
+    let s = if settings != () { settings } else { #{} };
     let limit = 40;
     let pid = page;
-    let search_tags = url_encode(query);
+    let filtered_query = apply_filters(query, s);
+    let search_tags = url_encode(filtered_query);
 
     // Build HTML listing URL
     let url = `${REALBOORU_API}?page=post&s=list&tags=${search_tags}&pid=${pid}`;
@@ -353,11 +420,19 @@ fn search_series(query, page, auth) {
 
 /// Get latest updates (used for browse) - HTML scraping version
 fn get_latest_updates(page, auth) {
+    let s = if settings != () { settings } else { #{} };
     let limit = 40;
     let pid = page;
 
-    // Build HTML listing URL (no tags = latest)
-    let url = `${REALBOORU_API}?page=post&s=list&pid=${pid}`;
+    // Apply filters for browse
+    let filtered_query = apply_filters("", s);
+    let tags_param = "";
+    if filtered_query != "" {
+        tags_param = "&tags=" + url_encode(filtered_query);
+    }
+
+    // Build HTML listing URL
+    let url = `${REALBOORU_API}?page=post&s=list&pid=${pid}${tags_param}`;
 
     let response_text = http_get(url);
 

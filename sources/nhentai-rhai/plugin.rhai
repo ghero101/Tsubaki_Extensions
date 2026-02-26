@@ -200,7 +200,9 @@ fn build_series_result(gallery) {
             groups: groups,
             languages: languages,
             upload_date: upload_date,
-            source_site: "nhentai"
+            source_site: "nhentai",
+            auto_match_metadata: true,
+            source_name: "nhentai"
         }
     }
 }

@@ -64,16 +64,17 @@ fn fetch_html(url) {
 
     // Tier 3: Browser automation - last resort
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 15000);
             browser_wait_for_selector(browser_id, "a[href*='/manga/'], .book-list, .comic-thumb, h1", 10000);
             let html = browser_get_html(browser_id);
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
             return html;
         } catch {
-            // Fall through
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
 
@@ -100,16 +101,17 @@ fn fetch_html_browser(url) {
 
     // Tier 2: Browser automation - can render JS and load lazy images
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 15000);
             browser_wait_for_selector(browser_id, "img[src*='cdn'], img[data-src], .reading-content img", 10000);
             let html = browser_get_html(browser_id);
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
             return html;
         } catch {
-            // Fall through
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
 
@@ -632,7 +634,7 @@ fn get_series(id_or_url, auth) {
         year: year,
         content_rating: "suggestive",
         url: url,
-        extra: #{}
+        extra: #{ auto_match_metadata: true, source_name: "VyManga" }
     }
 }
 

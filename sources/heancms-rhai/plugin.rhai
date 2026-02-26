@@ -355,7 +355,10 @@ fn get_series(id_or_url, auth) {
     let base_url = get_base_url();
     series["url"] = `${base_url}/series/${slug}`;
     series["content_rating"] = "suggestive";
-    series["extra"] = #{};
+    series["extra"] = #{
+        auto_match_metadata: true,
+        source_name: "HeanCMS"
+    };
 
     series
 }

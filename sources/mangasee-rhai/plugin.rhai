@@ -226,7 +226,10 @@ fn get_series(id_or_url, auth) {
         year: (),
         content_rating: "suggestive",
         url: url,
-        extra: #{}
+        extra: #{
+            auto_match_metadata: true,
+            source_name: "MangaSee"
+        }
     }
 }
 

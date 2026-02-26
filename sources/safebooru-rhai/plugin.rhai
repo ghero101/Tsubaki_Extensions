@@ -106,10 +106,61 @@ fn build_result(post) {
     }
 }
 
+/// Build query with rating and tag filters from settings
+fn apply_filters(query, s) {
+    if s == () {
+        return query + " rating:safe";
+    }
+
+    let result_query = query;
+
+    // Apply rating filter - Safebooru is SFW by default
+    let include_questionable = s["include_questionable"];
+    if include_questionable != true {
+        result_query = result_query + " rating:safe";
+    }
+
+    // Get always include tags
+    let include_str = s["always_include_tags"];
+    if include_str != () && include_str != "" {
+        let parts = include_str.split(",");
+        for part in parts {
+            let trimmed = part.trim();
+            if trimmed != "" {
+                let tag = trimmed.to_lower().replace(" ", "_");
+                if result_query != "" {
+                    result_query = result_query + " " + tag;
+                } else {
+                    result_query = tag;
+                }
+            }
+        }
+    }
+
+    // Get always exclude tags
+    let exclude_str = s["always_exclude_tags"];
+    if exclude_str != () && exclude_str != "" {
+        let parts = exclude_str.split(",");
+        for part in parts {
+            let trimmed = part.trim();
+            if trimmed != "" {
+                let tag = trimmed.to_lower().replace(" ", "_");
+                if result_query != "" {
+                    result_query = result_query + " -" + tag;
+                } else {
+                    result_query = "-" + tag;
+                }
+            }
+        }
+    }
+
+    result_query
+}
+
 /// Search for fan art by tags/series name
 fn search_series(query, page, auth) {
-    // Build tag query - add rating:safe for safe content
-    let tags = query + " rating:safe";
+    let s = if settings != () { settings } else { #{} };
+    let tags = apply_filters(query, s);
     let limit = 40;
 
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=` + url_encode(tags);
@@ -140,8 +191,10 @@ fn search_series(query, page, auth) {
 
 /// Get latest updates (used for browse)
 fn get_latest_updates(page, auth) {
+    let s = if settings != () { settings } else { #{} };
     let limit = 40;
-    let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=rating:safe`;
+    let filtered = apply_filters("", s);
+    let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=` + url_encode(filtered);
 
     let body = http_get(url);
     let data = json_parse(body);
@@ -169,8 +222,10 @@ fn get_latest_updates(page, auth) {
 
 /// Get popular images (sorted by score)
 fn get_popular(page) {
+    let s = if settings != () { settings } else { #{} };
     let limit = 40;
-    let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=sort:score+rating:safe`;
+    let filtered = apply_filters("sort:score", s);
+    let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=` + url_encode(filtered);
 
     let body = http_get(url);
     let data = json_parse(body);

@@ -61,15 +61,18 @@ fn fetch_http_first(url) {
 
     // Tier 3: Browser
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 15000);
             browser_wait_for_selector(browser_id, "body", 8000);
             let html = browser_get_html(browser_id);
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
             return html;
-        } catch {}
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
     }
 
     ""
@@ -89,15 +92,18 @@ fn fetch_page(url) {
 
     // Tier 2: Browser
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 15000);
             browser_wait_for_selector(browser_id, "body", 8000);
             let html = browser_get_html(browser_id);
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
             return html;
-        } catch {}
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
     }
 
     // Tier 3: HTTP
@@ -122,15 +128,18 @@ fn fetch_page_wait(url, selector) {
 
     // Tier 2: Browser with selector wait
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 15000);
             browser_wait_for_selector(browser_id, selector, 12000);
             let html = browser_get_html(browser_id);
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
             return html;
-        } catch {}
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
     }
 
     // Tier 3: HTTP
@@ -458,7 +467,10 @@ fn get_series(id_or_url, auth) {
         year: year,
         content_rating: "suggestive",
         url: url,
-        extra: #{}
+        extra: #{
+            auto_match_metadata: true,
+            source_name: "MangaFire"
+        }
     }
 }
 
@@ -632,14 +644,16 @@ fn get_chapter_pages(chapter_id, auth) {
 
     // Tier 2: Browser automation
     if html == "" && browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_cloudflare(browser_id, 15000);
             browser_wait_for_selector(browser_id, "img.page-img, img[src*='mfcdn'], div.reader img, canvas", 15000);
             html = browser_get_html(browser_id);
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
         } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
             html = "";
         }
     }

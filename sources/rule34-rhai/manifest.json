@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "rule34-rhai",
   "name": "Rule34",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only. API credentials (User ID + API Key) are REQUIRED.",
   "author": {
     "name": "Tsubaki Community",
@@ -88,6 +88,30 @@
       "default": 40,
       "min": 10,
       "max": 100
+    },
+    "rating_filter": {
+      "type": "select",
+      "label": "Content Rating",
+      "description": "Filter content by rating",
+      "default": "all",
+      "options": [
+        {
+          "value": "all",
+          "label": "All Ratings"
+        },
+        {
+          "value": "safe",
+          "label": "Safe (SFW)"
+        },
+        {
+          "value": "questionable",
+          "label": "Questionable"
+        },
+        {
+          "value": "explicit",
+          "label": "Explicit (NSFW)"
+        }
+      ]
     },
     "safe_mode": {
       "type": "boolean",

@@ -282,7 +282,9 @@ fn parse_manga_page(html, manga_id) {
         url: `${BASE_URL}/manga/${manga_id}`,
         extra: #{
             type: type_text,
-            source_site: "mangapill"
+            source_site: "mangapill",
+            auto_match_metadata: true,
+            source_name: "MangaPill"
         }
     }
 }

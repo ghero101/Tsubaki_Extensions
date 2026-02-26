@@ -446,7 +446,9 @@ fn get_series(id_or_url, auth) {
         content_rating: "suggestive",
         url: url,
         extra: #{
-            rating: rating
+            rating: rating,
+            auto_match_metadata: true,
+            source_name: "MangaGeko"
         }
     }
 }

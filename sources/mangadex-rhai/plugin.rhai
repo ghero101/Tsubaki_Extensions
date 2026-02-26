@@ -143,13 +143,32 @@ fn extract_cover_url(manga_id, relationships) {
     return "";
 }
 
-/// Extract authors and artists from relationships.
-fn extract_people(relationships) {
+/// Extract authors from relationships.
+fn extract_authors(relationships) {
     let people = [];
     let seen = [];
     if relationships == () { return people; }
     for rel in relationships {
-        if rel.type == "author" || rel.type == "artist" {
+        if rel.type == "author" {
+            let attrs = rel.attributes;
+            if attrs != () && attrs.name != () {
+                if !array_contains(seen, attrs.name) {
+                    people.push(attrs.name);
+                    seen.push(attrs.name);
+                }
+            }
+        }
+    }
+    return people;
+}
+
+/// Extract artists from relationships.
+fn extract_artists(relationships) {
+    let people = [];
+    let seen = [];
+    if relationships == () { return people; }
+    for rel in relationships {
+        if rel.type == "artist" {
             let attrs = rel.attributes;
             if attrs != () && attrs.name != () {
                 if !array_contains(seen, attrs.name) {
@@ -241,17 +260,37 @@ fn build_series_result(manga, preferred_lang) {
         description = extract_title(attrs.description, preferred_lang);
     }
     
+    // Separate genre-type tags from format/theme tags
+    let all_tags = [];
+    let genres = [];
+    if attrs.tags != () {
+        for tag in attrs.tags {
+            let tag_attrs = tag.attributes;
+            if tag_attrs != () && tag_attrs.name != () {
+                let tag_name = extract_title(tag_attrs.name, preferred_lang);
+                if tag_name != "" {
+                    let group = if tag_attrs.group != () { tag_attrs.group } else { "" };
+                    if group == "genre" {
+                        genres.push(tag_name);
+                    } else {
+                        all_tags.push(tag_name);
+                    }
+                }
+            }
+        }
+    }
+
     return #{
         id: id,
         title: title,
         alternate_titles: alt_titles,
         description: description,
         cover_url: extract_cover_url(id, rels),
-        authors: extract_people(rels),
-        artists: [], // MangaDex API combines authors and artists
+        authors: extract_authors(rels),
+        artists: extract_artists(rels),
         status: map_status(attrs.status),
-        genres: extract_tags(attrs.tags, preferred_lang),
-        tags: [],
+        genres: genres,
+        tags: all_tags,
         year: attrs.year,
         content_rating: attrs.contentRating,
         url: `https://mangadex.org/title/${id}`,
@@ -259,7 +298,8 @@ fn build_series_result(manga, preferred_lang) {
             original_language: attrs.originalLanguage,
             last_chapter: attrs.lastChapter,
             last_volume: attrs.lastVolume,
-            demographic: attrs.publicationDemographic
+            demographic: attrs.publicationDemographic,
+            auto_match_metadata: true
         }
     };
 }

@@ -486,7 +486,7 @@ fn parse_tag_list(tag_string) {
     tags
 }
 
-/// Build query with included/excluded tags from settings
+/// Build query with rating filter and included/excluded tags from settings
 /// Returns the modified query string with tag filters applied
 fn apply_tag_filters(query, settings) {
     if settings == () {
@@ -494,6 +494,13 @@ fn apply_tag_filters(query, settings) {
     }
 
     let result_query = query;
+
+    // Apply rating filter
+    let rating = settings["rating_filter"];
+    if rating != () && rating != "all" && rating != "" {
+        // Rule34 ratings: safe, questionable, explicit
+        result_query = result_query + " rating:" + rating;
+    }
 
     // Get always include tags
     let include_tags_str = settings["always_include_tags"];

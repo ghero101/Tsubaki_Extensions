@@ -16,12 +16,17 @@ const BASE_URL = "https://mangaowl.io";
 /// Falls back to HTTP if browser not available
 fn fetch_html(url) {
     if browser_is_available() {
-        let browser_id = browser_launch();
-        browser_goto(browser_id, url);
-        browser_wait_for_cloudflare(browser_id, 15000);
-        let html = browser_get_html(browser_id);
-        browser_close(browser_id);
-        return html;
+        let browser_id = ();
+        try {
+            browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            let html = browser_get_html(browser_id);
+            try { browser_close(browser_id); } catch {}
+            return html;
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
     }
 
     // Fallback to HTTP (may fail with Cloudflare)
@@ -285,7 +290,10 @@ fn get_series(id_or_url, auth) {
         year: (),
         content_rating: "suggestive",
         url: url,
-        extra: #{}
+        extra: #{
+            auto_match_metadata: true,
+            source_name: "MangaOwl"
+        }
     }
 }
 

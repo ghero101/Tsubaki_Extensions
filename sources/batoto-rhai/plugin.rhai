@@ -25,8 +25,9 @@ const BASE_URL = "https://mto.to";
 /// Falls back to HTTP if browser not available
 fn fetch_html(url) {
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
 
             // Navigate to the page
             browser_goto(browser_id, url);
@@ -37,11 +38,9 @@ fn fetch_html(url) {
             } catch {}
 
             // Wait additional time for Vue.js to render content
-            // Try multiple selectors that might indicate content is loaded
             try {
                 browser_wait_for_selector(browser_id, "a[href*='/title/'], a[href*='/chapter/'], div.item, div.main", 10000);
             } catch {
-                // If specific selectors fail, just wait a bit for Vue to render
                 try {
                     browser_wait_for_selector(browser_id, "div, main, article", 5000);
                 } catch {}
@@ -51,19 +50,19 @@ fn fetch_html(url) {
             let html = browser_get_html(browser_id);
 
             // Close browser session to free resources
-            browser_close(browser_id);
+            try { browser_close(browser_id); } catch {}
 
             if html != "" && html.len() > 500 {
                 return html;
             }
         } catch {
-            // Browser failed, fall through to HTTP
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
 
     // Fallback to HTTP (will likely return empty Vue shell)
     let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5"
     };
@@ -456,7 +455,10 @@ fn get_series(id_or_url, auth) {
         year: year,
         content_rating: (),
         url: url,
-        extra: #{}
+        extra: #{
+            source_name: "BatoTo",
+            auto_match_metadata: true
+        }
     }
 }
 
@@ -581,11 +583,11 @@ fn get_chapters(series_id, auth) {
         });
     }
 
-    // Sort chapters by number (descending - newest first)
+    // Sort chapters by number ascending (oldest first)
     chapters.sort(|a, b| {
         let num_a = parse_float(a["number"]);
         let num_b = parse_float(b["number"]);
-        if num_a < num_b { 1 } else if num_a > num_b { -1 } else { 0 }
+        if num_a < num_b { -1 } else if num_a > num_b { 1 } else { 0 }
     });
 
     chapters
@@ -644,43 +646,52 @@ fn get_chapter_pages(chapter_id, auth) {
     let pages = [];
 
     if browser_is_available() {
-        let browser_id = browser_launch();
+        let browser_id = ();
+        try {
+            browser_id = browser_launch();
 
-        // Navigate to the chapter page
-        browser_goto(browser_id, url);
+            // Navigate to the chapter page
+            browser_goto(browser_id, url);
 
-        // Wait for images to load
-        browser_wait_for_selector(browser_id, "img.page-img, img.chapter-img, div.page-container", 15000);
+            // Wait for images to load
+            try {
+                browser_wait_for_selector(browser_id, "img.page-img, img.chapter-img, div.page-container", 15000);
+            } catch {}
 
-        // Execute script to get image URLs
-        let result = browser_execute_script(browser_id, script);
+            // Execute script to get image URLs
+            let result = "";
+            try {
+                result = browser_execute_script(browser_id, script);
+            } catch {}
 
-        // Close browser
-        browser_close(browser_id);
+            // Close browser
+            try { browser_close(browser_id); } catch {}
 
-        // Parse the result
-        if result != () && result != "" && result != "[]" {
-            let img_urls = json_parse(result);
+            // Parse the result
+            if result != () && result != "" && result != "[]" {
+                let img_urls = json_parse(result);
 
-            if img_urls != () {
-                let idx = 0;
-                for img_url in img_urls {
-                    if img_url != () && img_url != "" {
-                        // Fix CDN URL
-                        let fixed_url = fix_cdn_url(img_url);
+                if img_urls != () {
+                    let idx = 0;
+                    for img_url in img_urls {
+                        if img_url != () && img_url != "" {
+                            let fixed_url = fix_cdn_url(img_url);
 
-                        pages.push(#{
-                            index: idx,
-                            url: fixed_url,
-                            headers: #{
-                                "Referer": BASE_URL
-                            },
-                            referer: BASE_URL
-                        });
-                        idx += 1;
+                            pages.push(#{
+                                index: idx,
+                                url: fixed_url,
+                                headers: #{
+                                    "Referer": BASE_URL
+                                },
+                                referer: BASE_URL
+                            });
+                            idx += 1;
+                        }
                     }
                 }
             }
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
 

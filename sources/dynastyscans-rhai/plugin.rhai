@@ -344,7 +344,9 @@ fn get_series(id_or_url, auth) {
         content_rating: "suggestive",
         url: url,
         extra: #{
-            pairings: pairings
+            pairings: pairings,
+            auto_match_metadata: true,
+            source_name: "Dynasty Scans"
         }
     }
 }

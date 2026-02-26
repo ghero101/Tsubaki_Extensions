@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "xbooru-rhai",
   "name": "XBooru",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Search and browse XBooru for anime-style artwork. Contains adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",
@@ -67,6 +67,30 @@
       "default": 40,
       "min": 10,
       "max": 100
+    },
+    "rating_filter": {
+      "type": "select",
+      "label": "Content Rating",
+      "description": "Filter content by rating",
+      "default": "all",
+      "options": [
+        {
+          "value": "all",
+          "label": "All Ratings"
+        },
+        {
+          "value": "safe",
+          "label": "Safe (SFW)"
+        },
+        {
+          "value": "questionable",
+          "label": "Questionable"
+        },
+        {
+          "value": "explicit",
+          "label": "Explicit (NSFW)"
+        }
+      ]
     },
     "safe_mode": {
       "type": "boolean",

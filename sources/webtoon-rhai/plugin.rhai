@@ -304,7 +304,9 @@ fn get_series(id_or_url, auth) {
         content_rating: "safe",
         url: url,
         extra: #{
-            title_no: title_no
+            title_no: title_no,
+            auto_match_metadata: true,
+            source_name: "Webtoon"
         }
     }
 }
