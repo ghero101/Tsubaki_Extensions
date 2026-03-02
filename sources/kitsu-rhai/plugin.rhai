@@ -344,12 +344,12 @@ fn get_series(id_or_url, auth) {
         tags: tags,
         year: year,
         content_rating: content_rating,
+        chapter_count: chapter_count,
         url: `https://kitsu.io/manga/${attributes["slug"]}`,
         extra: #{
             kitsu_id: manga_id,
             rating: rating,
             subtype: subtype,
-            chapter_count: chapter_count,
             volume_count: volume_count,
             age_rating: age_rating,
             age_rating_guide: age_rating_guide

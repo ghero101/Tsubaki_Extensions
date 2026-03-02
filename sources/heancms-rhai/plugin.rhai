@@ -268,6 +268,15 @@ fn parse_series_dto(item) {
         artists.push(studio);
     }
 
+    // Extract chapter count (HeanCMS API may return as chapters_count, chapter_count, or meta.total)
+    let chapter_count = item["chapters_count"];
+    if chapter_count == () {
+        chapter_count = item["chapter_count"];
+    }
+    if chapter_count == () {
+        chapter_count = item["total_chapters"];
+    }
+
     let base_url = get_base_url();
 
     #{
@@ -281,7 +290,8 @@ fn parse_series_dto(item) {
         status: status,
         genres: genres,
         tags: [],
-        description: item["description"]
+        description: item["description"],
+        chapter_count: chapter_count
     }
 }
 
