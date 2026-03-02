@@ -316,7 +316,7 @@ fn get_series(post_id, auth) {
 
     let data = json_parse(response_text);
 
-    if data == () || data.len == () || data.len() == 0 {
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return ();
     }
 
@@ -343,7 +343,7 @@ fn get_chapter_pages(chapter_id, auth) {
 
     let data = json_parse(response_text);
 
-    if data == () || data.len == () || data.len() == 0 {
+    if data == () || type_of(data) != "array" || data.len() == 0 {
         return [];
     }
 

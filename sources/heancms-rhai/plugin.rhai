@@ -458,7 +458,7 @@ fn get_chapters_new_endpoint(slug, auth) {
 
     if items == () {
         // Check if response is the array directly
-        if chapters_data.len != () {
+        if type_of(chapters_data) == "array" && chapters_data.len() > 0 {
             items = chapters_data;
         }
     }

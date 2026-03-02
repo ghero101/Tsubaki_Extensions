@@ -430,8 +430,9 @@ fn get_chapter_pages(chapter_id, auth) {
 
     // Get reading style from settings (default: long_strip)
     let reading_style = "long_strip";
-    if settings.contains("reading_style") {
-        reading_style = settings["reading_style"];
+    let s = if settings != () { settings } else { #{} };
+    if s.contains("reading_style") {
+        reading_style = s["reading_style"];
     }
 
     // Fetch pages using the /images endpoint

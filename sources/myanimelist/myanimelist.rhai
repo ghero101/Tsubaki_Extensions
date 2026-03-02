@@ -666,7 +666,12 @@ fn update_list_entry(manga_id, entry, auth) {
         form_data.push(`priority=${entry.priority}`);
     }
 
-    let body = form_data.join("&");
+    let body = "";
+    let first = true;
+    for part in form_data {
+        if first { body = part; first = false; }
+        else { body = body + "&" + part; }
+    }
 
     let response = http_patch_form(url, body, headers);
     let json = json_parse(response);

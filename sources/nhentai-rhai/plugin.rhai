@@ -24,6 +24,18 @@ const THUMB_URL = "https://t.nhentai.net/galleries";
 
 // --- Helper Functions ---
 
+/// Join array elements with a separator
+fn join_array(arr, sep) {
+    if arr.len() == 0 { return ""; }
+    let result = "";
+    let first = true;
+    for item in arr {
+        if first { result = item.to_string(); first = false; }
+        else { result = result + sep + item.to_string(); }
+    }
+    result
+}
+
 /// Get file extension from image type
 fn get_extension(type_char) {
     if type_char == "j" {
@@ -156,18 +168,18 @@ fn build_series_result(gallery) {
     // Build description from parodies and characters
     let desc_parts = [];
     if parodies.len() > 0 {
-        desc_parts.push("Parody: " + parodies.join(", "));
+        desc_parts.push("Parody: " + join_array(parodies, ", "));
     }
     if characters.len() > 0 {
-        desc_parts.push("Characters: " + characters.join(", "));
+        desc_parts.push("Characters: " + join_array(characters, ", "));
     }
     if groups.len() > 0 {
-        desc_parts.push("Group: " + groups.join(", "));
+        desc_parts.push("Group: " + join_array(groups, ", "));
     }
     if languages.len() > 0 {
-        desc_parts.push("Language: " + languages.join(", "));
+        desc_parts.push("Language: " + join_array(languages, ", "));
     }
-    let description = desc_parts.join("\n");
+    let description = join_array(desc_parts, "\n");
 
     // Get page count
     let num_pages = gallery["num_pages"];

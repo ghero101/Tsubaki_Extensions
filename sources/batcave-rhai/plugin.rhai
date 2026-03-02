@@ -28,7 +28,8 @@ const BASE_URL = "https://batcave.biz";
 
 /// Get headers for HTTP requests (with optional mobile user-agent)
 fn get_headers() {
-    let use_mobile = if settings.contains("use_mobile_ua") { settings["use_mobile_ua"] } else { true };
+    let s = if settings != () { settings } else { #{} };
+    let use_mobile = if s.contains("use_mobile_ua") { s["use_mobile_ua"] } else { true };
 
     if use_mobile {
         #{

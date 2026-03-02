@@ -57,7 +57,16 @@ fn build_result(post) {
             count += 1;
         }
     }
-    let title = title_tags.join(", ");
+    let title = "";
+    let first = true;
+    for t in title_tags {
+        if first {
+            title = t;
+            first = false;
+        } else {
+            title = title + ", " + t;
+        }
+    }
 
     // Get URLs - Konachan uses preview_url, sample_url, file_url
     let preview_url = post["preview_url"];

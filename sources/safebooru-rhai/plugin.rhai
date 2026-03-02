@@ -221,7 +221,7 @@ fn get_latest_updates(page, auth) {
 }
 
 /// Get popular images (sorted by score)
-fn get_popular(page) {
+fn get_popular(page, auth) {
     let s = if settings != () { settings } else { #{} };
     let limit = 40;
     let filtered = apply_filters("sort:score", s);
@@ -252,7 +252,7 @@ fn get_popular(page) {
 }
 
 /// Get details for a specific image
-fn get_series_details(id) {
+fn get_series(id, auth) {
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&id=${id}`;
 
     let body = http_get(url);
@@ -268,12 +268,12 @@ fn get_series_details(id) {
 }
 
 /// Get chapters (not applicable for image posts, returns empty)
-fn get_chapters(series_id) {
+fn get_chapters(series_id, auth) {
     []
 }
 
 /// Get pages for a "chapter" (the single image)
-fn get_chapter_pages(chapter_id) {
+fn get_chapter_pages(chapter_id, auth) {
     // For image posts, chapter_id is the post ID
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&id=${chapter_id}`;
 

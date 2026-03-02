@@ -55,7 +55,16 @@ fn build_result(post) {
             count += 1;
         }
     }
-    let title = title_tags.join(", ");
+    let title = "";
+    let first = true;
+    for t in title_tags {
+        if first {
+            title = t;
+            first = false;
+        } else {
+            title = title + ", " + t;
+        }
+    }
 
     #{
         id: post_id,
