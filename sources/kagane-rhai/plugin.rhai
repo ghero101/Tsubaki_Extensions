@@ -783,9 +783,14 @@ fn get_chapters(series_id, auth) {
 fn get_chapter_pages(chapter_id, auth) {
     // Parse "{series_id}/{book_id}"
     let parts = chapter_id.split("/");
-    if parts.len() < 2 { return []; }
+    if parts.len() < 2 {
+        throw `Invalid chapter_id format: "${chapter_id}" (expected "series_id/book_id")`;
+    }
     let series_id = parts[0];
     let book_id = parts[1];
+    if series_id == "" || book_id == "" {
+        throw `Invalid chapter_id: series_id="${series_id}", book_id="${book_id}"`;
+    }
 
     let reader_url = `${BASE_URL}/series/${series_id}/reader/${book_id}`;
     let extract_url = "http://tsubaki-browser:3001/extract-pages";
