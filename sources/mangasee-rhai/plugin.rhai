@@ -37,14 +37,14 @@ fn get_headers() {
 fn extract_vm_json(html, var_name) {
     // Look for vm.VarName = [...]
     let pattern = `vm\\.${var_name}\\s*=\\s*(\\[.*?\\]);`;
-    let match = regex_find(pattern, html);
+    let found = regex_find(pattern, html);
 
-    if match == () || match == "" {
+    if found == () || found == "" {
         return [];
     }
 
     // Parse the JSON
-    let parsed = json_parse(match);
+    let parsed = json_parse(found);
     if parsed == () {
         return [];
     }

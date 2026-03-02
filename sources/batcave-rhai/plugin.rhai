@@ -71,9 +71,9 @@ fn fetch_html(url) {
 /// URL format: /{id}-{slug}.html or https://batcave.biz/{id}-{slug}.html
 fn extract_comic_id(url) {
     // Pattern: /33758-batman-2025.html -> 33758
-    let match = regex_find("/(\\d+)-[^/]+\\.html", url);
-    if match != "" {
-        let num = regex_find("\\d+", match);
+    let found = regex_find("/(\\d+)-[^/]+\\.html", url);
+    if found != "" {
+        let num = regex_find("\\d+", found);
         if num != "" {
             return num;
         }
@@ -98,10 +98,10 @@ fn extract_comic_id(url) {
 /// Extract slug from comic URL
 /// URL format: /{id}-{slug}.html -> {slug}
 fn extract_slug(url) {
-    let match = regex_find("/\\d+-([^/]+)\\.html", url);
-    if match != "" {
+    let found = regex_find("/\\d+-([^/]+)\\.html", url);
+    if found != "" {
         // Remove the leading /ID- and trailing .html
-        let clean = match.split("-");
+        let clean = found.split("-");
         if clean.len() > 1 {
             // Join everything after the ID
             let slug_parts = [];

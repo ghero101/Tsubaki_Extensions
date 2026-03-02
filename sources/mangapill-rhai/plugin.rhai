@@ -158,7 +158,7 @@ fn parse_manga_card(card_html) {
     }
 
     #{
-        id: manga_id,
+        id: href,
         title: title,
         alternate_titles: [],
         description: "",
@@ -173,13 +173,14 @@ fn parse_manga_card(card_html) {
         url: `${BASE_URL}${href}`,
         extra: #{
             type: type_text,
-            source_site: "mangapill"
+            source_site: "mangapill",
+            manga_id: manga_id
         }
     }
 }
 
 /// Parse full manga details from manga page
-fn parse_manga_page(html, manga_id) {
+fn parse_manga_page(html, manga_id, page_url) {
     // Get title from h1 using regex (more reliable)
     let title = "";
     let title_result = regex_find("<h1[^>]*>([^<]+)</h1>", html);
@@ -266,8 +267,14 @@ fn parse_manga_page(html, manga_id) {
         }
     }
 
+    // Extract URL path for use as ID (e.g., /manga/33/slug-name)
+    let url_path = regex_find("/manga/\\d+/[^\"?#]+", page_url);
+    if url_path == "" {
+        url_path = `/manga/${manga_id}`;
+    }
+
     #{
-        id: manga_id,
+        id: url_path,
         title: title,
         alternate_titles: [],
         description: description,
@@ -279,10 +286,11 @@ fn parse_manga_page(html, manga_id) {
         tags: [],
         year: year,
         content_rating: "safe",
-        url: `${BASE_URL}/manga/${manga_id}`,
+        url: page_url,
         extra: #{
             type: type_text,
             source_site: "mangapill",
+            manga_id: manga_id,
             auto_match_metadata: true,
             source_name: "MangaPill"
         }
@@ -363,7 +371,7 @@ fn search_series(query, page, auth) {
         }
 
         series.push(#{
-            id: manga_id,
+            id: href,
             title: title,
             alternate_titles: [],
             description: "",
@@ -377,7 +385,8 @@ fn search_series(query, page, auth) {
             content_rating: "safe",
             url: `${BASE_URL}${href}`,
             extra: #{
-                source_site: "mangapill"
+                source_site: "mangapill",
+                manga_id: manga_id
             }
         });
     }
@@ -489,7 +498,7 @@ fn get_series(id_or_url, auth) {
         throw `Manga not found at: ${url}`;
     }
 
-    parse_manga_page(response_text, manga_id)
+    parse_manga_page(response_text, manga_id, url)
 }
 
 /// Get chapters for a manga
@@ -900,7 +909,7 @@ fn get_latest_updates(page, auth) {
         }
 
         series.push(#{
-            id: manga_id,
+            id: href,
             title: title,
             alternate_titles: [],
             description: "",
@@ -914,7 +923,8 @@ fn get_latest_updates(page, auth) {
             content_rating: "safe",
             url: `${BASE_URL}${href}`,
             extra: #{
-                source_site: "mangapill"
+                source_site: "mangapill",
+                manga_id: manga_id
             }
         });
     }
@@ -1001,7 +1011,7 @@ fn browse(page, category, auth) {
         }
 
         series.push(#{
-            id: manga_id,
+            id: manga_url,
             title: title,
             alternate_titles: [],
             description: "",
@@ -1015,7 +1025,8 @@ fn browse(page, category, auth) {
             content_rating: "safe",
             url: `${BASE_URL}${manga_url}`,
             extra: #{
-                source_site: "mangapill"
+                source_site: "mangapill",
+                manga_id: manga_id
             }
         });
     }
