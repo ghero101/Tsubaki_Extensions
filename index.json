@@ -1,6 +1,6 @@
 {
-    "version": 42,
-    "updated_at": "2026-03-02T20:00:00Z",
+    "version": 43,
+    "updated_at": "2026-03-02T22:00:00Z",
     "addons": [
         {
             "id": "anilist",
@@ -115,21 +115,26 @@
         {
             "id": "demonicscans-rhai",
             "name": "DemonicScans",
-            "version": "1.0.3",
+            "version": "1.0.4",
             "description": "Scraper for DemonicScans manga scanlation site.",
             "author": "Tsubaki Community",
             "technology": "rhai",
             "addon_type": "scraper",
             "nsfw": false,
             "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-3.zip",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-4.zip",
             "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans-rhai/manifest.json",
-            "latest_version": "1.0.3",
+            "latest_version": "1.0.4",
             "versions": {
                 "1.0.3": {
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-3.zip",
-                    "changelog": "Updated",
+                    "changelog": "Initial release",
                     "released_at": "2026-01-19T06:33:25Z"
+                },
+                "1.0.4": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-4.zip",
+                    "changelog": "Fix browser_get() runtime error — use proper browser automation API",
+                    "released_at": "2026-03-02T22:00:00Z"
                 }
             }
         },

@@ -12,10 +12,26 @@ fn get_headers() {
 }
 
 fn fetch_html(url) {
-    if browser_is_available() {
-        return browser_get(url);
+    // Try HTTP first (faster)
+    let html = http_get_with_headers(url, get_headers());
+    if html != "" && !html.contains("Just a moment") {
+        return html;
     }
-    http_get_with_headers(url, get_headers())
+
+    // Fallback to browser automation for Cloudflare-protected pages
+    if browser_is_available() {
+        try {
+            let browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_selector(browser_id, ".post-title, .c-tabs-item__content, .reading-content", 15000);
+            let result = browser_get_html(browser_id);
+            browser_close(browser_id);
+            return result;
+        } catch {
+            // Browser failed, return whatever HTTP gave us
+        }
+    }
+    html
 }
 
 fn get_source_info() {
