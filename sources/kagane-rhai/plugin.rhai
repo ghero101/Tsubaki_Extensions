@@ -781,8 +781,12 @@ fn get_chapters(series_id, auth) {
 /// Cloudflare errors internally. This function adds an outer retry layer for
 /// transient HTTP failures or when the service reports site unavailability.
 fn get_chapter_pages(chapter_id, auth) {
-    // Parse "{series_id}|{book_id}" (pipe separator avoids URL path conflicts with %2F)
+    // Parse "{series_id}|{book_id}" or legacy "{series_id}/{book_id}"
     let parts = chapter_id.split("|");
+    if parts.len() < 2 {
+        // Fallback: legacy separator "/" (from chapters imported before pipe separator change)
+        parts = chapter_id.split("/");
+    }
     if parts.len() < 2 {
         throw `Invalid chapter_id format: "${chapter_id}" (expected "series_id|book_id")`;
     }
