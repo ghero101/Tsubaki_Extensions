@@ -1,6 +1,6 @@
 {
-    "version": 45,
-    "updated_at": "2026-03-20T12:00:00Z",
+    "version": 46,
+    "updated_at": "2026-03-20T14:00:00Z",
     "addons": [
         {
             "id": "anilist",
@@ -981,6 +981,27 @@
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-2-0.zip",
                     "changelog": "Updated",
                     "released_at": "2026-02-16T00:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "comick",
+            "name": "ComicK",
+            "version": "1.0.0",
+            "description": "ComicK - Massive manga, manhwa, and manhua library with multi-language support",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comick-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comick-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_1-0-0.zip",
+                    "changelog": "Initial release - API-based scraper with massive multi-language catalog",
+                    "released_at": "2026-03-20T14:00:00Z"
                 }
             }
         },

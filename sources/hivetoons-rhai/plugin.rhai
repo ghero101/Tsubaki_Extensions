@@ -2,7 +2,8 @@
 // API-based scraper for hivetoons.org (formerly Void Scans)
 //
 // API Endpoints (api.hivetoons.org/api):
-//   GET /query - Search/browse series (returns full series data with chapters)
+//   GET /query - Search/browse series (returns series data)
+//   GET /post/chapters?postId={id} - Get all chapters for a series (flat JSON array)
 // Chapter pages:
 //   Fetched by scraping HTML from hivetoons.org/series/{slug}/{chapter-slug}
 //   Images hosted on storage.hivetoon.com
@@ -260,9 +261,9 @@ fn get_chapters(series_id, auth) {
         }
     }
 
-    // Query API searching by slug - response includes chapters array
-    let url = `${API_URL}/query?page=1&perPage=20&series_type=Comic&query_string=${url_encode(slug)}&adult=true&order=desc&orderBy=updated_at&status=All&tags_ids=[]`;
-    let response = http_get_with_headers(url, get_headers());
+    // Step 1: Query API to find the series and get its numeric id
+    let query_url = `${API_URL}/query?page=1&perPage=20&series_type=Comic&query_string=${url_encode(slug)}&adult=true&order=desc&orderBy=updated_at&status=All&tags_ids=[]`;
+    let response = http_get_with_headers(query_url, get_headers());
 
     if response == "" || response == () {
         return [];
@@ -292,7 +293,20 @@ fn get_chapters(series_id, auth) {
         series_data = items[0];
     }
 
-    let chapters_data = series_data["chapters"];
+    let post_id = series_data["id"];
+    if post_id == () {
+        return [];
+    }
+
+    // Step 2: Fetch chapters from the dedicated chapters endpoint
+    let chapters_url = `${API_URL}/post/chapters?postId=${post_id}`;
+    let ch_response = http_get_with_headers(chapters_url, get_headers());
+
+    if ch_response == "" || ch_response == () {
+        return [];
+    }
+
+    let chapters_data = json_parse(ch_response);
     if chapters_data == () || chapters_data.len() == 0 {
         return [];
     }
