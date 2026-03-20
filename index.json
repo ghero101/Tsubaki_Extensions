@@ -1,6 +1,6 @@
 {
-    "version": 44,
-    "updated_at": "2026-03-20T06:00:00Z",
+    "version": 45,
+    "updated_at": "2026-03-20T12:00:00Z",
     "addons": [
         {
             "id": "anilist",
@@ -981,6 +981,174 @@
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-2-0.zip",
                     "changelog": "Updated",
                     "released_at": "2026-02-16T00:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "hivetoons",
+            "name": "HiveToons",
+            "version": "1.0.0",
+            "description": "HiveToons - Manhwa and webtoon scanlation group (formerly Void Scans)",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hivetoons-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hivetoons-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "fanfox",
+            "name": "FanFox",
+            "version": "1.0.0",
+            "description": "FanFox (MangaFox) - Large manga aggregator with extensive library",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/fanfox-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/fanfox-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "mangabuddy",
+            "name": "MangaBuddy",
+            "version": "1.0.0",
+            "description": "MangaBuddy - Popular manga, manhwa, and manhua aggregator",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangabuddy-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangabuddy-rhai/mangabuddy-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangabuddy-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangabuddy-rhai/mangabuddy-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "toonily",
+            "name": "Toonily",
+            "version": "1.0.0",
+            "description": "Toonily - Korean manhwa and webtoon reader",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": true,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/toonily-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonily-rhai/toonily-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/toonily-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonily-rhai/toonily-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "philiascans",
+            "name": "Philia Scans",
+            "version": "1.0.0",
+            "description": "Philia Scans - Manga and manhua translations",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "manhuaplus",
+            "name": "ManhuaPlus",
+            "version": "1.0.0",
+            "description": "ManhuaPlus - Chinese manhua reader with large collection",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhuaplus-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhuaplus-rhai/manhuaplus-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhuaplus-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhuaplus-rhai/manhuaplus-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "toonclash",
+            "name": "ToonClash",
+            "version": "1.0.0",
+            "description": "ToonClash - Manga, manhwa, and manhua reader",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/toonclash-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/toonclash-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "arenascans",
+            "name": "Arena Scans",
+            "version": "1.0.0",
+            "description": "Arena Scans - Manhwa and manga scanlation group",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/arenascans-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/arenascans-rhai/arenascans-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/arenascans-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/arenascans-rhai/arenascans-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-20T12:00:00Z"
                 }
             }
         }
