@@ -1007,12 +1007,29 @@ fn get_chapter_pages(chapter_id, auth) {
         return [];
     }
 
+    let pages = extract_page_images(html, url);
+
+    // If no images found, the page likely loads them via JavaScript.
+    // Retry with FlareSolverr which renders JS and returns the full DOM.
+    if pages.len() == 0 && flaresolverr_is_available() {
+        try {
+            let fs_html = flaresolverr_get(url, 30000);
+            if fs_html.len() > 500 {
+                pages = extract_page_images(fs_html, url);
+            }
+        } catch {}
+    }
+
+    pages
+}
+
+/// Extract page images from chapter HTML using multiple selector strategies
+fn extract_page_images(html, referer_url) {
     let pages = [];
     let idx = 0;
     let seen_urls = #{};
 
     // Madara theme reader: div.page-break img or div.reading-content img
-    // These are the standard selectors in order of specificity
     let selectors = [
         "div.page-break img",
         ".reading-content .page-break img",
@@ -1032,11 +1049,8 @@ fn get_chapter_pages(chapter_id, auth) {
 
             if img_url != () && img_url != "" && is_valid_page_image(img_url) {
                 let full_url = make_absolute_url(img_url);
-
-                // Trim whitespace from URLs (Madara sometimes has leading/trailing spaces)
                 full_url = full_url.trim();
 
-                // Skip duplicates
                 if seen_urls.contains(full_url) {
                     continue;
                 }
@@ -1045,27 +1059,22 @@ fn get_chapter_pages(chapter_id, auth) {
                 pages.push(#{
                     index: idx,
                     url: full_url,
-                    headers: #{
-                        "Referer": url
-                    },
-                    referer: url
+                    headers: #{ "Referer": referer_url },
+                    referer: referer_url
                 });
                 idx += 1;
             }
         }
 
-        // If we found pages with this selector, stop trying others
         if pages.len() > 0 {
             break;
         }
     }
 
-    // Fallback: regex extraction for image URLs in case HTML parsing missed them
+    // Fallback: regex extraction for image URLs
     if pages.len() == 0 {
-        // Look for image URLs in the page source (common in Madara themes)
         let img_matches = regex_find_all("\"(https?://[^\"]+(?:\\.jpg|\\.jpeg|\\.png|\\.webp)[^\"]*)\"", html);
         for img_url in img_matches {
-            // Clean up the match - remove surrounding quotes
             let clean_url = img_url.replace("\"", "").trim();
 
             if is_valid_page_image(clean_url) {
@@ -1077,10 +1086,8 @@ fn get_chapter_pages(chapter_id, auth) {
                 pages.push(#{
                     index: idx,
                     url: clean_url,
-                    headers: #{
-                        "Referer": url
-                    },
-                    referer: url
+                    headers: #{ "Referer": referer_url },
+                    referer: referer_url
                 });
                 idx += 1;
             }
