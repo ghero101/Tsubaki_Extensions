@@ -50,7 +50,7 @@ fn search_series(query, page, auth) {
         return #{ series: [], has_more: false, total: 0 };
     }
 
-    let items = data["data"];
+    let items = data["posts"];
     if items == () || items.len() == 0 {
         return #{ series: [], has_more: false, total: 0 };
     }
@@ -97,7 +97,7 @@ fn browse(page, category, auth) {
         return #{ series: [], has_more: false };
     }
 
-    let items = data["data"];
+    let items = data["posts"];
     if items == () || items.len() == 0 {
         return #{ series: [], has_more: false };
     }
@@ -145,7 +145,7 @@ fn get_series(id_or_url, auth) {
         return #{ id: slug, title: "", error: "Failed to parse response" };
     }
 
-    let items = data["data"];
+    let items = data["posts"];
     if items == () || items.len() == 0 {
         return #{ id: slug, title: "", error: "Series not found" };
     }
@@ -274,7 +274,7 @@ fn get_chapters(series_id, auth) {
         return [];
     }
 
-    let items = data["data"];
+    let items = data["posts"];
     if items == () || items.len() == 0 {
         return [];
     }

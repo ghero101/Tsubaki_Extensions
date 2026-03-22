@@ -553,12 +553,19 @@ fn get_chapters(series_id, auth) {
         let pagination = data["pagination"];
         if pagination != () {
             let last_page = pagination["last_page"];
-            if last_page != () && current_page >= last_page {
+            if last_page != () {
+                // Ensure numeric comparison (API may return int or string)
+                let last_num = parse_int(`${last_page}`);
+                if current_page >= last_num {
+                    break;
+                }
+            }
+            // If no last_page but we got items, continue
+        } else {
+            // No pagination info — check if items suggest more pages
+            if items.len() < 10 {
                 break;
             }
-        } else {
-            // No pagination info and we got data — might be a flat response
-            break;
         }
 
         current_page += 1;

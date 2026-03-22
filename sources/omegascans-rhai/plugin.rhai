@@ -297,8 +297,9 @@ fn get_chapters(series_id, auth) {
             let ch_created = if ch["created_at"] != () { ch["created_at"] } else { () };
             let ch_price = if ch["price"] != () { ch["price"] } else { 0 };
 
-            // Extract chapter number from index (e.g., "7.0" -> "7")
-            let number = ch_index;
+            // Extract chapter number from index (e.g., 7.0 -> "7")
+            // The API returns index as a number, so convert to string first
+            let number = `${ch_index}`;
             if number.ends_with(".0") {
                 number = number.sub_string(0, number.len() - 2);
             }
