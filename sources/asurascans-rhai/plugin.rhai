@@ -8,7 +8,7 @@
 //   Browser: browser_launch_stealth(), browser_goto(), browser_scroll_to_bottom(),
 //            browser_click(), browser_get_html(), browser_close()
 
-const BASE_URL = "https://asuracomic.net";
+const BASE_URL = "https://asurascans.com";
 
 /// Get standard headers for requests
 fn get_headers() {
@@ -267,7 +267,7 @@ fn get_series(id_or_url, auth) {
     }
     if cover_url == () || cover_url == "" {
         // Second fallback: first optimized.webp image (series cover)
-        let img_match = regex_find("https://gg\\.asuracomic\\.net/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
+        let img_match = regex_find("https://gg\\.asura(?:comic\\.net|scans\\.com)/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
         if img_match != "" {
             cover_url = img_match;
         }
@@ -538,7 +538,7 @@ fn get_chapter_pages(chapter_id, auth) {
     // Images are embedded in escaped JSON in Next.js page data
     // Extract URLs using regex - pattern matches page images from any asura CDN subdomain
     // Format: https://{cdn}.asuracomic.net/storage/media/XXXXX/conversions/FILENAME-optimized.webp
-    let matches = regex_find_all("https://[a-z]+\\.asuracomic\\.net/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
+    let matches = regex_find_all("https://[a-z]+\\.asura(?:comic\\.net|scans\\.com)/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
 
     // Fallback: try broader pattern if CDN domain changes
     if matches.len() == 0 {

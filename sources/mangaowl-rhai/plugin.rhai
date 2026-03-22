@@ -67,12 +67,23 @@ fn search_series(query, page, auth) {
 
     // Select search result items (Madara theme structure)
     let items = html_select(html, "div.page-item-detail");
+    if items.len() == 0 {
+        items = html_select(html, ".page-listing-item");
+    }
+    if items.len() == 0 {
+        items = html_select(html, "div.c-tabs-item__content");
+    }
 
     for item in items {
-        // Get the title link
+        // Get the title link - MangaOwl uses h1 not h3
         let title_links = html_select(item, ".post-title a");
         if title_links.len() == 0 {
-            // Try alternative selector
+            title_links = html_select(item, ".post-title h1 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "h1 a");
+        }
+        if title_links.len() == 0 {
             title_links = html_select(item, "h3 a");
         }
         if title_links.len() == 0 {
@@ -421,20 +432,38 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest updates
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/page/${page}/`;
+    // MangaOwl uses /read-1/ with Madara's m_orderby and page/ pagination
+    let url = `${BASE_URL}/read-1/?m_orderby=latest`;
+    if page > 1 {
+        url = `${BASE_URL}/read-1/page/${page}/?m_orderby=latest`;
+    }
 
     let html = fetch_html(url);
     let doc = html_parse(html);
 
     let series = [];
 
-    // Parse latest updates (Madara theme structure)
+    // Parse latest updates - Madara theme uses .page-item-detail for each card
     let items = html_select(html, ".page-item-detail");
+    if items.len() == 0 {
+        items = html_select(html, ".page-listing-item");
+    }
 
     for item in items {
+        // MangaOwl uses .post-title with h1 (not h3)
         let title_links = html_select(item, ".post-title a");
         if title_links.len() == 0 {
+            title_links = html_select(item, ".post-title h1 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "h1 a");
+        }
+        if title_links.len() == 0 {
             title_links = html_select(item, "h3 a");
+        }
+        if title_links.len() == 0 {
+            // Fallback: find any link to /read-1/ within item
+            title_links = html_select(item, "a[href*='/read-1/']");
         }
         if title_links.len() == 0 {
             continue;
@@ -448,6 +477,12 @@ fn get_latest_updates(page, auth) {
 
         let slug = extract_slug(href);
         let title = element_text(link).trim();
+        if title == "" {
+            let title_attr = element_attr(link, "title");
+            if title_attr != () {
+                title = title_attr.trim();
+            }
+        }
 
         let cover_url = ();
         let imgs = html_select(item, ".item-thumb img, img");
@@ -471,8 +506,24 @@ fn get_latest_updates(page, auth) {
 
     // Check for next page
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .wp-pagenavi a.nextpostslink");
     if next_links.len() > 0 {
+        has_more = true;
+    }
+    // Fallback: check page link numbers
+    if !has_more {
+        let next_page = page + 1;
+        let page_links = html_select(html, ".wp-pagenavi a, .page-numbers a");
+        for pl in page_links {
+            let pl_href = element_attr(pl, "href");
+            if pl_href != () && pl_href.contains(`/page/${next_page}`) {
+                has_more = true;
+                break;
+            }
+        }
+    }
+    // If we got a full page, likely more exist
+    if !has_more && series.len() >= 10 {
         has_more = true;
     }
 
@@ -486,8 +537,11 @@ fn get_latest_updates(page, auth) {
 
 /// Get popular series
 fn get_popular(page, auth) {
-    // MangaOwl uses m_orderby parameter for sorting
-    let url = `${BASE_URL}/manga/?m_orderby=views&paged=${page}`;
+    // MangaOwl uses read-1 path with m_orderby parameter and page/ pagination
+    let url = `${BASE_URL}/read-1/?m_orderby=views`;
+    if page > 1 {
+        url = `${BASE_URL}/read-1/page/${page}/?m_orderby=views`;
+    }
 
     let html = fetch_html(url);
     let doc = html_parse(html);
@@ -495,11 +549,24 @@ fn get_popular(page, auth) {
     let series = [];
 
     let items = html_select(html, ".page-item-detail");
+    if items.len() == 0 {
+        items = html_select(html, ".page-listing-item");
+    }
 
     for item in items {
+        // MangaOwl uses .post-title with h1, not h3
         let title_links = html_select(item, ".post-title a");
         if title_links.len() == 0 {
+            title_links = html_select(item, ".post-title h1 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "h1 a");
+        }
+        if title_links.len() == 0 {
             title_links = html_select(item, "h3 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "a[href*='/read-1/']");
         }
         if title_links.len() == 0 {
             continue;
@@ -513,6 +580,12 @@ fn get_popular(page, auth) {
 
         let slug = extract_slug(href);
         let title = element_text(link).trim();
+        if title == "" {
+            let title_attr = element_attr(link, "title");
+            if title_attr != () {
+                title = title_attr.trim();
+            }
+        }
 
         let cover_url = ();
         let imgs = html_select(item, ".item-thumb img, img");
@@ -535,8 +608,22 @@ fn get_popular(page, auth) {
 
     // Check for more pages
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .wp-pagenavi a.nextpostslink");
     if next_links.len() > 0 {
+        has_more = true;
+    }
+    if !has_more {
+        let next_page = page + 1;
+        let page_links = html_select(html, ".wp-pagenavi a, .page-numbers a");
+        for pl in page_links {
+            let pl_href = element_attr(pl, "href");
+            if pl_href != () && pl_href.contains(`/page/${next_page}`) {
+                has_more = true;
+                break;
+            }
+        }
+    }
+    if !has_more && series.len() >= 10 {
         has_more = true;
     }
 

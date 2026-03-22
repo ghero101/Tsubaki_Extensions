@@ -45,7 +45,7 @@ fn search_series(query, page, auth) {
     let series = [];
     let seen = #{};
 
-    // VioletScans search results use anchor tags with h2 titles
+    // VioletScans search results use anchor tags wrapping covers and titles
     let items = html_select(doc, "a[href*='/comics/']");
 
     for item in items {
@@ -57,7 +57,7 @@ fn search_series(query, page, auth) {
         if seen.contains(href) { continue; }
         seen[href] = true;
 
-        // Get title from h2 inside the anchor
+        // Get title from heading inside the anchor
         let title = "";
         let h2_els = html_select(item, "h2");
         if h2_els.len() > 0 {
@@ -70,15 +70,37 @@ fn search_series(query, page, auth) {
             }
         }
         if title == "" {
+            let h4_els = html_select(item, "h4");
+            if h4_els.len() > 0 {
+                title = element_text(h4_els[0]).trim();
+            }
+        }
+        if title == "" {
             let tt_els = html_select(item, ".tt");
             if tt_els.len() > 0 {
                 title = element_text(tt_els[0]).trim();
             }
         }
+        if title == "" {
+            let title_els = html_select(item, ".title");
+            if title_els.len() > 0 {
+                title = element_text(title_els[0]).trim();
+            }
+        }
+        // Fallback: try title attribute on the anchor
+        if title == "" {
+            let title_attr = element_attr(item, "title");
+            if title_attr != () && title_attr != "" {
+                title = title_attr.trim();
+            }
+        }
 
-        // Get cover from img.ts-post-image or any img
+        // Get cover from img.ts-post-image, img.wp-post-image, or any img
         let cover = ();
         let imgs = html_select(item, "img.ts-post-image");
+        if imgs.len() == 0 {
+            imgs = html_select(item, "img.wp-post-image");
+        }
         if imgs.len() == 0 {
             imgs = html_select(item, "img");
         }
@@ -358,7 +380,7 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
-    // VioletScans uses anchor tags with h2 for title and img.ts-post-image for covers
+    // VioletScans uses anchor tags wrapping covers and titles
     let items = html_select(doc, "a[href*='/comics/']");
 
     for item in items {
@@ -370,7 +392,7 @@ fn get_latest_updates(page, auth) {
         if seen.contains(href) { continue; }
         seen[href] = true;
 
-        // Get title from h2 inside the anchor
+        // Get title from heading inside the anchor (h2, h3, or h4)
         let title = "";
         let h2_els = html_select(item, "h2");
         if h2_els.len() > 0 {
@@ -383,15 +405,37 @@ fn get_latest_updates(page, auth) {
             }
         }
         if title == "" {
+            let h4_els = html_select(item, "h4");
+            if h4_els.len() > 0 {
+                title = element_text(h4_els[0]).trim();
+            }
+        }
+        if title == "" {
             let tt_els = html_select(item, ".tt");
             if tt_els.len() > 0 {
                 title = element_text(tt_els[0]).trim();
             }
         }
+        if title == "" {
+            let title_els = html_select(item, ".title");
+            if title_els.len() > 0 {
+                title = element_text(title_els[0]).trim();
+            }
+        }
+        // Fallback: try title attribute on the anchor
+        if title == "" {
+            let title_attr = element_attr(item, "title");
+            if title_attr != () && title_attr != "" {
+                title = title_attr.trim();
+            }
+        }
 
-        // Get cover from img.ts-post-image or any img
+        // Get cover from img.ts-post-image, img.wp-post-image, or any img
         let cover = ();
         let imgs = html_select(item, "img.ts-post-image");
+        if imgs.len() == 0 {
+            imgs = html_select(item, "img.wp-post-image");
+        }
         if imgs.len() == 0 {
             imgs = html_select(item, "img");
         }
@@ -432,7 +476,7 @@ fn get_popular(page, auth) {
     let series = [];
     let seen = #{};
 
-    // VioletScans uses anchor tags with h2 for title
+    // VioletScans uses anchor tags wrapping covers and titles
     let items = html_select(doc, "a[href*='/comics/']");
 
     for item in items {
@@ -455,9 +499,30 @@ fn get_popular(page, auth) {
                 title = element_text(h3_els[0]).trim();
             }
         }
+        if title == "" {
+            let h4_els = html_select(item, "h4");
+            if h4_els.len() > 0 {
+                title = element_text(h4_els[0]).trim();
+            }
+        }
+        if title == "" {
+            let title_els = html_select(item, ".title");
+            if title_els.len() > 0 {
+                title = element_text(title_els[0]).trim();
+            }
+        }
+        if title == "" {
+            let title_attr = element_attr(item, "title");
+            if title_attr != () && title_attr != "" {
+                title = title_attr.trim();
+            }
+        }
 
         let cover = ();
         let imgs = html_select(item, "img.ts-post-image");
+        if imgs.len() == 0 {
+            imgs = html_select(item, "img.wp-post-image");
+        }
         if imgs.len() == 0 {
             imgs = html_select(item, "img");
         }

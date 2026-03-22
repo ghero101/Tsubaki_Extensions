@@ -484,29 +484,20 @@ fn browse(page, category, auth) {
         return get_latest_updates(page, auth);
     }
 
-    // Philia Scans uses /all-mangas/ for browse listing
+    // Philia Scans uses /all-mangas/ with ?paged= pagination (WordPress block template)
     let url = `${BASE_URL}/all-mangas/`;
     if page > 1 {
-        url = `${BASE_URL}/all-mangas/page/${page}/`;
+        url = `${BASE_URL}/all-mangas/?paged=${page}`;
     }
 
     let html = fetch_html(url);
 
-    // Fallback: try standard Madara pattern if /all-mangas/ didn't work
+    // Fallback: try /series/ listing
     if html == "" {
-        let order = "latest";
-        if category == "popular" || category == "views" {
-            order = "views";
-        } else if category == "trending" {
-            order = "trending";
-        } else if category == "rating" {
-            order = "rating";
-        } else if category == "new-manga" {
-            order = "new-manga";
-        } else if category == "az" || category == "alphabetical" {
-            order = "alphabet";
+        url = `${BASE_URL}/series/`;
+        if page > 1 {
+            url = `${BASE_URL}/series/?paged=${page}`;
         }
-        url = `${BASE_URL}/series/?m_orderby=${order}&page=${page}`;
         html = fetch_html(url);
     }
 
@@ -517,59 +508,73 @@ fn browse(page, category, auth) {
     let series = [];
     let seen = #{};
 
-    // Madara browse page uses .page-item-detail for each manga card
-    let items = html_select(html, ".page-item-detail");
-    if items.len() == 0 {
-        items = html_select(html, "div.page-listing-item");
-    }
-    if items.len() == 0 {
-        items = html_select(html, "div.manga");
-    }
+    // PhiliaScans uses WordPress block template - manga entries are simple <a> tags
+    // linking to /series/{slug}/ with images and text inside. No .page-item-detail divs.
+    // Strategy: find all anchor tags with /series/ in href
+    let all_links = html_select(html, "a[href*='/series/']");
 
-    for item in items {
-        let title_links = html_select(item, ".post-title a");
-        if title_links.len() == 0 {
-            title_links = html_select(item, "h3 a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "h5 a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "a");
-        }
-        if title_links.len() == 0 {
-            continue;
-        }
-
-        let link = title_links[0];
+    for link in all_links {
         let href = element_attr(link, "href");
         if href == () || href == "" {
             continue;
         }
 
-        let slug = extract_slug(href);
-        if slug == "" {
+        // Only process links to series pages (not chapter links)
+        if !href.contains("/series/") {
             continue;
         }
 
+        let slug = extract_slug(href);
+        if slug == "" || slug == "?m_orderby" {
+            continue;
+        }
+
+        // Skip duplicates
         if seen.contains(slug) {
             continue;
         }
         seen[slug] = true;
 
+        // Get title from link text, title attribute, or nested elements
         let title = element_text(link).trim();
         if title == "" {
             let title_attr = element_attr(link, "title");
             if title_attr != () { title = title_attr.trim(); }
         }
+        // Skip links that are just images or empty
+        if title == "" {
+            // Try to get alt text from nested img
+            let nested_imgs = html_select(link, "img");
+            if nested_imgs.len() > 0 {
+                let alt = element_attr(nested_imgs[0], "alt");
+                if alt != () && alt != "" {
+                    title = alt.trim();
+                }
+            }
+        }
         if title == "" {
             continue;
         }
 
+        // Skip very short titles that are likely chapter numbers
+        if title.len() < 3 {
+            continue;
+        }
+        // Skip "Chapter" or "Ch." links (these are chapter links, not series)
+        let title_lower = title.to_lower();
+        if title_lower.starts_with("ch.") || title_lower.starts_with("chapter") {
+            continue;
+        }
+
+        // Get cover image from nested img
         let cover_url = ();
-        let imgs = html_select(item, ".item-thumb img, img");
+        let imgs = html_select(link, "img");
         if imgs.len() > 0 {
             cover_url = get_image_url(imgs[0]);
+            // If get_image_url returned nothing, try alt text or just src
+            if cover_url == () || cover_url == "" {
+                cover_url = element_attr(imgs[0], "src");
+            }
         }
         cover_url = make_absolute_url(cover_url);
 
@@ -588,17 +593,29 @@ fn browse(page, category, auth) {
         });
     }
 
-    // Check for more pages
+    // Check for more pages using ?paged= pagination links
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
-    if next_links.len() > 0 {
-        has_more = true;
+    let next_page = page + 1;
+    let page_links = html_select(html, "a[href*='paged=']");
+    for pl in page_links {
+        let pl_href = element_attr(pl, "href");
+        if pl_href != () && pl_href.contains(`paged=${next_page}`) {
+            has_more = true;
+            break;
+        }
     }
+    // Also check for standard next link selectors
+    if !has_more {
+        let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
+        if next_links.len() > 0 {
+            has_more = true;
+        }
+    }
+    // Fallback: if we got a full page of results, assume more
     if !has_more && series.len() >= 12 {
-        // Madara typically shows 12-20 items per page; assume more if we got a full page
         has_more = true;
     }
-    if page >= 100 {
+    if page >= 50 {
         has_more = false;
     }
 
@@ -1125,17 +1142,20 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest manga updates
 fn get_latest_updates(page, auth) {
-    // Philia Scans uses /all-mangas/ for listing
+    // Philia Scans uses /all-mangas/ with ?paged= pagination (WordPress block template)
     let url = `${BASE_URL}/all-mangas/`;
     if page > 1 {
-        url = `${BASE_URL}/all-mangas/page/${page}/`;
+        url = `${BASE_URL}/all-mangas/?paged=${page}`;
     }
 
     let html = fetch_html(url);
 
-    // Fallback: try standard Madara latest pattern
+    // Fallback: try /series/ listing
     if html == "" {
-        url = `${BASE_URL}/series/?m_orderby=latest&page=${page}`;
+        url = `${BASE_URL}/series/`;
+        if page > 1 {
+            url = `${BASE_URL}/series/?paged=${page}`;
+        }
         html = fetch_html(url);
     }
 
@@ -1146,38 +1166,22 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
-    // Madara browse uses .page-item-detail for each card
-    let items = html_select(html, ".page-item-detail");
-    if items.len() == 0 {
-        items = html_select(html, "div.page-listing-item");
-    }
-    if items.len() == 0 {
-        items = html_select(html, "div.manga");
-    }
+    // PhiliaScans uses WordPress block template - manga entries are <a> tags
+    // linking to /series/{slug}/ with images and text inside
+    let all_links = html_select(html, "a[href*='/series/']");
 
-    for item in items {
-        let title_links = html_select(item, ".post-title a");
-        if title_links.len() == 0 {
-            title_links = html_select(item, "h3 a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "h5 a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "a");
-        }
-        if title_links.len() == 0 {
-            continue;
-        }
-
-        let link = title_links[0];
+    for link in all_links {
         let href = element_attr(link, "href");
         if href == () || href == "" {
             continue;
         }
 
+        if !href.contains("/series/") {
+            continue;
+        }
+
         let slug = extract_slug(href);
-        if slug == "" {
+        if slug == "" || slug == "?m_orderby" {
             continue;
         }
 
@@ -1192,47 +1196,64 @@ fn get_latest_updates(page, auth) {
             if title_attr != () { title = title_attr.trim(); }
         }
         if title == "" {
+            let nested_imgs = html_select(link, "img");
+            if nested_imgs.len() > 0 {
+                let alt = element_attr(nested_imgs[0], "alt");
+                if alt != () && alt != "" {
+                    title = alt.trim();
+                }
+            }
+        }
+        if title == "" {
+            continue;
+        }
+
+        // Skip chapter-like text
+        let title_lower = title.to_lower();
+        if title.len() < 3 || title_lower.starts_with("ch.") || title_lower.starts_with("chapter") {
             continue;
         }
 
         let cover_url = ();
-        let imgs = html_select(item, ".item-thumb img, img");
+        let imgs = html_select(link, "img");
         if imgs.len() > 0 {
             cover_url = get_image_url(imgs[0]);
-        }
-        cover_url = make_absolute_url(cover_url);
-
-        // Get latest chapter link text for updated_at
-        let updated_at = ();
-        let ch_els = html_select(item, ".chapter a, .list-chapter a");
-        if ch_els.len() > 0 {
-            // Get the date next to the chapter
-            let date_els = html_select(item, ".post-on, .chapter-time");
-            if date_els.len() > 0 {
-                updated_at = element_text(date_els[0]).trim();
+            if cover_url == () || cover_url == "" {
+                cover_url = element_attr(imgs[0], "src");
             }
         }
+        cover_url = make_absolute_url(cover_url);
 
         series.push(#{
             id: slug,
             title: title,
             url: make_absolute_url(href),
             cover_url: cover_url,
-            updated_at: updated_at
+            updated_at: ()
         });
     }
 
-    // Check for next page
+    // Check for next page using ?paged= pagination
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
-    if next_links.len() > 0 {
-        has_more = true;
+    let next_page = page + 1;
+    let page_links = html_select(html, "a[href*='paged=']");
+    for pl in page_links {
+        let pl_href = element_attr(pl, "href");
+        if pl_href != () && pl_href.contains(`paged=${next_page}`) {
+            has_more = true;
+            break;
+        }
     }
-    // If we got a full page of results, assume there are more
+    if !has_more {
+        let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
+        if next_links.len() > 0 {
+            has_more = true;
+        }
+    }
     if !has_more && series.len() >= 12 {
         has_more = true;
     }
-    if page >= 100 {
+    if page >= 50 {
         has_more = false;
     }
 

@@ -22,7 +22,11 @@
 //          regex_find_all(pattern, text)
 //   Utility: url_encode(text), parse_int(str), parse_float(str)
 
+// readm.org returns 522 (origin unreachable). readm.today is a redirect/tracking
+// wrapper that requires JS execution. We try readm.org first (in case it comes back),
+// then fall back to readm.today via FlareSolverr which can execute the JS redirect.
 const BASE_URL = "https://readm.org";
+const ALT_URL = "https://readm.today";
 
 // ============================================================================
 // Helper Functions
@@ -55,41 +59,77 @@ fn is_cloudflare_page(html) {
     false
 }
 
-/// Fetch HTML with 3-tier Cloudflare bypass:
-/// 1. http_get_with_headers (rquest with Chrome131 TLS impersonation)
-/// 2. http_get_plain (standard reqwest, no impersonation)
-/// 3. flaresolverr_get (headless browser, last resort)
+/// Check if HTML is a redirect/tracking page (readm.today wraps content in JS redirects)
+fn is_redirect_page(html) {
+    if html.contains("FingerprintJS") && html.contains("redirect_link") {
+        return true;
+    }
+    if html.contains("Click here to enter") && html.contains("redirect") {
+        return true;
+    }
+    false
+}
+
+/// Fetch HTML with multi-tier approach:
+/// 1. Try readm.org with rquest (Chrome TLS impersonation)
+/// 2. Try readm.org with plain reqwest
+/// 3. Try readm.today via FlareSolverr (handles JS redirect)
+/// 4. Try readm.org via FlareSolverr
 fn fetch_html(url) {
-    // Tier 1: rquest with Chrome TLS impersonation (best for Cloudflare)
+    // Tier 1: rquest with Chrome TLS impersonation on primary domain
     try {
         let html = http_get_with_headers(url, get_headers());
-        if html.len() > 500 && !is_cloudflare_page(html) {
+        if html.len() > 500 && !is_cloudflare_page(html) && !is_redirect_page(html) {
             return html;
         }
     } catch {
-        // Fall through to next tier
+        // Fall through - readm.org may return 522
     }
 
-    // Tier 2: plain reqwest (no TLS impersonation)
+    // Tier 2: plain reqwest on primary domain
     try {
         let html = http_get_plain(url, get_headers());
-        if html.len() > 500 && !is_cloudflare_page(html) {
+        if html.len() > 500 && !is_cloudflare_page(html) && !is_redirect_page(html) {
             return html;
         }
     } catch {
         // Fall through
     }
 
-    // Tier 3: FlareSolverr if available
+    // Tier 3: Try alternate domain (readm.today) via FlareSolverr
+    // FlareSolverr can execute JS redirects that readm.today uses
     if flaresolverr_is_available() {
+        // Try alt URL first (readm.today) - FlareSolverr handles the JS redirect
+        let alt_url = url.replace(BASE_URL, ALT_URL);
         try {
-            let html = flaresolverr_get(url, 30000);
-            if html.len() > 500 && !is_cloudflare_page(html) {
+            let html = flaresolverr_get(alt_url, 45000);
+            if html.len() > 500 && !is_cloudflare_page(html) && !is_redirect_page(html) {
                 return html;
             }
         } catch {
             // Fall through
         }
+
+        // Try original URL via FlareSolverr
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 500 && !is_cloudflare_page(html) && !is_redirect_page(html) {
+                return html;
+            }
+        } catch {
+            // Fall through
+        }
+    }
+
+    // Tier 4: Try alt domain with HTTP directly (may work if redirect is simple)
+    let alt_url = url.replace(BASE_URL, ALT_URL);
+    try {
+        let html = http_get_with_headers(alt_url, get_headers());
+        if html.len() > 500 && !is_cloudflare_page(html) && !is_redirect_page(html) {
+            return html;
+        }
+    } catch {
+        // Fall through
     }
 
     ""

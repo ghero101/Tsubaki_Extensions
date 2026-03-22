@@ -54,7 +54,7 @@ fn is_cloudflare_page(html) {
     false
 }
 
-/// Fetch HTML with Cloudflare bypass
+/// Fetch HTML with Cloudflare bypass (4-tier approach for heavy CF protection)
 fn fetch_html(url) {
     // Tier 1: rquest with Chrome TLS impersonation
     try {
@@ -76,15 +76,32 @@ fn fetch_html(url) {
         // Fall through
     }
 
-    // Tier 3: FlareSolverr if available
+    // Tier 3: FlareSolverr (headless browser, solves CF challenges)
     if flaresolverr_is_available() {
         try {
-            let html = flaresolverr_get(url, 30000);
+            let html = flaresolverr_get(url, 45000);
             if html.len() > 500 && !is_cloudflare_page(html) {
                 return html;
             }
         } catch {
             // Fall through
+        }
+    }
+
+    // Tier 4: Browser automation (puppeteer/chrome) if available
+    if browser_is_available() {
+        let browser_id = ();
+        try {
+            browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 20000);
+            let html = browser_get_html(browser_id);
+            try { browser_close(browser_id); } catch {}
+            if html.len() > 500 && !is_cloudflare_page(html) {
+                return html;
+            }
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
 
@@ -100,7 +117,7 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only",
+        capability_level: "browser_automation",
         nsfw: false,
         content_types: ["manhwa", "manga", "manhua"]
     }
@@ -452,7 +469,11 @@ fn browse(page, category, auth) {
     let series = [];
     let seen = #{};
 
+    // Try Madara page-item-detail selector (standard)
     let items = html_select(html, ".page-item-detail");
+    if items.len() == 0 {
+        items = html_select(html, ".page-listing-item");
+    }
     if items.len() == 0 {
         items = html_select(html, "div.manga");
     }
@@ -460,10 +481,16 @@ fn browse(page, category, auth) {
     for item in items {
         let title_links = html_select(item, ".post-title a");
         if title_links.len() == 0 {
+            title_links = html_select(item, ".post-title h1 a");
+        }
+        if title_links.len() == 0 {
             title_links = html_select(item, "h3 a");
         }
         if title_links.len() == 0 {
             title_links = html_select(item, "h5 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "a[href*='/manga/']");
         }
         if title_links.len() == 0 {
             continue;
@@ -514,6 +541,56 @@ fn browse(page, category, auth) {
             tags: [],
             description: ()
         });
+    }
+
+    // Fallback: if no items found via Madara selectors, try finding all manga links
+    if series.len() == 0 {
+        let all_links = html_select(html, "a[href*='/manga/']");
+        for link in all_links {
+            let href = element_attr(link, "href");
+            if href == () || href == "" {
+                continue;
+            }
+            let slug = extract_slug(href);
+            if slug == "" || seen.contains(slug) {
+                continue;
+            }
+            let title = element_text(link).trim();
+            if title == "" {
+                let title_attr = element_attr(link, "title");
+                if title_attr != () { title = title_attr.trim(); }
+            }
+            if title == "" || title.len() < 3 {
+                continue;
+            }
+            // Skip chapter-like links
+            let title_lower = title.to_lower();
+            if title_lower.starts_with("ch.") || title_lower.starts_with("chapter") {
+                continue;
+            }
+            seen[slug] = true;
+
+            let cover_url = ();
+            let imgs = html_select(link, "img");
+            if imgs.len() > 0 {
+                cover_url = get_image_url(imgs[0]);
+            }
+            cover_url = make_absolute_url(cover_url);
+
+            series.push(#{
+                id: slug,
+                title: title,
+                url: make_absolute_url(href),
+                cover_url: cover_url,
+                alternate_titles: [],
+                authors: [],
+                artists: [],
+                status: (),
+                genres: [],
+                tags: [],
+                description: ()
+            });
+        }
     }
 
     let has_more = false;
@@ -1020,7 +1097,11 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
+    // Try Madara selectors
     let items = html_select(html, ".page-item-detail");
+    if items.len() == 0 {
+        items = html_select(html, ".page-listing-item");
+    }
     if items.len() == 0 {
         items = html_select(html, "div.manga");
     }
@@ -1028,10 +1109,16 @@ fn get_latest_updates(page, auth) {
     for item in items {
         let title_links = html_select(item, ".post-title a");
         if title_links.len() == 0 {
+            title_links = html_select(item, ".post-title h1 a");
+        }
+        if title_links.len() == 0 {
             title_links = html_select(item, "h3 a");
         }
         if title_links.len() == 0 {
             title_links = html_select(item, "h5 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "a[href*='/manga/']");
         }
         if title_links.len() == 0 {
             continue;
@@ -1085,6 +1172,49 @@ fn get_latest_updates(page, auth) {
             cover_url: cover_url,
             updated_at: updated_at
         });
+    }
+
+    // Fallback: if Madara selectors returned nothing, extract from all manga links
+    if series.len() == 0 {
+        let all_links = html_select(html, "a[href*='/manga/']");
+        for link in all_links {
+            let href = element_attr(link, "href");
+            if href == () || href == "" {
+                continue;
+            }
+            let slug = extract_slug(href);
+            if slug == "" || seen.contains(slug) {
+                continue;
+            }
+            let title = element_text(link).trim();
+            if title == "" {
+                let title_attr = element_attr(link, "title");
+                if title_attr != () { title = title_attr.trim(); }
+            }
+            if title == "" || title.len() < 3 {
+                continue;
+            }
+            let title_lower = title.to_lower();
+            if title_lower.starts_with("ch.") || title_lower.starts_with("chapter") {
+                continue;
+            }
+            seen[slug] = true;
+
+            let cover_url = ();
+            let imgs = html_select(link, "img");
+            if imgs.len() > 0 {
+                cover_url = get_image_url(imgs[0]);
+            }
+            cover_url = make_absolute_url(cover_url);
+
+            series.push(#{
+                id: slug,
+                title: title,
+                url: make_absolute_url(href),
+                cover_url: cover_url,
+                updated_at: ()
+            });
+        }
     }
 
     let has_more = false;

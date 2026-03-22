@@ -124,86 +124,25 @@ fn get_source_info() {
     }
 }
 
-/// Search for series matching query
-fn search_series(query, page, auth) {
-    // MangaGeko uses /browse-comics/ with query parameters
-    let encoded_query = url_encode(query);
-    let url = `${BASE_URL}/browse-comics/?q=${encoded_query}&page=${page}`;
-
-    let html = fetch_html(url);
-
+/// Parse series from API HTML response (used by search, browse, latest)
+fn parse_series_from_api_html(html_content) {
     let series = [];
+    let seen = #{};
+    let doc = html_parse(html_content);
 
-    // Select manga items - MangaGeko uses novel-item class on homepage
-    // and comic-card class on browse page (loaded via AJAX)
-    // For the initial HTML, try both patterns
-    let items = html_select(html, "div.novel-item");
-
-    // If no novel-item found, try comic-card (though these are usually AJAX loaded)
+    // The API returns HTML with comic-card or novel-item elements
+    // Try comic-card first (browse/search API), then novel-item (homepage)
+    let items = html_select(doc, ".comic-card");
     if items.len() == 0 {
-        items = html_select(html, "div.comic-card");
-    }
-
-    // Also try a more general container approach
-    if items.len() == 0 {
-        items = html_select(html, "a[href*='/manga/']");
-
-        // Process anchor tags directly
-        let seen = #{};
-        for link in items {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-
-            // Make URL absolute
-            let manga_url = href;
-            if !href.starts_with("http") {
-                manga_url = `${BASE_URL}${href}`;
-            }
-
-            let slug = extract_slug(manga_url);
-            if slug == "" || seen.contains(slug) {
-                continue;
-            }
-            seen[slug] = true;
-
-            // Try to get title from link text or title attribute
-            let title = element_text(link).trim();
-            if title == "" {
-                title = element_attr(link, "title");
-            }
-            if title == () {
-                title = "";
-            }
-            title = title.trim();
-
-            // Skip navigation links
-            if title == "" || title.to_lower().contains("browse") || title.to_lower().contains("home") {
-                continue;
-            }
-
-            series.push(#{
-                id: slug,
-                title: title,
-                url: manga_url,
-                cover_url: (),
-                alternate_titles: [],
-                authors: [],
-                artists: [],
-                status: (),
-                genres: [],
-                tags: [],
-                description: ()
-            });
-        }
-
-        return #{ series: series, has_more: series.len() >= 20, total: () };
+        items = html_select(doc, "li.novel-item");
     }
 
     for item in items {
         // Get the manga link
-        let links = html_select(item, "a");
+        let links = html_select(item, "a[href*='/manga/']");
+        if links.len() == 0 {
+            links = html_select(item, "a");
+        }
         if links.len() == 0 {
             continue;
         }
@@ -228,13 +167,14 @@ fn search_series(query, page, auth) {
         }
 
         let slug = extract_slug(manga_url);
-        if slug == "" {
+        if slug == "" || seen.contains(slug) {
             continue;
         }
+        seen[slug] = true;
 
         // Get title - try various selectors
         let title = "";
-        let title_els = html_select(item, ".novel-title");
+        let title_els = html_select(item, ".comic-card__title a");
         if title_els.len() > 0 {
             title = element_text(title_els[0]).trim();
         }
@@ -245,8 +185,24 @@ fn search_series(query, page, auth) {
             }
         }
         if title == "" {
-            // Fallback to first anchor text
+            let title_els3 = html_select(item, "h4.novel-title");
+            if title_els3.len() > 0 {
+                title = element_text(title_els3[0]).trim();
+            }
+        }
+        if title == "" {
+            let title_els4 = html_select(item, ".novel-title");
+            if title_els4.len() > 0 {
+                title = element_text(title_els4[0]).trim();
+            }
+        }
+        if title == "" {
+            // Fallback: link text or title attribute
             title = element_text(links[0]).trim();
+            if title == "" {
+                title = element_attr(links[0], "title");
+                if title == () { title = ""; }
+            }
         }
 
         if title == "" {
@@ -261,15 +217,12 @@ fn search_series(query, page, auth) {
             if cover_url == () || cover_url == "" {
                 cover_url = element_attr(imgs[0], "src");
             }
-        }
-
-        // Get rating if available
-        let rating = ();
-        let status_els = html_select(item, ".status");
-        if status_els.len() > 0 {
-            let rating_text = element_text(status_els[0]).trim();
-            if rating_text != "" {
-                rating = rating_text;
+            // Skip placeholder images
+            if cover_url != () && cover_url.contains("placeholder.gif") {
+                let alt_src = element_attr(imgs[0], "data-src");
+                if alt_src != () && alt_src != "" {
+                    cover_url = alt_src;
+                }
             }
         }
 
@@ -288,19 +241,87 @@ fn search_series(query, page, auth) {
         });
     }
 
-    // Check for pagination
+    series
+}
+
+/// Search for series matching query
+fn search_series(query, page, auth) {
+    // MangaGeko browse page loads results via AJAX from /browse-comics/data/
+    let encoded_query = url_encode(query);
+    let api_url = `${BASE_URL}/browse-comics/data/?q=${encoded_query}&page=${page}`;
+
+    let json_text = fetch_html(api_url);
+
+    let series = [];
     let has_more = false;
-    let next_links = html_select(html, "a.bp-btn");
-    for link in next_links {
-        let text = element_text(link);
-        if text.contains("Next") || text.contains(">") {
-            has_more = true;
-            break;
+
+    // The API returns JSON with results_html containing the comic cards
+    if json_text != "" && json_text.len() > 10 {
+        // Try to parse as JSON to get the results_html field
+        try {
+            let data = json_parse(json_text);
+            if data.results_html != () && data.results_html != "" {
+                series = parse_series_from_api_html(data.results_html);
+            }
+            // Check pagination from API response
+            if data.num_pages != () && data.page != () {
+                has_more = data.page < data.num_pages;
+            }
+        } catch {
+            // If JSON parse fails, try parsing the raw text as HTML
+            series = parse_series_from_api_html(json_text);
         }
     }
 
-    // Also check if we got a full page of results
-    if series.len() >= 20 {
+    // Fallback: try loading the browse page directly and parsing links
+    if series.len() == 0 {
+        let browse_url = `${BASE_URL}/browse-comics/?q=${encoded_query}&page=${page}`;
+        let html = fetch_html(browse_url);
+
+        // Try parsing any manga links from the page
+        let links = html_select(html, "a[href*='/manga/']");
+        let seen = #{};
+        for link in links {
+            let href = element_attr(link, "href");
+            if href == () || href == "" { continue; }
+
+            let manga_url = href;
+            if !href.starts_with("http") {
+                manga_url = `${BASE_URL}${href}`;
+            }
+
+            let slug = extract_slug(manga_url);
+            if slug == "" || seen.contains(slug) { continue; }
+            seen[slug] = true;
+
+            let title = element_text(link).trim();
+            if title == "" {
+                title = element_attr(link, "title");
+                if title == () { title = ""; }
+            }
+            title = title.trim();
+
+            if title == "" || title.to_lower().contains("browse") || title.to_lower().contains("home") {
+                continue;
+            }
+
+            series.push(#{
+                id: slug,
+                title: title,
+                url: manga_url,
+                cover_url: (),
+                alternate_titles: [],
+                authors: [],
+                artists: [],
+                status: (),
+                genres: [],
+                tags: [],
+                description: ()
+            });
+        }
+    }
+
+    if !has_more && series.len() >= 20 {
         has_more = true;
     }
 
@@ -605,96 +626,114 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest updates
 fn get_latest_updates(page, auth) {
-    let url = `${BASE_URL}/jumbo/manga/?page=${page}`;
+    // Try the API endpoint first for latest updates
+    let api_url = `${BASE_URL}/browse-comics/data/?sort=latest&page=${page}`;
 
-    let html = fetch_html(url);
+    let json_text = fetch_html(api_url);
 
     let series = [];
-    let seen = #{};
+    let has_more = false;
 
-    // Select manga items
-    let items = html_select(html, "div.novel-item");
-
-    for item in items {
-        let links = html_select(item, "a");
-        if links.len() == 0 {
-            continue;
-        }
-
-        let href = ();
-        for link in links {
-            let h = element_attr(link, "href");
-            if h != () && h.contains("/manga/") {
-                href = h;
-                break;
+    if json_text != "" && json_text.len() > 10 {
+        try {
+            let data = json_parse(json_text);
+            if data.results_html != () && data.results_html != "" {
+                let parsed = parse_series_from_api_html(data.results_html);
+                for s in parsed {
+                    series.push(#{
+                        id: s.id,
+                        title: s.title,
+                        url: s.url,
+                        cover_url: s.cover_url,
+                        updated_at: ()
+                    });
+                }
             }
-        }
+            if data.num_pages != () && data.page != () {
+                has_more = data.page < data.num_pages;
+            }
+        } catch {}
+    }
 
-        if href == () || href == "" {
-            continue;
-        }
+    // Fallback: try the jumbo/manga page which uses novel-item elements
+    if series.len() == 0 {
+        let url = `${BASE_URL}/jumbo/manga/?page=${page}`;
+        let html = fetch_html(url);
+        let doc = html_parse(html);
 
-        let slug = extract_slug(href);
-        if slug == "" || seen.contains(slug) {
-            continue;
+        let items = html_select(doc, "li.novel-item");
+        if items.len() == 0 {
+            items = html_select(doc, ".novel-item");
         }
-        seen[slug] = true;
+        let seen = #{};
 
-        let manga_url = href;
-        if !href.starts_with("http") {
-            manga_url = `${BASE_URL}${href}`;
-        }
+        for item in items {
+            let links = html_select(item, "a");
+            if links.len() == 0 { continue; }
 
-        // Get title
-        let title = "";
-        let title_els = html_select(item, ".novel-title");
-        if title_els.len() > 0 {
-            title = element_text(title_els[0]).trim();
-        }
-        if title == "" {
+            let href = ();
             for link in links {
-                let t = element_text(link).trim();
-                if t != "" && t.len() > 2 {
-                    title = t;
+                let h = element_attr(link, "href");
+                if h != () && h.contains("/manga/") {
+                    href = h;
                     break;
                 }
             }
-        }
 
-        // Get cover
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "data-src");
-            if cover_url == () || cover_url == "" {
+            if href == () || href == "" { continue; }
+
+            let slug = extract_slug(href);
+            if slug == "" || seen.contains(slug) { continue; }
+            seen[slug] = true;
+
+            let manga_url = href;
+            if !href.starts_with("http") {
+                manga_url = `${BASE_URL}${href}`;
+            }
+
+            let title = "";
+            let title_els = html_select(item, "h4.novel-title");
+            if title_els.len() > 0 {
+                title = element_text(title_els[0]).trim();
+            }
+            if title == "" {
+                let title_els2 = html_select(item, ".novel-title");
+                if title_els2.len() > 0 {
+                    title = element_text(title_els2[0]).trim();
+                }
+            }
+            if title == "" {
+                for link in links {
+                    let t = element_attr(link, "title");
+                    if t != () && t != "" {
+                        title = t.trim();
+                        break;
+                    }
+                }
+            }
+
+            let cover_url = ();
+            let imgs = html_select(item, "img");
+            if imgs.len() > 0 {
                 cover_url = element_attr(imgs[0], "src");
+                if cover_url == () || cover_url == "" || cover_url.contains("placeholder") {
+                    cover_url = element_attr(imgs[0], "data-src");
+                }
+            }
+
+            if title != "" {
+                series.push(#{
+                    id: slug,
+                    title: title,
+                    url: manga_url,
+                    cover_url: cover_url,
+                    updated_at: ()
+                });
             }
         }
-
-        if title != "" {
-            series.push(#{
-                id: slug,
-                title: title,
-                url: manga_url,
-                cover_url: cover_url,
-                updated_at: ()
-            });
-        }
     }
 
-    // Check for pagination
-    let has_more = false;
-    let next_links = html_select(html, "a");
-    for link in next_links {
-        let href = element_attr(link, "href");
-        if href != () && href.contains(`page=${page + 1}`) {
-            has_more = true;
-            break;
-        }
-    }
-
-    // Assume more if we got a full page
-    if series.len() >= 20 {
+    if !has_more && series.len() >= 20 {
         has_more = true;
     }
 
@@ -709,84 +748,125 @@ fn browse(page, filters, auth) {
 
 /// Get popular manga
 fn get_popular(page, auth) {
-    // Use the hot/trending manga page
-    let url = `${BASE_URL}/jumbo/manga/?hot=true&page=${page}`;
+    // Use the API endpoint which returns JSON with rendered HTML
+    let api_url = `${BASE_URL}/browse-comics/data/?sort=views&page=${page}`;
 
-    let html = fetch_html(url);
+    let json_text = fetch_html(api_url);
 
     let series = [];
-    let seen = #{};
+    let has_more = false;
 
-    let items = html_select(html, "div.novel-item");
-
-    for item in items {
-        let links = html_select(item, "a");
-        if links.len() == 0 {
-            continue;
-        }
-
-        let href = ();
-        for link in links {
-            let h = element_attr(link, "href");
-            if h != () && h.contains("/manga/") {
-                href = h;
-                break;
-            }
-        }
-
-        if href == () || href == "" {
-            continue;
-        }
-
-        let slug = extract_slug(href);
-        if slug == "" || seen.contains(slug) {
-            continue;
-        }
-        seen[slug] = true;
-
-        let manga_url = href;
-        if !href.starts_with("http") {
-            manga_url = `${BASE_URL}${href}`;
-        }
-
-        // Get title
-        let title = "";
-        let title_els = html_select(item, ".novel-title");
-        if title_els.len() > 0 {
-            title = element_text(title_els[0]).trim();
-        }
-        if title == "" {
-            for link in links {
-                let t = element_text(link).trim();
-                if t != "" && t.len() > 2 {
-                    title = t;
-                    break;
+    if json_text != "" && json_text.len() > 10 {
+        try {
+            let data = json_parse(json_text);
+            if data.results_html != () && data.results_html != "" {
+                let parsed = parse_series_from_api_html(data.results_html);
+                for s in parsed {
+                    series.push(#{
+                        id: s.id,
+                        title: s.title,
+                        url: s.url,
+                        cover_url: s.cover_url
+                    });
                 }
             }
-        }
-
-        // Get cover
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "data-src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "src");
+            if data.num_pages != () && data.page != () {
+                has_more = data.page < data.num_pages;
             }
-        }
-
-        if title != "" {
-            series.push(#{
-                id: slug,
-                title: title,
-                url: manga_url,
-                cover_url: cover_url
-            });
+        } catch {
+            // Fallback: parse raw text
+            let parsed = parse_series_from_api_html(json_text);
+            for s in parsed {
+                series.push(#{
+                    id: s.id,
+                    title: s.title,
+                    url: s.url,
+                    cover_url: s.cover_url
+                });
+            }
         }
     }
 
-    // Check pagination
-    let has_more = series.len() >= 20;
+    // Fallback: try the jumbo/manga page which uses novel-item elements
+    if series.len() == 0 {
+        let url = `${BASE_URL}/jumbo/manga/?page=${page}`;
+        let html = fetch_html(url);
+        let doc = html_parse(html);
+
+        let items = html_select(doc, "li.novel-item");
+        if items.len() == 0 {
+            items = html_select(doc, ".novel-item");
+        }
+        let seen = #{};
+
+        for item in items {
+            let links = html_select(item, "a");
+            if links.len() == 0 { continue; }
+
+            let href = ();
+            for link in links {
+                let h = element_attr(link, "href");
+                if h != () && h.contains("/manga/") {
+                    href = h;
+                    break;
+                }
+            }
+
+            if href == () || href == "" { continue; }
+
+            let slug = extract_slug(href);
+            if slug == "" || seen.contains(slug) { continue; }
+            seen[slug] = true;
+
+            let manga_url = href;
+            if !href.starts_with("http") {
+                manga_url = `${BASE_URL}${href}`;
+            }
+
+            let title = "";
+            let title_els = html_select(item, "h4.novel-title");
+            if title_els.len() > 0 {
+                title = element_text(title_els[0]).trim();
+            }
+            if title == "" {
+                let title_els2 = html_select(item, ".novel-title");
+                if title_els2.len() > 0 {
+                    title = element_text(title_els2[0]).trim();
+                }
+            }
+            if title == "" {
+                for link in links {
+                    let t = element_attr(link, "title");
+                    if t != () && t != "" {
+                        title = t.trim();
+                        break;
+                    }
+                }
+            }
+
+            let cover_url = ();
+            let imgs = html_select(item, "img");
+            if imgs.len() > 0 {
+                cover_url = element_attr(imgs[0], "src");
+                if cover_url == () || cover_url == "" || cover_url.contains("placeholder") {
+                    cover_url = element_attr(imgs[0], "data-src");
+                }
+            }
+
+            if title != "" {
+                series.push(#{
+                    id: slug,
+                    title: title,
+                    url: manga_url,
+                    cover_url: cover_url
+                });
+            }
+        }
+    }
+
+    if !has_more && series.len() >= 20 {
+        has_more = true;
+    }
 
     #{ series: series, has_more: has_more }
 }

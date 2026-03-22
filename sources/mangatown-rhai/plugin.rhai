@@ -146,101 +146,52 @@ fn search_series(query, page, auth) {
     let html = fetch_html(url);
 
     let series = [];
+    let seen = #{};
 
-    // Search results are in a list structure
-    // Look for links to manga pages
-    let items = html_select(html, "ul.manga_pic_list li");
+    // MangaTown uses classless HTML - extract series directly from anchor tags
+    let all_links = html_select(html, "a[href*='/manga/']");
 
-    // If that doesn't work, try alternative selector
-    if items.len() == 0 {
-        items = html_select(html, "li");
-    }
-
-    for item in items {
-        // Look for manga link
-        let links = html_select(item, "a[href*='/manga/']");
-        if links.len() == 0 {
+    for link in all_links {
+        let href = element_attr(link, "href");
+        if href == () || href == "" {
             continue;
         }
 
-        // Find the main manga link (not chapter links)
-        let main_link = ();
-        let cover_url = ();
-        let title = "";
-
-        for link in links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-
-            // Skip chapter links (contain /c or /v followed by numbers)
-            if regex_find("/[cv][0-9]", href) != () {
-                continue;
-            }
-
-            // This should be the main manga link
-            if href.contains("/manga/") {
-                main_link = link;
-                let link_title = element_attr(link, "title");
-                if link_title != () && link_title != "" {
-                    title = link_title;
-                }
-                if title == "" {
-                    title = element_text(link).trim();
-                }
-                break;
-            }
-        }
-
-        if main_link == () {
+        // Skip chapter links (contain /c or /v followed by numbers)
+        if regex_find("/[cv][0-9]", href) != () {
             continue;
         }
 
-        let href = element_attr(main_link, "href");
+        if !href.contains("/manga/") {
+            continue;
+        }
+
         let slug = extract_manga_slug(href);
-        if slug == "" {
+        if slug == "" || seen.contains(slug) {
             continue;
         }
 
-        // Get cover image
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
+        // Get title from title attribute first, then text content
+        let title = element_attr(link, "title");
+        if title == () || title == "" {
+            title = element_text(link).trim();
         }
 
         // Clean up title
         title = clean_text(title);
-        if title == "" {
+        if title == "" || title.len() < 2 {
             continue;
         }
 
-        // Get author if available
-        let authors = [];
-        let item_text = element_text(item);
-        let author_match = regex_find("Author:\\s*([^\\n]+)", item_text);
-        if author_match != () && author_match != "" {
-            let author = author_match.replace("Author:", "").trim();
-            if author != "" {
-                authors.push(author);
-            }
-        }
+        seen[slug] = true;
 
-        // Get status if available
-        let status = ();
-        let status_match = regex_find("Status:\\s*(\\w+)", item_text);
-        if status_match != () && status_match != "" {
-            let status_text = status_match.replace("Status:", "").trim();
-            status = map_status(status_text);
-        }
-
-        // Get genres if available
-        let genres = [];
-        let genre_links = html_select(item, "a[href*='/directory/']");
-        for g_link in genre_links {
-            let genre = element_text(g_link).trim();
-            if genre != "" && !genres.contains(genre) {
-                genres.push(genre);
+        // Get cover image from nested img
+        let cover_url = ();
+        let imgs = html_select(link, "img");
+        if imgs.len() > 0 {
+            cover_url = element_attr(imgs[0], "src");
+            if cover_url != () && cover_url.starts_with("//") {
+                cover_url = `https:${cover_url}`;
             }
         }
 
@@ -256,10 +207,10 @@ fn search_series(query, page, auth) {
             url: manga_url,
             cover_url: cover_url,
             alternate_titles: [],
-            authors: authors,
+            authors: [],
             artists: [],
-            status: status,
-            genres: genres,
+            status: (),
+            genres: [],
             tags: [],
             description: ()
         });
@@ -272,13 +223,17 @@ fn search_series(query, page, auth) {
         has_more = true;
     } else {
         // Check for page number links
-        let page_links = html_select(html, "div.next-page a");
+        let page_links = html_select(html, "a");
         for p_link in page_links {
             let p_href = element_attr(p_link, "href");
             if p_href != () && p_href.contains(`page=${page + 1}`) {
                 has_more = true;
                 break;
             }
+        }
+        // Fallback: if we got results, assume more pages exist
+        if !has_more && series.len() >= 20 {
+            has_more = true;
         }
     }
 
@@ -645,61 +600,49 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
-    // Select manga items
-    let items = html_select(html, "ul.manga_pic_list li");
-    if items.len() == 0 {
-        items = html_select(html, "li");
-    }
+    // MangaTown uses classless HTML - extract series from anchor tags directly
+    let all_links = html_select(html, "a[href*='/manga/']");
 
-    for item in items {
-        // Find manga link (not chapter link)
-        let links = html_select(item, "a[href*='/manga/']");
-        let main_link = ();
-        let title = "";
-
-        for link in links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-
-            // Skip chapter links
-            if regex_find("/[cv][0-9]", href) != () {
-                continue;
-            }
-
-            if href.contains("/manga/") {
-                main_link = link;
-                title = element_attr(link, "title");
-                if title == () || title == "" {
-                    title = element_text(link).trim();
-                }
-                break;
-            }
-        }
-
-        if main_link == () {
+    for link in all_links {
+        let href = element_attr(link, "href");
+        if href == () || href == "" {
             continue;
         }
 
-        let href = element_attr(main_link, "href");
+        // Skip chapter links (contain /c or /v followed by numbers)
+        if regex_find("/[cv][0-9]", href) != () {
+            continue;
+        }
+
+        if !href.contains("/manga/") {
+            continue;
+        }
+
         let slug = extract_manga_slug(href);
         if slug == "" || seen.contains(slug) {
             continue;
         }
-        seen[slug] = true;
 
-        // Get cover
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
+        let title = element_attr(link, "title");
+        if title == () || title == "" {
+            title = element_text(link).trim();
         }
 
-        // Clean title
         title = clean_text(title);
-        if title == "" {
+        if title == "" || title.len() < 2 {
             continue;
+        }
+
+        seen[slug] = true;
+
+        // Get cover from nested img
+        let cover_url = ();
+        let imgs = html_select(link, "img");
+        if imgs.len() > 0 {
+            cover_url = element_attr(imgs[0], "src");
+            if cover_url != () && cover_url.starts_with("//") {
+                cover_url = `https:${cover_url}`;
+            }
         }
 
         // Make URL absolute
@@ -718,21 +661,7 @@ fn get_latest_updates(page, auth) {
     }
 
     // Check for more pages
-    let has_more = false;
-    let next_links = html_select(html, "a.next");
-    if next_links.len() > 0 {
-        has_more = true;
-    } else {
-        // Check page number
-        let page_links = html_select(html, "div.next-page a");
-        for p_link in page_links {
-            let p_text = element_text(p_link).trim();
-            if p_text == "Next" || p_text == ">" {
-                has_more = true;
-                break;
-            }
-        }
-    }
+    let has_more = series.len() > 0 && page < 50;
 
     #{ series: series, has_more: has_more }
 }
@@ -753,61 +682,67 @@ fn get_popular(page, auth) {
     let html = fetch_html(url);
 
     let series = [];
+    let seen = #{};
 
-    // Select manga items
-    let items = html_select(html, "ul.manga_pic_list li");
-    if items.len() == 0 {
-        items = html_select(html, "li");
-    }
+    // MangaTown uses classless HTML: <ul> <li> with <a href="/manga/slug/"> entries.
+    // Since there are no CSS classes on the list elements, we extract series directly
+    // from all anchor tags linking to /manga/ pages (filtering out chapter links).
+    let all_links = html_select(html, "a[href*='/manga/']");
 
-    for item in items {
-        // Find manga link
-        let links = html_select(item, "a[href*='/manga/']");
-        let main_link = ();
-        let title = "";
-
-        for link in links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-
-            // Skip chapter links
-            if regex_find("/[cv][0-9]", href) != () {
-                continue;
-            }
-
-            if href.contains("/manga/") {
-                main_link = link;
-                title = element_attr(link, "title");
-                if title == () || title == "" {
-                    title = element_text(link).trim();
-                }
-                break;
-            }
-        }
-
-        if main_link == () {
+    for link in all_links {
+        let href = element_attr(link, "href");
+        if href == () || href == "" {
             continue;
         }
 
-        let href = element_attr(main_link, "href");
+        // Skip chapter links (contain /c or /v followed by numbers)
+        if regex_find("/[cv][0-9]", href) != () {
+            continue;
+        }
+
+        // Must be a valid manga link
+        if !href.contains("/manga/") {
+            continue;
+        }
+
         let slug = extract_manga_slug(href);
         if slug == "" {
             continue;
         }
 
-        // Get cover
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
+        // Skip duplicates
+        if seen.contains(slug) {
+            continue;
+        }
+
+        // Get title from title attribute first, then text content
+        let title = element_attr(link, "title");
+        if title == () || title == "" {
+            title = element_text(link).trim();
         }
 
         // Clean title
         title = clean_text(title);
         if title == "" {
             continue;
+        }
+
+        // Skip very short titles that are likely navigation elements
+        if title.len() < 2 {
+            continue;
+        }
+
+        seen[slug] = true;
+
+        // Get cover from a sibling/nearby img element - we look for the link's own img
+        let cover_url = ();
+        let imgs = html_select(link, "img");
+        if imgs.len() > 0 {
+            cover_url = element_attr(imgs[0], "src");
+            // Fix protocol-relative URLs
+            if cover_url != () && cover_url.starts_with("//") {
+                cover_url = `https:${cover_url}`;
+            }
         }
 
         // Make URL absolute
@@ -825,7 +760,7 @@ fn get_popular(page, auth) {
     }
 
     // Check for more pages
-    let has_more = page < 300;  // MangaTown has ~334 pages
+    let has_more = series.len() > 0 && page < 300;  // MangaTown has ~334 pages
 
     #{ series: series, has_more: has_more }
 }

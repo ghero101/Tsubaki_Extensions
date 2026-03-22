@@ -201,8 +201,14 @@ fn get_chapters(series_id, auth) {
     let doc = html_parse(html);
     let chapters = [];
 
-    // Find chapter links
-    let ch_links = html_select(doc, "a[href*='/chapter']");
+    // RoliaScan uses /read/ URLs for chapters (e.g., /read/kinato-s-magic/chapter-9)
+    let ch_links = html_select(doc, "a[href*='/read/']");
+
+    // Fallback: also try /chapter links
+    if ch_links.len() == 0 {
+        ch_links = html_select(doc, "a[href*='/chapter']");
+    }
+
     let seen = #{};
     let idx = 0;
 
@@ -211,20 +217,41 @@ fn get_chapters(series_id, auth) {
         if href == () || href == "" { continue; }
         if seen.contains(href) { continue; }
 
+        // Skip non-chapter links (navigation, etc.)
+        if !href.contains("chapter") { continue; }
+
         seen[href] = true;
 
         let ch_title = element_text(link).trim();
         if ch_title == "" { continue; }
 
-        // Extract chapter number
+        // Extract chapter number from URL or title
         let ch_num = `${idx + 1}`;
-        let num_match = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
-        if num_match != () && num_match != "" {
-            ch_num = num_match;
-        } else {
-            let num_match2 = regex_find("(\\d+\\.?\\d*)", ch_title);
-            if num_match2 != () && num_match2 != "" {
-                ch_num = num_match2;
+
+        // Try URL pattern first: chapter-{number}
+        let url_match = regex_find("chapter-(\\d+\\.?\\d*)", href);
+        if url_match != () && url_match != "" {
+            // url_match is like "chapter-9", extract the number
+            let parts = url_match.split("-");
+            if parts.len() >= 2 {
+                ch_num = parts[1];
+            }
+        }
+
+        // Fallback: try title text
+        if ch_num == `${idx + 1}` {
+            let title_match = regex_find("(?i)chapter[\\s.-]*(\\d+\\.?\\d*)", ch_title);
+            if title_match != () && title_match != "" {
+                // Extract just the number
+                let num = regex_find("\\d+\\.?\\d*", title_match);
+                if num != () && num != "" {
+                    ch_num = num;
+                }
+            } else {
+                let num_match2 = regex_find("(\\d+\\.?\\d*)", ch_title);
+                if num_match2 != () && num_match2 != "" {
+                    ch_num = num_match2;
+                }
             }
         }
 
@@ -266,14 +293,34 @@ fn get_chapter_pages(chapter_id, auth) {
         if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
             continue;
         }
+        if src_lower.contains("banner") || src_lower.contains("ad") || src_lower.contains("loading") {
+            continue;
+        }
 
-        // Only include CDN images (actual manga pages)
-        if src.contains("cdn2.fandommanga.xyz") || src.contains("/chapters/") || src.contains("/manga/") {
+        // Include CDN images (actual manga pages) and any /read/ path images
+        if src.contains("cdn2.fandommanga.xyz") || src.contains("fandommanga.xyz") || src.contains("/chapters/") || src.contains("/manga/") || src.contains("/read/") {
             pages.push(#{
                 index: idx,
                 url: src,
                 headers: #{
-                    "Referer": url,
+                    "Referer": BASE_URL,
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+                }
+            });
+            idx += 1;
+        }
+    }
+
+    // Fallback: try to find images via regex (some readers embed URLs in JS)
+    if pages.len() == 0 {
+        let cdn_urls = regex_find_all("https://cdn2\\.fandommanga\\.xyz/[^\"'\\s]+\\.(jpg|png|webp)", html);
+        for img_url in cdn_urls {
+            pages.push(#{
+                index: idx,
+                url: img_url,
+                headers: #{
+                    "Referer": BASE_URL,
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
                 }
