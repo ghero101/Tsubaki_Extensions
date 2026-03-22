@@ -1,6 +1,6 @@
 {
-    "version": 48,
-    "updated_at": "2026-03-22T12:00:00Z",
+    "version": 49,
+    "updated_at": "2026-03-22T14:00:00Z",
     "addons": [
         {
             "id": "anilist",
@@ -1149,6 +1149,90 @@
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-0.zip",
                     "changelog": "Initial release",
                     "released_at": "2026-03-20T12:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "mangareader",
+            "name": "MangaReader",
+            "version": "1.0.0",
+            "description": "MangaReader.to - Massive manga, manhwa, and manhua library",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangareader-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangareader-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_1-0-0.zip",
+                    "changelog": "Initial release - browser automation for scrambled image descrambling",
+                    "released_at": "2026-03-22T14:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "readm",
+            "name": "ReadM",
+            "version": "1.0.0",
+            "description": "ReadM - Large manga library with daily updates",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/readm-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/readm-rhai/readm-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/readm-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/readm-rhai/readm-rhai_1-0-0.zip",
+                    "changelog": "Initial release - POST-based search, CF-protected",
+                    "released_at": "2026-03-22T14:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "manhwaclan",
+            "name": "ManhwaClan",
+            "version": "1.0.0",
+            "description": "ManhwaClan - Manhwa, manga, and manhua reader",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhwaclan-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhwaclan-rhai/manhwaclan-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhwaclan-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhwaclan-rhai/manhwaclan-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-22T14:00:00Z"
+                }
+            }
+        },
+        {
+            "id": "manhuafast",
+            "name": "ManhuaFast",
+            "version": "1.0.0",
+            "description": "ManhuaFast - Manhua, manhwa, and manga reader",
+            "author": "Tsubaki Team",
+            "technology": "rhai",
+            "addon_type": "scraper",
+            "nsfw": false,
+            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhuafast-rhai/icon.png",
+            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhuafast-rhai/manhuafast-rhai_1-0-0.zip",
+            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhuafast-rhai/manifest.json",
+            "latest_version": "1.0.0",
+            "versions": {
+                "1.0.0": {
+                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhuafast-rhai/manhuafast-rhai_1-0-0.zip",
+                    "changelog": "Initial release",
+                    "released_at": "2026-03-22T14:00:00Z"
                 }
             }
         },
