@@ -977,7 +977,18 @@ fn get_chapter_pages(chapter_id, auth) {
         url = make_absolute_url(chapter_id);
     }
 
-    let html = fetch_html(url);
+    // ToonClash loads chapter images via JavaScript after page load.
+    // Standard HTTP fetch won't have images. Try FlareSolverr first (renders JS),
+    // then fall back to regular HTTP.
+    let html = "";
+    if flaresolverr_is_available() {
+        try {
+            html = flaresolverr_get(url, 30000);
+        } catch {}
+    }
+    if html == "" || html.len() < 500 {
+        html = fetch_html(url);
+    }
 
     if html == "" {
         return [];

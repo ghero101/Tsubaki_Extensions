@@ -23,7 +23,7 @@
       "toonclash.com"
     ],
     "requires_cookies": false,
-    "requires_javascript": false,
+    "requires_javascript": true,
     "cloudflare_protected": false
   },
   "features": {

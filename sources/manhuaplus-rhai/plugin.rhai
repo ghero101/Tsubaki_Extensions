@@ -225,19 +225,19 @@ fn get_image_url(img) {
     // Priority: data-src > data-lazy-src > data-lazy > src
     let url = element_attr(img, "data-src");
 
-    if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") {
+    if url == () || url == "" || url.contains("blank.gif") || url.contains("dflazy") || url.starts_with("data:") {
         url = element_attr(img, "data-lazy-src");
     }
-    if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") {
+    if url == () || url == "" || url.contains("blank.gif") || url.contains("dflazy") || url.starts_with("data:") {
         url = element_attr(img, "data-lazy");
     }
-    if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") {
+    if url == () || url == "" || url.contains("blank.gif") || url.contains("dflazy") || url.starts_with("data:") {
         url = element_attr(img, "src");
     }
 
     // Skip placeholder/invalid images
     if url != () && url != "" {
-        if url.contains("blank.gif") || url.starts_with("data:") || url.contains("loading") {
+        if url.contains("blank.gif") || url.contains("dflazy") || url.starts_with("data:") || url.contains("loading") {
             return ();
         }
     }
@@ -324,11 +324,14 @@ fn search_series(query, page, auth) {
     let series = [];
     let seen = #{};
 
-    // Madara theme search results use div.c-tabs-item__content or div.row.c-tabs-item
-    // Each result item is typically in div.row with .c-tabs-item__content
-    let items = html_select(html, "div.c-tabs-item__content");
+    // ManhuaPlus search results use .page-listing-item containers
+    // Each contains .page-item-detail (metadata) and .item-summary
+    // Fallback to standard Madara selectors for compatibility
+    let items = html_select(html, "div.page-listing-item .page-item-detail");
 
-    // Fallback selectors if the primary one yields nothing
+    if items.len() == 0 {
+        items = html_select(html, "div.c-tabs-item__content");
+    }
     if items.len() == 0 {
         items = html_select(html, "div.page-item-detail");
     }

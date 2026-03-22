@@ -5,11 +5,11 @@
 // The site is behind Cloudflare, so we use http_get_with_headers() with Chrome TLS
 // impersonation and fall back to http_get_plain() if that fails.
 //
-// URL Patterns:
+// URL Patterns (non-standard Madara - uses /series/ instead of /manga/):
 //   Search: /?s={query}&post_type=wp-manga
-//   Browse: /manga/?m_orderby=latest&page={page}
-//   Series: /manga/{slug}/
-//   Chapter: /manga/{slug}/{chapter-slug}/
+//   Browse: /all-mangas/ (paginated: /all-mangas/page/{page}/)
+//   Series: /series/{slug}/
+//   Chapter: /series/{slug}/{chapter-slug}/
 //   Chapter list AJAX: POST /wp-admin/admin-ajax.php (action=manga_get_chapters&manga={post_id})
 //
 // Available Rhai APIs:
@@ -109,9 +109,20 @@ fn get_source_info() {
 }
 
 /// Extract manga slug from a URL
-/// URL patterns: /manga/{slug}/, or full URL
+/// URL patterns: /series/{slug}/, or full URL
 fn extract_slug(url) {
-    // Primary: /manga/{slug}/
+    // Primary: /series/{slug}/
+    if url.contains("/series/") {
+        let parts = url.split("/series/");
+        if parts.len() > 1 {
+            let slug = parts[1].split("/")[0].split("?")[0];
+            if slug != "" && slug != "?m_orderby" {
+                return slug;
+            }
+        }
+    }
+
+    // Fallback: /manga/{slug}/ (in case any old URLs use this pattern)
     if url.contains("/manga/") {
         let parts = url.split("/manga/");
         if parts.len() > 1 {
@@ -324,26 +335,37 @@ fn search_series(query, page, auth) {
     let series = [];
     let seen = #{};
 
-    // Madara theme search results use div.c-tabs-item__content or div.row.c-tabs-item
-    // Each result item is typically in div.row with .c-tabs-item__content
-    let items = html_select(html, "div.c-tabs-item__content");
+    // Philia Scans uses .search-result-card containers for search results
+    let items = html_select(html, "div.search-result-card");
 
     // Fallback selectors if the primary one yields nothing
     if items.len() == 0 {
+        items = html_select(html, "div.c-tabs-item__content");
+    }
+    if items.len() == 0 {
         items = html_select(html, "div.page-item-detail");
+    }
+    if items.len() == 0 {
+        items = html_select(html, "div.page-listing-item");
     }
     if items.len() == 0 {
         items = html_select(html, "div.row.c-tabs-item");
     }
 
     for item in items {
-        // Get title and URL from the title link
-        let title_links = html_select(item, ".post-title a");
+        // Get title and URL from links - first try /series/ links
+        let title_links = html_select(item, "a[href*='/series/']");
+        if title_links.len() == 0 {
+            title_links = html_select(item, ".post-title a");
+        }
         if title_links.len() == 0 {
             title_links = html_select(item, "h3 a");
         }
         if title_links.len() == 0 {
             title_links = html_select(item, "h4 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "a");
         }
         if title_links.len() == 0 {
             continue;
@@ -374,13 +396,23 @@ fn search_series(query, page, auth) {
                 title = title_attr.trim();
             }
         }
+        // Try getting title from heading elements within the card
+        if title == "" {
+            let heading_els = html_select(item, "h3, h4, .post-title");
+            if heading_els.len() > 0 {
+                title = element_text(heading_els[0]).trim();
+            }
+        }
         if title == "" {
             continue;
         }
 
-        // Get cover image
+        // Get cover image - check for data-src (lazy loaded) first
         let cover_url = ();
-        let imgs = html_select(item, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        let imgs = html_select(item, "img[data-src]");
+        if imgs.len() == 0 {
+            imgs = html_select(item, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        }
         if imgs.len() == 0 {
             imgs = html_select(item, "img");
         }
@@ -452,23 +484,31 @@ fn browse(page, category, auth) {
         return get_latest_updates(page, auth);
     }
 
-    // Madara theme browse with ordering
-    let order = "latest";
-    if category == "popular" || category == "views" {
-        order = "views";
-    } else if category == "trending" {
-        order = "trending";
-    } else if category == "rating" {
-        order = "rating";
-    } else if category == "new-manga" {
-        order = "new-manga";
-    } else if category == "az" || category == "alphabetical" {
-        order = "alphabet";
+    // Philia Scans uses /all-mangas/ for browse listing
+    let url = `${BASE_URL}/all-mangas/`;
+    if page > 1 {
+        url = `${BASE_URL}/all-mangas/page/${page}/`;
     }
 
-    let url = `${BASE_URL}/manga/?m_orderby=${order}&page=${page}`;
-
     let html = fetch_html(url);
+
+    // Fallback: try standard Madara pattern if /all-mangas/ didn't work
+    if html == "" {
+        let order = "latest";
+        if category == "popular" || category == "views" {
+            order = "views";
+        } else if category == "trending" {
+            order = "trending";
+        } else if category == "rating" {
+            order = "rating";
+        } else if category == "new-manga" {
+            order = "new-manga";
+        } else if category == "az" || category == "alphabetical" {
+            order = "alphabet";
+        }
+        url = `${BASE_URL}/series/?m_orderby=${order}&page=${page}`;
+        html = fetch_html(url);
+    }
 
     if html == "" {
         return #{ series: [], has_more: false };
@@ -480,6 +520,9 @@ fn browse(page, category, auth) {
     // Madara browse page uses .page-item-detail for each manga card
     let items = html_select(html, ".page-item-detail");
     if items.len() == 0 {
+        items = html_select(html, "div.page-listing-item");
+    }
+    if items.len() == 0 {
         items = html_select(html, "div.manga");
     }
 
@@ -490,6 +533,9 @@ fn browse(page, category, auth) {
         }
         if title_links.len() == 0 {
             title_links = html_select(item, "h5 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "a");
         }
         if title_links.len() == 0 {
             continue;
@@ -565,7 +611,7 @@ fn get_series(id_or_url, auth) {
     let slug = id_or_url;
 
     if !id_or_url.starts_with("http") {
-        url = `${BASE_URL}/manga/${id_or_url}/`;
+        url = `${BASE_URL}/series/${id_or_url}/`;
     } else {
         slug = extract_slug(id_or_url);
     }
@@ -576,14 +622,14 @@ fn get_series(id_or_url, auth) {
         throw `Failed to fetch series: ${id_or_url}`;
     }
 
-    // Extract title - Madara theme uses .post-title h1
+    // Extract title - try h1 directly first, then Madara's .post-title h1
     let title = "";
-    let title_els = html_select(html, ".post-title h1");
+    let title_els = html_select(html, "h1");
     if title_els.len() > 0 {
         title = element_text(title_els[0]).trim();
     }
     if title == "" {
-        let title_els2 = html_select(html, "h1");
+        let title_els2 = html_select(html, ".post-title h1");
         if title_els2.len() > 0 {
             title = element_text(title_els2[0]).trim();
         }
@@ -603,7 +649,7 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract cover image - Madara uses .summary_image img
+    // Extract cover image - Madara uses .summary_image img, also check for lazy loading
     let cover_url = ();
     let cover_els = html_select(html, ".summary_image img");
     if cover_els.len() == 0 {
@@ -617,9 +663,12 @@ fn get_series(id_or_url, auth) {
     }
     cover_url = make_absolute_url(cover_url);
 
-    // Extract description - Madara uses .summary__content or .description-summary
+    // Extract description - try #synopsis anchor area, then standard Madara selectors
     let description = ();
-    let desc_els = html_select(html, ".summary__content p, .description-summary p, .manga-excerpt p");
+    let desc_els = html_select(html, "#synopsis ~ p, #synopsis ~ div p");
+    if desc_els.len() == 0 {
+        desc_els = html_select(html, ".summary__content p, .description-summary p, .manga-excerpt p");
+    }
     if desc_els.len() > 0 {
         let desc_parts = [];
         for p in desc_els {
@@ -685,18 +734,19 @@ fn get_series(id_or_url, auth) {
     }
 
     // Extract status - Madara uses .post-status with .summary-content
+    // Philia Scans shows "Releasing" instead of "Ongoing"
     let status = ();
     let status_els = html_select(html, ".post-status .post-content_item");
     for el in status_els {
         let text = element_text(el).to_lower();
         if text.contains("status") {
-            if text.contains("ongoing") || text.contains("publishing") {
+            if text.contains("ongoing") || text.contains("publishing") || text.contains("releasing") {
                 status = "Ongoing";
             } else if text.contains("completed") || text.contains("finished") {
                 status = "Completed";
             } else if text.contains("hiatus") {
                 status = "Hiatus";
-            } else if text.contains("cancelled") || text.contains("canceled") {
+            } else if text.contains("cancelled") || text.contains("canceled") || text.contains("dropped") {
                 status = "Cancelled";
             }
         }
@@ -706,7 +756,7 @@ fn get_series(id_or_url, auth) {
         let summary_els = html_select(html, ".summary-content");
         for el in summary_els {
             let text = element_text(el).to_lower().trim();
-            if text == "ongoing" || text == "publishing" {
+            if text == "ongoing" || text == "publishing" || text == "releasing" {
                 status = "Ongoing";
                 break;
             } else if text == "completed" || text == "finished" {
@@ -715,7 +765,7 @@ fn get_series(id_or_url, auth) {
             } else if text == "hiatus" {
                 status = "Hiatus";
                 break;
-            } else if text == "cancelled" || text == "canceled" {
+            } else if text == "cancelled" || text == "canceled" || text == "dropped" {
                 status = "Cancelled";
                 break;
             }
@@ -793,7 +843,7 @@ fn get_chapters(series_id, auth) {
     let slug = series_id;
 
     if !series_id.starts_with("http") {
-        url = `${BASE_URL}/manga/${series_id}/`;
+        url = `${BASE_URL}/series/${series_id}/`;
     } else {
         slug = extract_slug(series_id);
     }
@@ -829,6 +879,13 @@ fn get_chapters(series_id, auth) {
             post_id = regex_find("\\d+", id_match3);
         }
     }
+    if post_id == "" {
+        // Try input hidden with manga id
+        let id_match4 = regex_find("id=\"manga-chapters-holder\"[^>]*data-id=\"(\\d+)\"", html);
+        if id_match4 != "" {
+            post_id = regex_find("\\d+", id_match4);
+        }
+    }
 
     // If we have a post ID, try AJAX endpoint for full chapter list
     if post_id != "" {
@@ -859,7 +916,7 @@ fn get_chapters(series_id, auth) {
 fn parse_chapter_list(html, series_id, seen) {
     let chapters = [];
 
-    // Madara theme chapter list: li.wp-manga-chapter
+    // Madara theme chapter list: li.wp-manga-chapter (includes both .free-chap and .premium-block)
     let chapter_items = html_select(html, "li.wp-manga-chapter");
 
     // Fallback selectors
@@ -1068,10 +1125,19 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest manga updates
 fn get_latest_updates(page, auth) {
-    // Madara latest: /manga/?m_orderby=latest&page={page}
-    let url = `${BASE_URL}/manga/?m_orderby=latest&page=${page}`;
+    // Philia Scans uses /all-mangas/ for listing
+    let url = `${BASE_URL}/all-mangas/`;
+    if page > 1 {
+        url = `${BASE_URL}/all-mangas/page/${page}/`;
+    }
 
     let html = fetch_html(url);
+
+    // Fallback: try standard Madara latest pattern
+    if html == "" {
+        url = `${BASE_URL}/series/?m_orderby=latest&page=${page}`;
+        html = fetch_html(url);
+    }
 
     if html == "" {
         return #{ series: [], has_more: false };
@@ -1083,6 +1149,9 @@ fn get_latest_updates(page, auth) {
     // Madara browse uses .page-item-detail for each card
     let items = html_select(html, ".page-item-detail");
     if items.len() == 0 {
+        items = html_select(html, "div.page-listing-item");
+    }
+    if items.len() == 0 {
         items = html_select(html, "div.manga");
     }
 
@@ -1093,6 +1162,9 @@ fn get_latest_updates(page, auth) {
         }
         if title_links.len() == 0 {
             title_links = html_select(item, "h5 a");
+        }
+        if title_links.len() == 0 {
+            title_links = html_select(item, "a");
         }
         if title_links.len() == 0 {
             continue;
