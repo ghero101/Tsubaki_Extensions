@@ -272,7 +272,11 @@ fn get_chapter_pages(chapter_id, auth) {
             pages.push(#{
                 index: idx,
                 url: src,
-                headers: #{ "Referer": url }
+                headers: #{
+                    "Referer": url,
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+                }
             });
             idx += 1;
         }

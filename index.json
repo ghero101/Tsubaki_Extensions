@@ -1,6 +1,6 @@
 {
-    "version": 49,
-    "updated_at": "2026-03-22T14:00:00Z",
+    "version": 50,
+    "updated_at": "2026-03-22T18:00:00Z",
     "addons": [
         {
             "id": "anilist",
@@ -62,32 +62,6 @@
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave-rhai/batcave-rhai_1-0-4.zip",
                     "changelog": "Updated",
                     "released_at": "2026-01-19T06:33:25Z"
-                }
-            }
-        },
-        {
-            "id": "batoto-rhai",
-            "name": "BatoTo",
-            "version": "1.0.4",
-            "description": "BatoTo manga reader - Multi-language manga aggregator with extensive library. Uses browser automation due to Vue.js rendering.",
-            "author": "Tsubaki Team",
-            "technology": "rhai",
-            "addon_type": "scraper",
-            "nsfw": false,
-            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/batoto-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batoto-rhai/batoto-rhai_1-0-4.zip",
-            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/batoto-rhai/manifest.json",
-            "latest_version": "1.0.4",
-            "versions": {
-                "1.0.3": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batoto-rhai/batoto-rhai_1-0-3.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-01-19T06:33:25Z"
-                },
-                "1.0.4": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batoto-rhai/batoto-rhai_1-0-4.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-02-05T12:00:00Z"
                 }
             }
         },
@@ -182,53 +156,6 @@
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-1-8.zip",
                     "changelog": "Updated",
                     "released_at": "2026-02-16T00:00:00Z"
-                }
-            }
-        },
-        {
-            "id": "fmreader-rhai",
-            "name": "FMReader",
-            "version": "1.0.5",
-            "description": "FMReader framework parser - A template for FMReader-based manga sites. Supports multiple sites using the FMReader CMS including KissManga, ReadManga, and similar platforms.",
-            "author": "Tsubaki Community",
-            "technology": "rhai",
-            "addon_type": "scraper",
-            "nsfw": false,
-            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/fmreader-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fmreader-rhai/fmreader-rhai_latest.zip",
-            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/fmreader-rhai/manifest.json",
-            "latest_version": "1.0.5",
-            "versions": {
-                "1.0.4": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fmreader-rhai/fmreader-rhai_1-0-4.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-01-19T06:33:25Z"
-                },
-                "1.0.5": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fmreader-rhai/fmreader-rhai_1-0-5.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-02-16T00:00:00Z"
-                }
-            }
-        },
-        {
-            "id": "foolslide-rhai",
-            "name": "FoolSlide",
-            "version": "1.0.3",
-            "description": "Framework parser for FoolSlide CMS-based manga sites. FoolSlide is an open-source manga reading platform used by many scanlation groups. Configure the base URL to connect to any FoolSlide instance.",
-            "author": "Tsubaki Community",
-            "technology": "rhai",
-            "addon_type": "scraper",
-            "nsfw": false,
-            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/foolslide-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/foolslide-rhai/foolslide-rhai_1-0-3.zip",
-            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/foolslide-rhai/manifest.json",
-            "latest_version": "1.0.3",
-            "versions": {
-                "1.0.3": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/foolslide-rhai/foolslide-rhai_1-0-3.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-01-19T06:33:25Z"
                 }
             }
         },

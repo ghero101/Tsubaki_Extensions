@@ -88,7 +88,12 @@ fn search_series(query, page, auth) {
     }
 
     let url = `${API_URL}/get_all_series/`;
-    let response_text = http_get_with_headers(url, get_headers());
+    let response_text = "";
+    try {
+        response_text = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{ series: [], has_more: false, total: 0 };
+    }
     let data = json_parse(response_text);
 
     if data == () {
@@ -180,7 +185,16 @@ fn get_series(id_or_url, auth) {
     let slug = extract_slug(id_or_url);
 
     let url = `${API_URL}/series/${slug}/`;
-    let response_text = http_get_with_headers(url, get_headers());
+    let response_text = "";
+    try {
+        response_text = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{
+            id: slug,
+            title: "",
+            error: `Network error: ${err}`
+        };
+    }
     let data = json_parse(response_text);
 
     if data == () {
@@ -263,7 +277,12 @@ fn get_chapters(series_id, auth) {
     let slug = extract_slug(series_id);
 
     let url = `${API_URL}/series/${slug}/`;
-    let response_text = http_get_with_headers(url, get_headers());
+    let response_text = "";
+    try {
+        response_text = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return [];
+    }
     let data = json_parse(response_text);
 
     if data == () || !data.contains("chapters") {
@@ -386,7 +405,12 @@ fn get_chapter_pages(chapter_id, auth) {
 
     // Fetch series data to get chapter pages
     let url = `${API_URL}/series/${slug}/`;
-    let response_text = http_get_with_headers(url, get_headers());
+    let response_text = "";
+    try {
+        response_text = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return [];
+    }
     let data = json_parse(response_text);
 
     if data == () || !data.contains("chapters") {
@@ -467,7 +491,12 @@ fn get_latest_updates(page, auth) {
     }
 
     let url = `${API_URL}/get_all_series/`;
-    let response_text = http_get_with_headers(url, get_headers());
+    let response_text = "";
+    try {
+        response_text = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{ series: [], has_more: false };
+    }
     let data = json_parse(response_text);
 
     if data == () {

@@ -386,6 +386,12 @@ fn get_series_details(id_or_url, auth) {
 
 /// Get all chapters for a series.
 fn get_chapters(series_id, auth) {
+    let id = series_id;
+    // Extract UUID from full URL if needed
+    if id.contains("mangadex.org/title/") {
+        id = id.split("/title/")[1].split("/")[0];
+    }
+
     let chapters = [];
     let offset = 0;
     let limit = 500; // Max limit for this endpoint
@@ -393,7 +399,7 @@ fn get_chapters(series_id, auth) {
     let content_rating_params = build_content_rating_params();
 
     while true {
-        let url = `${BASE_URL}/manga/${series_id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=${lang}&order[chapter]=desc&includes[]=scanlation_group&${content_rating_params}`;
+        let url = `${BASE_URL}/manga/${id}/feed?limit=${limit}&offset=${offset}&translatedLanguage[]=${lang}&order[chapter]=desc&includes[]=scanlation_group&${content_rating_params}`;
 
         let response_text = auth_http_get(url, auth);
         let response = json_parse(response_text);
@@ -408,6 +414,11 @@ fn get_chapters(series_id, auth) {
         for chapter_data in response.data {
             let attrs = chapter_data.attributes;
             let rels = chapter_data.relationships;
+
+            // Skip external-only chapters (licensed content hosted elsewhere, no MangaDex pages)
+            if attrs.externalUrl != () && attrs.externalUrl != "" {
+                continue;
+            }
 
             let scanlator = "";
             if rels != () {
@@ -431,10 +442,7 @@ fn get_chapters(series_id, auth) {
                 scanlator: scanlator,
                 url: `https://mangadex.org/chapter/${chapter_data.id}`,
                 published_at: attrs.publishAt,
-                page_count: attrs.pages,
-                extra: #{
-                    external_url: attrs.externalUrl
-                }
+                page_count: attrs.pages
             });
         }
 
@@ -467,7 +475,7 @@ fn get_chapter_pages(chapter_id, auth) {
         return [];
     }
     let hash = chapter_data.hash;
-    if hash == () {
+    if hash == () || hash == "" {
         return [];
     }
 
@@ -476,7 +484,6 @@ fn get_chapter_pages(chapter_id, auth) {
         "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
         "Sec-Fetch-Dest": "image",
         "Sec-Fetch-Mode": "no-cors",
         "Sec-Fetch-Site": "cross-site",

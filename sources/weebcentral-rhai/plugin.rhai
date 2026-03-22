@@ -93,6 +93,33 @@ fn extract_chapter_id(url) {
     ""
 }
 
+/// Clean title text — strip "Official" badge text and excessive whitespace
+fn clean_title(title) {
+    if title == () || title == "" {
+        return "";
+    }
+    // Remove "Official" prefix that comes from badge elements
+    let cleaned = title;
+    if cleaned.starts_with("Official") {
+        cleaned = cleaned.sub_string(8, cleaned.len());
+    }
+    // Collapse multiple whitespace/newlines into single space
+    let result = "";
+    let last_was_space = true;  // Trim leading whitespace
+    for c in cleaned.chars() {
+        if c == ' ' || c == '\n' || c == '\r' || c == '\t' {
+            if !last_was_space {
+                result += " ";
+                last_was_space = true;
+            }
+        } else {
+            result += c;
+            last_was_space = false;
+        }
+    }
+    result.trim()
+}
+
 /// Search for series matching query
 fn search_series(query, page, auth) {
     let cleaned_query = clean_query(query);
@@ -107,6 +134,7 @@ fn search_series(query, page, auth) {
 
     // The response is HTML with article/section structure
     let series = [];
+    let seen = #{};
 
     // Select search result items: article > section > a
     let items = html_select(html, "article section a");
@@ -119,18 +147,19 @@ fn search_series(query, page, auth) {
 
         // Extract series ID
         let id = extract_series_id(href);
-        if id == "" {
+        if id == "" || seen.contains(id) {
             continue;
         }
+        seen[id] = true;
 
         // Get title from the link or nested div
         let title = "";
         let title_divs = html_select(item, "div:last-child");
         if title_divs.len() > 0 {
-            title = element_text(title_divs[title_divs.len() - 1]).trim();
+            title = clean_title(element_text(title_divs[title_divs.len() - 1]));
         }
         if title == "" {
-            title = element_text(item).trim();
+            title = clean_title(element_text(item));
         }
 
         // Get cover image
@@ -578,6 +607,7 @@ fn get_popular(page, auth) {
 
     let series = [];
 
+    let seen = #{};
     let items = html_select(html, "article section a");
 
     for item in items {
@@ -587,18 +617,19 @@ fn get_popular(page, auth) {
         }
 
         let id = extract_series_id(href);
-        if id == "" {
+        if id == "" || seen.contains(id) {
             continue;
         }
+        seen[id] = true;
 
         // Get title
         let title = "";
         let title_divs = html_select(item, "div:last-child");
         if title_divs.len() > 0 {
-            title = element_text(title_divs[title_divs.len() - 1]).trim();
+            title = clean_title(element_text(title_divs[title_divs.len() - 1]));
         }
         if title == "" {
-            title = element_text(item).trim();
+            title = clean_title(element_text(item));
         }
 
         // Get cover

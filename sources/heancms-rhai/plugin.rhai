@@ -158,13 +158,18 @@ fn login(email, password) {
 /// Search for series matching query
 fn search_series(query, page, auth) {
     let api_url = get_api_url();
-    let encoded_query = query.replace(" ", "%20");
+    let encoded_query = url_encode(query);
 
     // Build query URL
     let url = `${api_url}/query?query_string=${encoded_query}&page=${page}&perPage=${get_per_page()}&series_type=Comic`;
 
-    let response = http_get_with_headers(url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers(auth));
+    } catch(err) {
+        return #{ series: [], has_more: false, total: 0 };
+    }
+    if response == () || response == "" {
         return #{ series: [], has_more: false, total: 0 };
     }
 
@@ -328,8 +333,17 @@ fn get_series(id_or_url, auth) {
     let api_url = get_api_url();
     let url = `${api_url}/series/${slug}`;
 
-    let response = http_get_with_headers(url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers(auth));
+    } catch(err) {
+        return #{
+            id: slug,
+            title: "",
+            error: `Network error: ${err}`
+        };
+    }
+    if response == () || response == "" {
         return #{
             id: slug,
             title: "",
@@ -423,8 +437,13 @@ fn get_chapters_new_endpoint(slug, auth) {
     let api_url = get_api_url();
     let series_url = `${api_url}/series/${slug}`;
 
-    let response = http_get_with_headers(series_url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(series_url, get_headers(auth));
+    } catch(err) {
+        return [];
+    }
+    if response == () || response == "" {
         return [];
     }
 
@@ -442,8 +461,13 @@ fn get_chapters_new_endpoint(slug, auth) {
     // Query chapters endpoint
     let chapters_url = `${api_url}/chapter/query?series_id=${series_id}&perPage=${get_chapters_per_page()}`;
 
-    let chapters_response = http_get_with_headers(chapters_url, get_headers(auth));
-    if chapters_response == () {
+    let chapters_response = "";
+    try {
+        chapters_response = http_get_with_headers(chapters_url, get_headers(auth));
+    } catch(err) {
+        return parse_seasons_chapters(series_data, slug);
+    }
+    if chapters_response == () || chapters_response == "" {
         // Fallback to seasons
         return parse_seasons_chapters(series_data, slug);
     }
@@ -487,8 +511,13 @@ fn get_chapters_from_series(slug, auth) {
     let api_url = get_api_url();
     let url = `${api_url}/series/${slug}`;
 
-    let response = http_get_with_headers(url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers(auth));
+    } catch(err) {
+        return [];
+    }
+    if response == () || response == "" {
         return [];
     }
 
@@ -649,9 +678,14 @@ fn get_chapter_pages(chapter_id, auth) {
     let url = `${api_url}/chapter/${chapter_path}`;
 
     let headers = get_headers(auth);
-    let response = http_get_with_headers(url, headers);
+    let response = "";
+    try {
+        response = http_get_with_headers(url, headers);
+    } catch(err) {
+        return [];
+    }
 
-    if response == () {
+    if response == () || response == "" {
         return [];
     }
 
@@ -755,8 +789,13 @@ fn get_latest_updates(page, auth) {
     let api_url = get_api_url();
     let url = `${api_url}/query?page=${page}&perPage=${get_per_page()}&orderBy=latest&series_type=Comic`;
 
-    let response = http_get_with_headers(url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers(auth));
+    } catch(err) {
+        return #{ series: [], has_more: false };
+    }
+    if response == () || response == "" {
         return #{ series: [], has_more: false };
     }
 
@@ -802,8 +841,13 @@ fn get_popular(page, auth) {
     let api_url = get_api_url();
     let url = `${api_url}/query?page=${page}&perPage=${get_per_page()}&orderBy=total_views&order=desc&series_type=Comic`;
 
-    let response = http_get_with_headers(url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers(auth));
+    } catch(err) {
+        return #{ series: [], has_more: false };
+    }
+    if response == () || response == "" {
         return #{ series: [], has_more: false };
     }
 
@@ -842,8 +886,13 @@ fn get_genres(auth) {
     let api_url = get_api_url();
     let url = `${api_url}/tags`;
 
-    let response = http_get_with_headers(url, get_headers(auth));
-    if response == () {
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers(auth));
+    } catch(err) {
+        return [];
+    }
+    if response == () || response == "" {
         return [];
     }
 

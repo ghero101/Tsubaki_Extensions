@@ -39,7 +39,12 @@ fn search_series(query, page, auth) {
     let offset = (page - 1) * 20;
     let url = `${API_BASE}/manga?filter[text]=${encoded_query}&page[limit]=20&page[offset]=${offset}`;
 
-    let response = http_get_with_headers(url, get_headers());
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{ series: [], has_more: false, total: 0 };
+    }
     let data = json_parse(response);
 
     let series = [];
@@ -180,7 +185,12 @@ fn get_series(id_or_url, auth) {
             let slug = parts[1].split("/")[0].split("?")[0];
             // Need to search by slug
             let search_url = `${API_BASE}/manga?filter[slug]=${slug}`;
-            let search_resp = http_get_with_headers(search_url, get_headers());
+            let search_resp = "";
+            try {
+                search_resp = http_get_with_headers(search_url, get_headers());
+            } catch(err) {
+                // Fall through and try by ID
+            }
             let search_data = json_parse(search_resp);
             if search_data != () {
                 let search_results = search_data["data"];
@@ -193,7 +203,16 @@ fn get_series(id_or_url, auth) {
 
     // Fetch manga with relationships
     let url = `${API_BASE}/manga/${manga_id}?include=genres,categories,staff,staff.person`;
-    let response = http_get_with_headers(url, get_headers());
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{
+            id: manga_id,
+            title: "",
+            error: `Network error: ${err}`
+        };
+    }
     let data = json_parse(response);
 
     if data == () {
@@ -373,7 +392,12 @@ fn get_latest_updates(page, auth) {
     let offset = (page - 1) * 20;
     let url = `${API_BASE}/manga?sort=-updatedAt&page[limit]=20&page[offset]=${offset}`;
 
-    let response = http_get_with_headers(url, get_headers());
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{ series: [], has_more: false };
+    }
     let data = json_parse(response);
 
     let series = [];
@@ -429,7 +453,12 @@ fn get_popular(page, auth) {
     let offset = (page - 1) * 20;
     let url = `${API_BASE}/manga?sort=-userCount&page[limit]=20&page[offset]=${offset}`;
 
-    let response = http_get_with_headers(url, get_headers());
+    let response = "";
+    try {
+        response = http_get_with_headers(url, get_headers());
+    } catch(err) {
+        return #{ series: [], has_more: false };
+    }
     let data = json_parse(response);
 
     let series = [];
