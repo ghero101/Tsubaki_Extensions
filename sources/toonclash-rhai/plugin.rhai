@@ -426,7 +426,7 @@ fn search_series(query, page, auth) {
 
     // Check for next page using Madara pagination
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .wp-pagenavi a.next");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .wp-pagenavi a.next, .nextprev a, .pagination a.next");
     if next_links.len() > 0 {
         has_more = true;
     }
@@ -544,11 +544,11 @@ fn browse(page, category, auth) {
 
     // Check for more pages
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .nextprev a, .pagination a.next, .wp-pagenavi a.nextpostslink");
     if next_links.len() > 0 {
         has_more = true;
     }
-    if !has_more && series.len() >= 12 {
+    if !has_more && series.len() >= 15 {
         // Madara typically shows 12-20 items per page; assume more if we got a full page
         has_more = true;
     }
@@ -1163,12 +1163,12 @@ fn get_latest_updates(page, auth) {
 
     // Check for next page
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .nextprev a, .pagination a.next, .wp-pagenavi a.nextpostslink");
     if next_links.len() > 0 {
         has_more = true;
     }
     // If we got a full page of results, assume there are more
-    if !has_more && series.len() >= 12 {
+    if !has_more && series.len() >= 15 {
         has_more = true;
     }
     if page >= 100 {

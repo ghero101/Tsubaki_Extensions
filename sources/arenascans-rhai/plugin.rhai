@@ -460,23 +460,27 @@ fn search_series(query, page, auth) {
         });
     }
 
-    // Check for next page
+    // Check for next page - try multiple pagination selectors
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .hpage a.r");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .hpage a.r, .nextprev a, .pagination a.next");
     if next_links.len() > 0 {
         has_more = true;
     }
     // Also check page number links
     if !has_more {
         let next_page = page + 1;
-        let page_links = html_select(html, ".pagination a, .hpage a, nav.navigation a");
+        let page_links = html_select(html, ".pagination a, .hpage a, nav.navigation a, .nextprev a");
         for pl in page_links {
             let pl_href = element_attr(pl, "href");
-            if pl_href != () && (pl_href.contains(`/page/${next_page}/`) || pl_href.contains(`paged=${next_page}`)) {
+            if pl_href != () && (pl_href.contains(`/page/${next_page}/`) || pl_href.contains(`paged=${next_page}`) || pl_href.contains(`?page=${next_page}`)) {
                 has_more = true;
                 break;
             }
         }
+    }
+    // Fallback: if we got a full page of results, assume there's more
+    if !has_more && series.len() >= 18 {
+        has_more = true;
     }
 
     #{ series: series, has_more: has_more, total: () }
@@ -514,11 +518,11 @@ fn browse(page, category, auth) {
 
     // Check for more pages
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .hpage a.r");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .hpage a.r, .nextprev a, .pagination a.next, .wp-pagenavi a.nextpostslink");
     if next_links.len() > 0 {
         has_more = true;
     }
-    if !has_more && series.len() >= 12 {
+    if !has_more && series.len() >= 15 {
         has_more = true;
     }
     if page >= 100 {
@@ -1233,11 +1237,11 @@ fn get_latest_updates(page, auth) {
 
     // Check for next page
     let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .hpage a.r");
+    let next_links = html_select(html, "a.next, a.nextpostslink, .hpage a.r, .nextprev a, .pagination a.next, .wp-pagenavi a.nextpostslink");
     if next_links.len() > 0 {
         has_more = true;
     }
-    if !has_more && series.len() >= 12 {
+    if !has_more && series.len() >= 15 {
         has_more = true;
     }
     if page >= 100 {
