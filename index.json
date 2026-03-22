@@ -1,6 +1,6 @@
 {
-    "version": 50,
-    "updated_at": "2026-03-22T18:00:00Z",
+    "version": 51,
+    "updated_at": "2026-03-22T20:00:00Z",
     "addons": [
         {
             "id": "anilist",
@@ -343,58 +343,6 @@
             }
         },
         {
-            "id": "mangakakalot-rhai",
-            "name": "MangaKakalot",
-            "version": "1.0.6",
-            "description": "Scraper for MangaKakalot (mangakakalot.com), one of the largest manga aggregator sites.",
-            "author": "Tsubaki Community",
-            "technology": "rhai",
-            "addon_type": "scraper",
-            "nsfw": false,
-            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangakakalot-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakakalot-rhai/mangakakalot-rhai_latest.zip",
-            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangakakalot-rhai/manifest.json",
-            "latest_version": "1.0.6",
-            "versions": {
-                "1.0.5": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakakalot-rhai/mangakakalot-rhai_1-0-5.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-01-19T06:33:25Z"
-                },
-                "1.0.6": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakakalot-rhai/mangakakalot-rhai_1-0-6.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-02-16T00:00:00Z"
-                }
-            }
-        },
-        {
-            "id": "manganato-rhai",
-            "name": "MangaNato",
-            "version": "1.2.0",
-            "description": "Scraper for MangaNato (manganato.com), one of the largest manga aggregator sites with thousands of titles.",
-            "author": "Tsubaki Community",
-            "technology": "rhai",
-            "addon_type": "scraper",
-            "nsfw": false,
-            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-rhai/manganato-rhai_latest.zip",
-            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-rhai/manifest.json",
-            "latest_version": "1.2.0",
-            "versions": {
-                "1.1.5": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-rhai/manganato-rhai_1-1-5.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-01-19T06:33:25Z"
-                },
-                "1.2.0": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-rhai/manganato-rhai_1-2-0.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-02-16T00:00:00Z"
-                }
-            }
-        },
-        {
             "id": "mangaowl-rhai",
             "name": "MangaOwl",
             "version": "1.0.3",
@@ -410,27 +358,6 @@
             "versions": {
                 "1.0.3": {
                     "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl-rhai/mangaowl-rhai_1-0-3.zip",
-                    "changelog": "Updated",
-                    "released_at": "2026-01-19T06:33:25Z"
-                }
-            }
-        },
-        {
-            "id": "mangapark-rhai",
-            "name": "MangaPark",
-            "version": "1.1.9",
-            "description": "Scraper for MangaPark (mangapark.org), featuring a large manga library with multiple versions and scanlation groups.",
-            "author": "Tsubaki Community",
-            "technology": "rhai",
-            "addon_type": "scraper",
-            "nsfw": false,
-            "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapark-rhai/icon.png",
-            "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapark-rhai/mangapark-rhai_1-1-9.zip",
-            "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapark-rhai/manifest.json",
-            "latest_version": "1.1.9",
-            "versions": {
-                "1.1.9": {
-                    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapark-rhai/mangapark-rhai_1-1-9.zip",
                     "changelog": "Updated",
                     "released_at": "2026-01-19T06:33:25Z"
                 }
