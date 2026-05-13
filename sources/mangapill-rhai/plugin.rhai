@@ -256,6 +256,38 @@ fn parse_manga_page(html, manga_id, page_url) {
         }
     }
 
+    // Extract authors
+    let authors = [];
+    let author_result = regex_find(">Author</label>\\s*<div>([^<]+)</div>", html);
+    if author_result != "" {
+        let author_str = regex_find("<div>([^<]+)</div>", author_result);
+        author_str = author_str.replace("<div>", "").replace("</div>", "").trim();
+        if author_str != "" {
+            for a in author_str.split(",") {
+                let cleaned = a.trim();
+                if cleaned != "" && cleaned != "N/A" && !authors.contains(cleaned) {
+                    authors.push(cleaned);
+                }
+            }
+        }
+    }
+
+    // Extract artists
+    let artists = [];
+    let artist_result = regex_find(">Artist</label>\\s*<div>([^<]+)</div>", html);
+    if artist_result != "" {
+        let artist_str = regex_find("<div>([^<]+)</div>", artist_result);
+        artist_str = artist_str.replace("<div>", "").replace("</div>", "").trim();
+        if artist_str != "" {
+            for a in artist_str.split(",") {
+                let cleaned = a.trim();
+                if cleaned != "" && cleaned != "N/A" && !artists.contains(cleaned) {
+                    artists.push(cleaned);
+                }
+            }
+        }
+    }
+
     // Get genres from links using regex
     let genres = [];
     let genre_results = regex_find_all("href=[\"']/search\\?genre=([^\"']+)[\"'][^>]*>([^<]+)<", html);
@@ -279,8 +311,8 @@ fn parse_manga_page(html, manga_id, page_url) {
         alternate_titles: [],
         description: description,
         cover_url: cover_url,
-        authors: [],
-        artists: [],
+        authors: authors,
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],

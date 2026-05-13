@@ -171,13 +171,37 @@ fn get_series(id_or_url, auth) {
         description = heading_match.trim();
     }
 
-    // Extract authors
+    // Extract authors and artists by splitting the HTML on mlabel spans
     let authors = [];
-    let author_matches = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, html);
-    for author in author_matches {
-        let cleaned = author.trim();
-        if cleaned != "" && !authors.contains(cleaned) {
-            authors.push(cleaned);
+    let artists = [];
+    let html_parts = html.split(`<span class="mlabel">`);
+    for part in html_parts {
+        if part.starts_with("Author(s):") {
+            let names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, part);
+            for n in names {
+                let cleaned = n.trim();
+                if cleaned != "" && !authors.contains(cleaned) {
+                    authors.push(cleaned);
+                }
+            }
+        } else if part.starts_with("Artist(s):") {
+            let names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, part);
+            for n in names {
+                let cleaned = n.trim();
+                if cleaned != "" && !artists.contains(cleaned) {
+                    artists.push(cleaned);
+                }
+            }
+        }
+    }
+    // Fallback: if label-based extraction found nothing, grab all author links
+    if authors.is_empty() && artists.is_empty() {
+        let all_matches = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, html);
+        for name in all_matches {
+            let cleaned = name.trim();
+            if cleaned != "" && !authors.contains(cleaned) {
+                authors.push(cleaned);
+            }
         }
     }
 
@@ -219,7 +243,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: `${COVER_URL}/${slug}.jpg`,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],
@@ -332,9 +356,12 @@ fn get_chapter_pages(chapter_id, auth) {
     let chapter_str = cur_chapter["Chapter"];
     let chapter_num = decode_chapter_number(chapter_str);
 
-    // Determine image server
-    // Usually: https://official-ongoing-1.ivalice.us/manga/Slug/CCCC-PPP.png
-    let base_image_url = "https://official-ongoing-1.ivalice.us/manga";
+    // Extract actual CDN server from page JS (vm.CurPathName)
+    let path_name = regex_find(`vm\\.CurPathName\\s*=\\s*"([^"]+)"`, html);
+    if path_name == () || path_name == "" {
+        path_name = "official-ongoing-1.ivalice.us";
+    }
+    let base_image_url = `https://${path_name}/manga`;
 
     // Build chapter path
     // Chapter 1 = 0001, Chapter 10 = 0010, Chapter 100.5 = 0100.5

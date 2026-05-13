@@ -167,6 +167,14 @@ fn get_series(id_or_url, auth) {
         if a != "" && !authors.contains(a) { authors.push(a); }
     }
 
+    // Get artists
+    let artists = [];
+    let artist_links = html_select(doc, "a[href*='/artist/']");
+    for link in artist_links {
+        let a = element_text(link).trim();
+        if a != "" && !artists.contains(a) { artists.push(a); }
+    }
+
     // Get status
     let status = ();
     let status_links = html_select(doc, "a[href*='/status/']");
@@ -184,7 +192,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         url: url

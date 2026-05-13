@@ -530,13 +530,24 @@ fn get_series(id_or_url, auth) {
             }
         }
 
-        // Authors
-        if item_text.contains("Authors") || item_text.contains("Author") {
+        // Authors (but not artist label)
+        if (item_text.contains("Authors") || item_text.contains("Author")) && !item_text.contains("Artist") {
             let author_links = element_select(info_item, "a");
             for al in author_links {
                 let name = element_text(al).trim();
                 if name != "" && name != "N/A" && !authors.contains(name) {
                     authors.push(name);
+                }
+            }
+        }
+
+        // Artists
+        if item_text.contains("Artists") || item_text.contains("Artist") {
+            let artist_links = element_select(info_item, "a");
+            for al in artist_links {
+                let name = element_text(al).trim();
+                if name != "" && name != "N/A" && !artists.contains(name) {
+                    artists.push(name);
                 }
             }
         }

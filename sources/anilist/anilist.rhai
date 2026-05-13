@@ -110,7 +110,7 @@ fn get_series(id_or_url, auth) {
     }
 
     let graphql_query = `{
-        "query": "query ($id: Int) { Media(id: $id, type: MANGA) { id title { romaji english native } description(asHtml: false) coverImage { extraLarge large medium } genres tags { name } status volumes chapters isAdult startDate { year month day } staff { edges { role node { name { full } } } } } }",
+        "query": "query ($id: Int) { Media(id: $id, type: MANGA) { id title { romaji english native } description(asHtml: false) coverImage { extraLarge large medium } genres tags { name rank } status volumes chapters isAdult startDate { year month day } staff { edges { role node { name { full } } } } } }",
         "variables": {"id": ${id}}
     }`;
 
@@ -158,10 +158,14 @@ fn get_series(id_or_url, auth) {
         rating = "adult";
     }
 
+    // Only include tags with rank >= 60 to reduce noise from uncertain tags
     let tags = [];
     if media.tags != () {
         for tag in media.tags {
-            tags.push(tag.name);
+            let rank = tag.rank;
+            if rank == () || rank >= 60 {
+                tags.push(tag.name);
+            }
         }
     }
 

@@ -413,14 +413,18 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Authors from DOM
+    // Authors and artists from DOM
     let authors = [];
-    let author_links = html_select(html, "a[href*='author'], a[href*='artist']");
+    let artists = [];
+    let author_links = html_select(html, "a[href*='author']");
     for link in author_links {
-        let author = element_text(link).trim();
-        if author != "" && !authors.contains(author) {
-            authors.push(author);
-        }
+        let name = element_text(link).trim();
+        if name != "" && !authors.contains(name) { authors.push(name); }
+    }
+    let artist_links = html_select(html, "a[href*='artist']");
+    for link in artist_links {
+        let name = element_text(link).trim();
+        if name != "" && !artists.contains(name) { artists.push(name); }
     }
 
     #{
@@ -430,7 +434,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover_url,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],

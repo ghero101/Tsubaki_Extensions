@@ -277,6 +277,16 @@ fn get_series(id_or_url, auth) {
         }
     }
 
+    // Extract artists
+    let artists = [];
+    let artist_els = html_select(html, "a[href*='/artists/']");
+    for el in artist_els {
+        let artist = element_text(el).trim();
+        if artist != "" && !artists.contains(artist) {
+            artists.push(artist);
+        }
+    }
+
     // Extract tags/genres
     let tags = [];
     let genres = [];
@@ -336,7 +346,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover_url,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         tags: tags,

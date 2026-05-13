@@ -307,6 +307,7 @@ fn get_series(id_or_url, auth) {
     // Parse metadata from dl/dt/dd structure
     let alt_titles = [];
     let authors = [];
+    let artists = [];
     let genres = [];
     let status = "";
     let description = "";
@@ -337,7 +338,7 @@ fn get_series(id_or_url, auth) {
                     alt_titles.push(cleaned);
                 }
             }
-        } else if label.contains("author") {
+        } else if label.contains("author") && !label.contains("artist") {
             let author_links = element_select(value_el, "a");
             if author_links.len() > 0 {
                 for al in author_links {
@@ -348,6 +349,18 @@ fn get_series(id_or_url, auth) {
                 }
             } else if value_text != "" {
                 authors.push(value_text);
+            }
+        } else if label.contains("artist") {
+            let artist_links = element_select(value_el, "a");
+            if artist_links.len() > 0 {
+                for al in artist_links {
+                    let artist = element_text(al).trim();
+                    if artist != "" && !artists.contains(artist) {
+                        artists.push(artist);
+                    }
+                }
+            } else if value_text != "" {
+                artists.push(value_text);
             }
         } else if label.contains("genre") {
             let genre_links = element_select(value_el, "a");
@@ -384,7 +397,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover_url,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],

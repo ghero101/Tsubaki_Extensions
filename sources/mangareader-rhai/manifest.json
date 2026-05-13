@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangareader",
   "name": "MangaReader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MangaReader.to - Massive manga, manhwa, and manhua library",
   "author": {
     "name": "Tsubaki Team",

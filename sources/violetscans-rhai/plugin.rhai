@@ -198,7 +198,18 @@ fn get_series(id_or_url, auth) {
     }
     for link in author_links {
         let a = element_text(link).trim();
-        if a != "" { authors.push(a); }
+        if a != "" && a != "Updating" { authors.push(a); }
+    }
+
+    // Get artists
+    let artists = [];
+    let artist_links = html_select(doc, ".artist-content a");
+    if artist_links.len() == 0 {
+        artist_links = html_select(doc, ".fmed a[href*='artist']");
+    }
+    for link in artist_links {
+        let a = element_text(link).trim();
+        if a != "" && a != "Updating" { artists.push(a); }
     }
 
     // Get status
@@ -218,7 +229,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         url: url

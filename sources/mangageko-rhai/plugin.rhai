@@ -445,6 +445,39 @@ fn get_series(id_or_url, auth) {
         }
     }
 
+    // Extract authors/artists from info table or link-based structure
+    let authors = [];
+    let artists = [];
+
+    // Try structured info rows (dt/dd or table)
+    let info_rows = html_select(html, ".novel-info .item, .manga-info .item, .info-meta li");
+    for row in info_rows {
+        let label_els = html_select(row, "h3, label, .label, span.label");
+        let label = if label_els.len() > 0 { element_text(label_els[0]).to_lower() } else { "" };
+        if label.contains("author") {
+            let links = html_select(row, "a");
+            for link in links {
+                let name = element_text(link).trim();
+                if name != "" && name != "N/A" && !authors.contains(name) { authors.push(name); }
+            }
+        } else if label.contains("artist") {
+            let links = html_select(row, "a");
+            for link in links {
+                let name = element_text(link).trim();
+                if name != "" && name != "N/A" && !artists.contains(name) { artists.push(name); }
+            }
+        }
+    }
+
+    // Fallback: author links in href
+    if authors.len() == 0 {
+        let author_links = html_select(html, "a[href*='/author/'], a[href*='author=']");
+        for link in author_links {
+            let name = element_text(link).trim();
+            if name != "" && name != "N/A" && !authors.contains(name) { authors.push(name); }
+        }
+    }
+
     // Extract rating
     let rating = ();
     let rating_els = html_select(html, ".rating");
@@ -458,8 +491,8 @@ fn get_series(id_or_url, auth) {
         alternate_titles: [],
         description: description,
         cover_url: cover_url,
-        authors: [],
-        artists: [],
+        authors: authors,
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],

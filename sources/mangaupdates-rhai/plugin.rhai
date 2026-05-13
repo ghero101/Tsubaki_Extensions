@@ -243,13 +243,16 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract categories/tags
+    // Extract categories/tags — only include categories with enough votes to be reliable
     let tags = [];
     let categories = data["categories"];
     if categories != () {
         for c in categories {
             let cat_name = c["category"];
-            if cat_name != () {
+            let cat_votes = c["votes"];
+            // Require at least 3 votes to filter out noise from single-user tags
+            let votes_ok = cat_votes == () || cat_votes >= 3;
+            if cat_name != () && votes_ok {
                 tags.push(cat_name);
             }
         }

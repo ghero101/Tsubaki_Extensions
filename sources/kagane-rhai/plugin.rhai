@@ -777,14 +777,13 @@ fn get_chapters(series_id, auth) {
 /// then extracts CDN image URLs from the performance resource log.
 /// Requires: browserless Chrome with Widevine CDM + FlareSolverr for CF bypass.
 ///
-/// The extraction service (extract_server.js) already retries navigation on
-/// Cloudflare errors internally. This function adds an outer retry layer for
-/// transient HTTP failures or when the service reports site unavailability.
+/// The extraction service (extract_server.js) serializes requests and retries
+/// internally. This function adds an outer retry layer only for genuinely
+/// transient failures — site blocks and integrity failures are not retried.
 fn get_chapter_pages(chapter_id, auth) {
     // Parse "{series_id}|{book_id}" or legacy "{series_id}/{book_id}"
     let parts = chapter_id.split("|");
     if parts.len() < 2 {
-        // Fallback: legacy separator "/" (from chapters imported before pipe separator change)
         parts = chapter_id.split("/");
     }
     if parts.len() < 2 {
@@ -800,15 +799,13 @@ fn get_chapter_pages(chapter_id, auth) {
     let extract_url = "http://tsubaki-browser:3001/extract-pages";
     let body = `{"reader_url":"${reader_url}","book_id":"${book_id}"}`;
 
-    let max_retries = 3;
+    let max_retries = 2;
     let retry = 0;
     let last_error = "";
 
     while retry < max_retries {
         if retry > 0 {
-            // Short backoff between outer retries since extract_server handles its own retries
-            let wait = if retry == 1 { 10000 } else { 20000 };
-            browser_sleep(wait);
+            browser_sleep(15000);
         }
 
         try {
@@ -823,12 +820,12 @@ fn get_chapter_pages(chapter_id, auth) {
             let result = json_parse(response);
 
             if result == () || type_of(result) != "map" {
-                last_error = `Invalid response from extraction service`;
+                last_error = "Invalid response from extraction service";
                 retry += 1;
                 continue;
             }
 
-            // Check for error field (HTTP 500 from extract_server)
+            // HTTP 500 error from extract_server
             if result.contains("error") {
                 last_error = `Extraction service error: ${result.error}`;
                 retry += 1;
@@ -837,31 +834,37 @@ fn get_chapter_pages(chapter_id, auth) {
 
             let urls = result.urls;
             if urls != () && type_of(urls) == "array" && urls.len() > 0 {
-                // Success — build page list
                 let pages = [];
                 let i = 0;
                 for url in urls {
-                    pages.push(#{
-                        url: url,
-                        index: i
-                    });
+                    pages.push(#{ url: url, index: i });
                     i += 1;
                 }
                 return pages;
             }
 
-            // 0 URLs returned — check the reason from extract_server
+            // 0 URLs — check why
             let reason = if result.contains("reason") { result.reason } else { "unknown" };
 
-            if reason == "site_unavailable" || reason == "cloudflare_blocked" {
-                last_error = "Kagane is temporarily unavailable (Cloudflare error). Waiting before retry...";
+            if reason == "site_unavailable" || reason == "integrity_blocked" {
+                // Site is actively blocking this server. No point retrying —
+                // throw immediately so the job is marked failed without wasting
+                // more time on retries that will all fail the same way.
+                throw `Kagane is blocking this server (${reason}). Skipping retries.`;
+            } else if reason == "cloudflare_blocked" {
+                throw `Kagane Cloudflare block — site unavailable from this IP.`;
             } else if reason == "navigation_error" {
                 last_error = "Page navigation failed. The site may be experiencing issues.";
             } else {
                 last_error = "No page images found. The reader page may not have loaded correctly.";
             }
         } catch(err) {
-            last_error = `Extraction service call failed: ${err}`;
+            let err_str = `${err}`;
+            // Propagate non-retryable errors immediately
+            if err_str.contains("blocking this server") || err_str.contains("Cloudflare block") {
+                throw err_str;
+            }
+            last_error = `Extraction service call failed: ${err_str}`;
         }
 
         retry += 1;

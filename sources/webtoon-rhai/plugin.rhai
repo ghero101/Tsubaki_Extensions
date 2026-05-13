@@ -211,16 +211,35 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract cover - the detail page only has banner images, so we need to search
-    // by series title to get the proper poster/thumbnail image used in cards
+    // Extract cover — og:image contains the thumbnail; search fallback for older series
     let cover_url = ();
 
-    // Try to get poster from search results using the series title
-    if title != "" {
+    // Tier 1: og:image meta (already fetched, no extra request)
+    let og_img_els = html_select(html, "meta[property='og:image']");
+    if og_img_els.len() > 0 {
+        let src = element_attr(og_img_els[0], "content");
+        if src != () && src != "" {
+            cover_url = src;
+        }
+    }
+
+    // Tier 2: detail page thumbnail img elements
+    if cover_url == () {
+        let cover_els = html_select(html, ".detail_body .thmb img, .detail_header img");
+        for el in cover_els {
+            let src = element_attr(el, "src");
+            if src != () && src != "" && src.contains("http") && !src.contains("spacer") {
+                cover_url = src;
+                break;
+            }
+        }
+    }
+
+    // Tier 3: search page (extra HTTP request, only if needed)
+    if cover_url == () && title != "" {
         let encoded_title = url_encode(title);
         let search_url = `${BASE_URL}/en/search?keyword=${encoded_title}&page=1`;
         let search_html = http_get_with_headers(search_url, get_headers());
-        // Find the card that matches our title_no
         let search_cards = html_select(search_html, `a._card_item[data-title-no="${title_no}"]`);
         if search_cards.len() > 0 {
             let imgs = html_select(search_cards[0], "img");
@@ -229,21 +248,6 @@ fn get_series(id_or_url, auth) {
                 if src != () && src != "" {
                     cover_url = src;
                 }
-            }
-        }
-    }
-
-    // Fallback to detail page images if search didn't work (likely won't be great)
-    if cover_url == () {
-        let cover_els = html_select(html, ".detail_body .thmb img, .detail_header img, meta[property='og:image']");
-        for el in cover_els {
-            let src = element_attr(el, "src");
-            if src == () {
-                src = element_attr(el, "content");
-            }
-            if src != () && src != "" {
-                cover_url = src;
-                break;
             }
         }
     }

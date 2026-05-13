@@ -527,16 +527,26 @@ fn get_series(id_or_url, auth) {
     let authors = [];
     let artists = [];
 
-    // Look for info items labeled Author/Artist
-    let info_items = html_select(html, "p.detail-info-right-say a");
-    for item in info_items {
-        let author = element_text(item).trim();
-        if author != "" && !authors.contains(author) {
-            authors.push(author);
+    // Each p.detail-info-right-say has a label span followed by name links
+    let info_paras = html_select(html, "p.detail-info-right-say");
+    for para in info_paras {
+        let para_text = element_text(para).to_lower();
+        let links = html_select(para, "a");
+        if links.len() == 0 { continue; }
+        if para_text.contains("author") {
+            for link in links {
+                let name = element_text(link).trim();
+                if name != "" && !authors.contains(name) { authors.push(name); }
+            }
+        } else if para_text.contains("artist") {
+            for link in links {
+                let name = element_text(link).trim();
+                if name != "" && !artists.contains(name) { artists.push(name); }
+            }
         }
     }
 
-    // Regex fallback for author
+    // Regex fallback for author (when CSS selector finds nothing)
     if authors.len() == 0 {
         let author_matches = regex_find_all("Author[^:]*:[^<]*<a[^>]*>([^<]+)</a>", html);
         for am in author_matches {
@@ -550,14 +560,16 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Artist regex
-    let artist_matches = regex_find_all("Artist[^:]*:[^<]*<a[^>]*>([^<]+)</a>", html);
-    for am in artist_matches {
-        let artist = regex_find(">([^<]+)<", am);
-        if artist != () && artist != "" {
-            artist = artist.replace(">", "").replace("<", "").trim();
-            if artist != "" && !artists.contains(artist) {
-                artists.push(artist);
+    // Regex fallback for artist (when CSS selector finds nothing)
+    if artists.len() == 0 {
+        let artist_matches = regex_find_all("Artist[^:]*:[^<]*<a[^>]*>([^<]+)</a>", html);
+        for am in artist_matches {
+            let artist = regex_find(">([^<]+)<", am);
+            if artist != () && artist != "" {
+                artist = artist.replace(">", "").replace("<", "").trim();
+                if artist != "" && !artists.contains(artist) {
+                    artists.push(artist);
+                }
             }
         }
     }

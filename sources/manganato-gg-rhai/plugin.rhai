@@ -460,6 +460,7 @@ fn get_series(id_or_url, auth) {
 
     // Extract info from table rows
     let authors = [];
+    let artists = [];
     let genres = [];
     let status = ();
     let alt_titles = [];
@@ -480,6 +481,14 @@ fn get_series(id_or_url, auth) {
                     let author = element_text(link).trim();
                     if author != "" && author != "Updating" && !authors.contains(author) {
                         authors.push(author);
+                    }
+                }
+            } else if label.contains("artist") {
+                let links = html_select(value_html, "a");
+                for link in links {
+                    let artist = element_text(link).trim();
+                    if artist != "" && artist != "Updating" && !artists.contains(artist) {
+                        artists.push(artist);
                     }
                 }
             } else if label.contains("genre") {
@@ -523,6 +532,14 @@ fn get_series(id_or_url, auth) {
                         authors.push(author);
                     }
                 }
+            } else if text.contains("artist") {
+                let links = html_select(item, "a");
+                for link in links {
+                    let artist = element_text(link).trim();
+                    if artist != "" && artist != "Updating" && !artists.contains(artist) {
+                        artists.push(artist);
+                    }
+                }
             } else if text.contains("genre") {
                 let links = html_select(item, "a");
                 for link in links {
@@ -557,7 +574,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover_url,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],

@@ -491,11 +491,21 @@ fn get_chapter_pages(chapter_id, auth) {
         "Cache-Control": "no-cache"
     };
 
+    // Use the at-home server's baseUrl as per MangaDex API guidelines.
+    // Falls back to uploads.mangadex.org if baseUrl is missing.
+    let base_url = response.baseUrl;
+    if base_url == () || base_url == "" {
+        base_url = "https://uploads.mangadex.org";
+    }
+    // Strip trailing slash
+    if base_url.ends_with("/") {
+        base_url = base_url.sub_string(0, base_url.len() - 1);
+    }
+
     let pages = [];
     let i = 0;
     for filename in chapter_data.data {
-        // Use uploads.mangadex.org directly instead of at-home CDN
-        let page_url = `https://uploads.mangadex.org/data/${hash}/${filename}`;
+        let page_url = `${base_url}/data/${hash}/${filename}`;
 
         pages.push(#{
             index: i,

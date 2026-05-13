@@ -395,8 +395,93 @@ fn get_latest_updates(page, auth) {
     #{ series: series, has_more: has_more }
 }
 
+/// Fetch full series details from /api/comics/{hid} and merge into base result.
+/// Returns merged result with authors, artists, and complete genres.
+fn enrich_from_detail(base_result, hid) {
+    if hid == () || hid == "" {
+        return base_result;
+    }
+
+    let detail = ();
+    try {
+        detail = api_get_json(`${BASE_URL}/api/comics/${hid}`);
+    } catch {
+        return base_result;
+    }
+
+    if detail == () {
+        return base_result;
+    }
+
+    // The detail endpoint wraps the comic under "comic" key
+    let comic = detail["comic"];
+    if comic == () {
+        comic = detail;
+    }
+
+    // Extract authors and artists from detail response
+    let authors = [];
+    let authors_list = detail["authors"];
+    if authors_list == () { authors_list = comic["authors"]; }
+    if authors_list != () && type_of(authors_list) == "array" {
+        for a in authors_list {
+            let name = a["name"];
+            if name != () && name != "" { authors.push(name); }
+        }
+    }
+
+    let artists = [];
+    let artists_list = detail["artists"];
+    if artists_list == () { artists_list = comic["artists"]; }
+    if artists_list != () && type_of(artists_list) == "array" {
+        for a in artists_list {
+            let name = a["name"];
+            if name != () && name != "" { artists.push(name); }
+        }
+    }
+
+    // Extract full genres from detail (more complete than search result)
+    let genres = base_result["genres"];
+    let detail_genres = detail["genres"];
+    if detail_genres == () { detail_genres = comic["genres"]; }
+    if detail_genres != () && type_of(detail_genres) == "array" {
+        genres = [];
+        for g in detail_genres {
+            let gname = g["name"];
+            if gname == () { gname = g["slug"]; }
+            if gname != () && gname != "" { genres.push(gname); }
+        }
+    }
+
+    // Extract description if missing from search result
+    let description = base_result["description"];
+    if description == () || description == "" {
+        let raw_desc = comic["description"];
+        if raw_desc != () && raw_desc != "" {
+            description = strip_html(raw_desc);
+        }
+    }
+
+    #{
+        id: base_result["id"],
+        title: base_result["title"],
+        alternate_titles: base_result["alternate_titles"],
+        description: description,
+        cover_url: base_result["cover_url"],
+        authors: authors,
+        artists: artists,
+        status: base_result["status"],
+        genres: genres,
+        tags: base_result["tags"],
+        year: base_result["year"],
+        content_rating: base_result["content_rating"],
+        url: base_result["url"],
+        extra: base_result["extra"]
+    }
+}
+
 /// Get detailed series information by slug or URL.
-/// Uses the search API to find the series by slug.
+/// Uses the search API to find the series, then enriches with detail endpoint.
 fn get_series(id_or_url, auth) {
     let slug = extract_slug(id_or_url);
     if slug == "" {
@@ -440,7 +525,11 @@ fn get_series(id_or_url, auth) {
         throw `Series not found: ${slug}`;
     }
 
-    build_series_from_search(matched)
+    let base_result = build_series_from_search(matched);
+
+    // Enrich with full authors/artists/genres from the detail endpoint
+    let hid = matched["hid"];
+    enrich_from_detail(base_result, hid)
 }
 
 /// Get all chapters for a series.

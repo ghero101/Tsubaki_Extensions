@@ -241,13 +241,32 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract authors from ul > li with Author label
+    // Extract authors and artists from ul > li entries with Author/Artist labels
     let authors = [];
-    let author_links = html_select(html, "a.link-info");
-    for link in author_links {
-        let author = element_text(link).trim();
-        if author != "" && !authors.contains(author) {
-            authors.push(author);
+    let artists = [];
+    let info_lis = html_select(html, "ul li");
+    for li in info_lis {
+        let li_text = element_text(li).to_lower();
+        let links = html_select(li, "a.link-info");
+        if links.len() == 0 { continue; }
+        if li_text.starts_with("author") {
+            for link in links {
+                let name = element_text(link).trim();
+                if name != "" && !authors.contains(name) { authors.push(name); }
+            }
+        } else if li_text.starts_with("artist") {
+            for link in links {
+                let name = element_text(link).trim();
+                if name != "" && !artists.contains(name) { artists.push(name); }
+            }
+        }
+    }
+    // Fallback: if no structured match, collect all link-info as authors
+    if authors.len() == 0 && artists.len() == 0 {
+        let author_links = html_select(html, "a.link-info");
+        for link in author_links {
+            let name = element_text(link).trim();
+            if name != "" && !authors.contains(name) { authors.push(name); }
         }
     }
 
@@ -300,7 +319,7 @@ fn get_series(id_or_url, auth) {
         description: description,
         cover_url: cover_url,
         authors: authors,
-        artists: [],
+        artists: artists,
         status: status,
         genres: genres,
         tags: [],

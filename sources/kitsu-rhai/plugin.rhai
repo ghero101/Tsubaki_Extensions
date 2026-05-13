@@ -323,6 +323,19 @@ fn get_series(id_or_url, auth) {
     let artists = [];
 
     let included = data["included"];
+    // Build a people-id → name map for staff resolution
+    let people_map = #{};
+    if included != () {
+        for inc in included {
+            if inc["type"] == "people" && inc["attributes"] != () {
+                let person_name = inc["attributes"]["name"];
+                if person_name != () && person_name != "" {
+                    people_map[inc["id"]] = person_name;
+                }
+            }
+        }
+    }
+
     if included != () {
         for inc in included {
             let inc_type = inc["type"];
@@ -337,6 +350,30 @@ fn get_series(id_or_url, auth) {
                 let cat_name = inc_attrs["title"];
                 if cat_name != () {
                     tags.push(cat_name);
+                }
+            } else if inc_type == "staff" && inc_attrs != () {
+                let role = inc_attrs["role"];
+                if role == () { role = ""; }
+                let role_lower = role.to_lower();
+                // Resolve the person name via relationship
+                let person_id = ();
+                let person_rel = inc["relationships"];
+                if person_rel != () {
+                    let p = person_rel["person"];
+                    if p != () && p["data"] != () {
+                        person_id = p["data"]["id"];
+                    }
+                }
+                if person_id == () { continue; }
+                let person_name = people_map[person_id];
+                if person_name == () || person_name == "" { continue; }
+
+                if role_lower.contains("story") || role_lower.contains("author") || role_lower.contains("writer") {
+                    if !authors.contains(person_name) { authors.push(person_name); }
+                } else if role_lower.contains("art") || role_lower.contains("illustrat") || role_lower.contains("draw") {
+                    if !artists.contains(person_name) { artists.push(person_name); }
+                } else if role_lower.contains("original") {
+                    if !authors.contains(person_name) { authors.push(person_name); }
                 }
             }
         }

@@ -407,7 +407,7 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Authors - from the meta section only (not nav)
+    // Authors/artists - from the meta section only (not nav)
     let authors = [];
     let artists = [];
     let meta_els = html_select(html, "div.meta");
@@ -417,6 +417,13 @@ fn get_series(id_or_url, auth) {
             let name = element_text(link).trim();
             if name != "" && !authors.contains(name) {
                 authors.push(name);
+            }
+        }
+        let artist_links = html_select(html, "div.meta a[href*='/artist/']");
+        for link in artist_links {
+            let name = element_text(link).trim();
+            if name != "" && !artists.contains(name) {
+                artists.push(name);
             }
         }
     }
