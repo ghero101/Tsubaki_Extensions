@@ -71,71 +71,61 @@ fn extract_next_data(html) {
     json_parse(json_str)
 }
 
-/// Search for series matching query
+/// Search for series matching query.
+///
+/// Uses /api/series — the same endpoint browse() uses — instead of scraping the
+/// homepage's __NEXT_DATA__. The homepage only ships ~20-30 series in
+/// `latestEntries`, so the old implementation silently returned zero results for
+/// any catalog series outside that window. /api/series returns the full ~145
+/// series and does not require CF bypass.
+///
+/// Trade-off: we lose authors/artists/description/tags in search results, but
+/// callers fill these in via get_series anyway and the matrix of "find any
+/// series by name" now actually works.
 fn search_series(query, page, auth) {
-    let url = BASE_URL;
-    let html = fetch_html(url);
-    let next_data = extract_next_data(html);
+    let url = `${BASE_URL}/api/series`;
+    let response = http_get(url);
 
-    if next_data == () {
+    if response == "" || response == () {
         return #{ series: [], has_more: false, total: 0 };
     }
 
-    let series = [];
+    let data = json_parse(response);
+    if data == () || data.len() == 0 {
+        return #{ series: [], has_more: false, total: 0 };
+    }
+
     let query_lower = query.to_lower();
+    let series = [];
 
-    let props = next_data["props"];
-    if props == () {
-        return #{ series: [], has_more: false, total: 0 };
-    }
+    for item in data {
+        let id = item["id"];
+        let title = item["label"];
+        let image = item["image"];
+        let status = item["status"];
 
-    let page_props = props["pageProps"];
-    if page_props == () {
-        return #{ series: [], has_more: false, total: 0 };
-    }
-
-    let latest_entries = page_props["latestEntries"];
-    if latest_entries != () {
-        let blocks = latest_entries["blocks"];
-        if blocks != () {
-            for block in blocks {
-                let block_series = block["series"];
-                if block_series != () {
-                    for s in block_series {
-                        let title = s["title"];
-                        if title == () {
-                            continue;
-                        }
-
-                        if query != "" && !title.to_lower().contains(query_lower) {
-                            continue;
-                        }
-
-                        let series_id = s["series_id"];
-                        let cover = s["cover"];
-                        let description = s["description"];
-                        let alt_titles = s["altTitles"];
-                        let authors = s["author"];
-                        let artists = s["artist"];
-                        let tags = s["tags"];
-
-                        series.push(#{
-                            id: `${series_id}`,
-                            title: title,
-                            url: `${BASE_URL}/series/${series_id}`,
-                            cover_url: build_cover_url(series_id, cover),
-                            alternate_titles: if alt_titles != () { alt_titles } else { [] },
-                            authors: if authors != () { authors } else { [] },
-                            artists: if artists != () { artists } else { [] },
-                            status: (),
-                            genres: if tags != () { tags } else { [] },
-                            tags: [],
-                            description: strip_html(description)
-                        });
-                    }
-                }
-            }
+        if id == () || title == () {
+            continue;
         }
+
+        // Empty query returns everything (browse-all behavior).
+        if query != "" && !title.to_lower().contains(query_lower) {
+            continue;
+        }
+
+        series.push(#{
+            id: `${id}`,
+            title: title,
+            url: `${BASE_URL}/series/${id}`,
+            cover_url: build_cover_url(id, image),
+            alternate_titles: [],
+            authors: [],
+            artists: [],
+            status: status,
+            genres: [],
+            tags: [],
+            description: ()
+        });
     }
 
     #{ series: series, has_more: false, total: series.len() }
