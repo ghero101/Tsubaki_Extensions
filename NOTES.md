@@ -73,6 +73,25 @@ isn't keeping pace.
 
 ---
 
+## 2026-05-13 — Comick BASE_URL may be stale
+
+`sources/comick-rhai/plugin.rhai` line 21: `const BASE_URL = "https://comick.art";`
+
+External signals:
+- `api.comick.io` returns `301 → comick.dev`
+- `comick.dev` returns `403 Forbidden` to non-browser User-Agents
+
+The plugin's `${BASE_URL}/api/comics/${hid}` enrichment may currently be hitting
+a stale host. Worth verifying inside the scraper container (rquest Chrome131
+impersonation may still work where plain HTTPS doesn't).
+
+**Action**: confirm with a real scraper run whether the BASE_URL still works.
+If not, update to whichever host serves the API today. Don't change blind — the
+plugin's behavior under the actual TLS-impersonated client may differ from a
+browser request.
+
+---
+
 ## 2026-05-13 — Several extensions have manifest_version mismatch between in-source and in-index
 
 Many in-index entries lack the `manifest_version` field and have stale `description`
