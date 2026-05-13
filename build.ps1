@@ -91,6 +91,10 @@ function Build-Extension {
     $extId = Get-ManifestValue $manifestFile "id"
     $version = Get-ManifestValue $manifestFile "version"
     $name = Get-ManifestValue $manifestFile "name"
+    $description = Get-ManifestValue $manifestFile "description"
+    $addonType = Get-ManifestValue $manifestFile "addon_type"
+    $technology = Get-ManifestValue $manifestFile "technology"
+    $nsfw = Get-ManifestValue $manifestFile "nsfw"
 
     if (-not $version) {
         Write-ColorOutput "  Skipping $extName (no version in manifest)" "Yellow"
@@ -150,6 +154,11 @@ function Build-Extension {
             ExtName = $extName
             Version = $version
             ZipFilename = $zipFilename
+            Name = $name
+            Description = $description
+            AddonType = $addonType
+            Technology = $technology
+            Nsfw = $nsfw
         }
     }
     catch {
@@ -182,6 +191,15 @@ function Update-Index {
                     $addon.latest_version = $ext.Version
                     $addon.download_url = $downloadUrl
                     $addon.manifest_url = $manifestUrl
+
+                    # Propagate human-readable manifest fields so the index doesn't
+                    # drift from the source as descriptions / nsfw / etc. evolve.
+                    # Only overwrite when the manifest actually provided a value.
+                    if ($ext.Name) { $addon.name = $ext.Name }
+                    if ($ext.Description) { $addon.description = $ext.Description }
+                    if ($ext.AddonType) { $addon.addon_type = $ext.AddonType }
+                    if ($ext.Technology) { $addon.technology = $ext.Technology }
+                    if ($null -ne $ext.Nsfw) { $addon.nsfw = $ext.Nsfw }
 
                     # Add/update version entry
                     if (-not $addon.versions) {

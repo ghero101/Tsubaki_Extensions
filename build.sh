@@ -83,6 +83,10 @@ build_extension() {
     local ext_id=$(get_manifest_value "$manifest_file" "id")
     local version=$(get_manifest_value "$manifest_file" "version")
     local name=$(get_manifest_value "$manifest_file" "name")
+    local description=$(get_manifest_value "$manifest_file" "description")
+    local addon_type=$(get_manifest_value "$manifest_file" "addon_type")
+    local technology=$(get_manifest_value "$manifest_file" "technology")
+    local nsfw=$(jq -r '.nsfw // empty' "$manifest_file" 2>/dev/null)
 
     if [ -z "$version" ]; then
         echo -e "${YELLOW}  Skipping $ext_name (no version in manifest)${NC}"
@@ -116,8 +120,10 @@ build_extension() {
     local size=$(du -h "$zip_path" | cut -f1)
     echo -e "    Created: $zip_filename ($size)"
 
-    # Return values for index update (stored in global array)
-    BUILT_EXTENSIONS+=("$ext_id|$ext_name|$version|$zip_filename")
+    # Return values for index update (stored in global array). Fields are
+    # pipe-separated; manifest fields with embedded pipes will need escaping
+    # if anyone ever uses them.
+    BUILT_EXTENSIONS+=("$ext_id|$ext_name|$version|$zip_filename|$name|$description|$addon_type|$technology|$nsfw")
 }
 
 # Update index.json with all built extensions
@@ -138,26 +144,43 @@ update_index() {
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
     for ext_info in "${BUILT_EXTENSIONS[@]}"; do
-        IFS='|' read -r ext_id ext_name version zip_filename <<< "$ext_info"
+        IFS='|' read -r ext_id ext_name version zip_filename name description addon_type technology nsfw <<< "$ext_info"
 
         local download_url="$GITHUB_RAW_BASE/dist/$ext_name/$zip_filename"
         local manifest_url="$GITHUB_RAW_BASE/sources/$ext_name/manifest.json"
+
+        # nsfw needs special handling — it's a JSON boolean, not a string.
+        # Pass an empty string if absent; the jq below preserves the prior value.
+        local nsfw_arg="${nsfw:-null}"
 
         # Update the addon entry in index.json
         # This uses jq to find the addon by id and update its fields.
         # released_at and changelog are preserved if the version entry already exists,
         # so rebuilding the same version doesn't churn history (clients display this).
+        # Human-readable fields (name/description/addon_type/technology/nsfw) are
+        # propagated from the source manifest so the index doesn't drift over time;
+        # missing values in the manifest preserve whatever the index already has.
         local updated=$(jq --arg id "$ext_id" \
                           --arg version "$version" \
                           --arg download_url "$download_url" \
                           --arg manifest_url "$manifest_url" \
-                          --arg timestamp "$timestamp" '
+                          --arg timestamp "$timestamp" \
+                          --arg name "$name" \
+                          --arg description "$description" \
+                          --arg addon_type "$addon_type" \
+                          --arg technology "$technology" \
+                          --argjson nsfw "$nsfw_arg" '
             .addons = [.addons[] |
                 if .id == $id then
                     .version = $version |
                     .latest_version = $version |
                     .download_url = $download_url |
                     .manifest_url = $manifest_url |
+                    (if $name != "" then .name = $name else . end) |
+                    (if $description != "" then .description = $description else . end) |
+                    (if $addon_type != "" then .addon_type = $addon_type else . end) |
+                    (if $technology != "" then .technology = $technology else . end) |
+                    (if $nsfw != null then .nsfw = $nsfw else . end) |
                     .versions[$version] = {
                         "download_url": $download_url,
                         "released_at": (.versions[$version].released_at // $timestamp),

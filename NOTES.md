@@ -103,12 +103,17 @@ browser request.
 
 ---
 
-## 2026-05-13 — Several extensions have manifest_version mismatch between in-source and in-index
+## 2026-05-13 — Several extensions have manifest_version mismatch between in-source and in-index (RESOLVED 2026-05-13)
+
+**Status: fixed.** build.ps1 / build.sh now propagate `name`, `description`,
+`addon_type`, `technology`, and `nsfw` from each source manifest into its
+index entry on every build. Empty values in the manifest preserve whatever
+the index already has (won't accidentally clear a field).
+
+This commit's build run corrected drift in: MangaNato (Unified) name, Omega
+Scans description, ReadM, MangaRead, ManhwaTop, HariManga descriptions.
 
 Many in-index entries lack the `manifest_version` field and have stale `description`
 strings. The build only updates `version`/`download_url`/`manifest_url`/`versions`
 — it never re-syncs the human-readable fields. Over time the index description
 drifts from the source manifest.
-
-**Suggested fix**: also propagate `description`, `name`, `nsfw`, `addon_type`,
-`technology` from the source manifest into the index entry on each build.
