@@ -101,8 +101,9 @@ The following extensions have been moved to `/archived` as their sites are no lo
 | FlixScans | Connection refused (.net & .org) | 2026-01-24 |
 | MyComicList | Domain parked (ad lander) | 2026-01-24 |
 | HeyToon | HTTP 404 on all endpoints | 2026-01-24 |
+| Gelbooru | Source already at `archived/gelbooru-rhai/`; index entry + `dist/gelbooru-rhai/` cleanup completed | 2026-05-13 |
 
-## Artwork Extensions (8/8 Working)
+## Artwork Extensions (7/7 Working)
 
 | Extension | ID | Status |
 |-----------|-----|--------|
@@ -111,7 +112,6 @@ The following extensions have been moved to `/archived` as their sites are no lo
 | Safebooru | safebooru-rhai | Working |
 | Rule34 | rule34-rhai | Working (requires API key) |
 | Danbooru | danbooru-rhai | Working |
-| Gelbooru | gelbooru-rhai | Working (requires API key) |
 | HypnoHub | hypnohub-rhai | Working |
 | XBooru | xbooru-rhai | Working |
 

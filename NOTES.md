@@ -6,7 +6,11 @@ question to answer.
 
 ---
 
-## 2026-05-13 — Three index/source ID inconsistencies (HIGH PRIORITY)
+## 2026-05-13 — Three index/source ID inconsistencies (RESOLVED 2026-05-13)
+
+**Status: all three fixed.** index.json entry ids now match source manifest ids
+(verified: build run reports zero warnings). Note that users who installed the
+old id may need to reinstall — there's no client-side migration.
 
 The build script (`build.ps1` / `build.sh`) updates `index.json` by matching on
 addon `id`. When the source manifest id differs from the index entry id, the
@@ -25,6 +29,7 @@ Three offenders:
   `flamecomics-rhai` (matches what users have installed). Risk: if the app keys
   installed addons by `index.json` id rather than internal manifest id, this looks
   like a brand-new addon.
+  YES MATCH EVERYTHING UP — **DONE 2026-05-13**: index entry renamed to `flamecomics-rhai`; build now picks up v1.2.0.
 
 ### 2. omegascans
 - `sources/omegascans-rhai/manifest.json` id: `omegascans`
@@ -34,6 +39,7 @@ Three offenders:
   not yet biting us (no in-flight changes), but a latent bug.
 - **Recommendation**: change the **index entry id** from `omegascans-rhai` to
   `omegascans` (matches what users have installed).
+  YES FIX THIS — **DONE 2026-05-13**: index entry renamed to `omegascans`.
 
 ### 3. gelbooru-rhai (orphan)
 - `index.json` has an entry, `dist/gelbooru-rhai/gelbooru-rhai_1-0-7.zip` exists.
@@ -46,9 +52,14 @@ Three offenders:
   `EXTENSION_STATUS.md`. If no, restore the source from git history (it was
   present at some prior commit). Check `git log -- 'sources/gelbooru-rhai/**'`.
 
+YES REMOVE THIS EXTENSION — **DONE 2026-05-13**: index entry deleted, `dist/gelbooru-rhai/` removed, archived note added to EXTENSION_STATUS.md. Source already lives in `archived/gelbooru-rhai/`.
+
 ---
 
-## 2026-05-13 — Build script lacks ID-consistency check
+## 2026-05-13 — Build script lacks ID-consistency check (RESOLVED 2026-05-13)
+
+**Status: fixed in commit 11f4d50.** Build now prints WARNING reports for both
+id-mismatched sources and orphan index entries on every full build.
 
 The build script silently swallows id mismatches. It should `exit 1` or at least
 WARN when a built source has no matching index entry. Otherwise the kind of bug
