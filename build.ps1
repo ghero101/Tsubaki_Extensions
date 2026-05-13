@@ -188,10 +188,15 @@ function Update-Index {
                         $addon | Add-Member -NotePropertyName "versions" -NotePropertyValue @{} -Force
                     }
 
+                    # Preserve original released_at on rebuilds — clients use it
+                    # to display "what's new" timelines. Only set when the version
+                    # entry is first created.
+                    $existing = $addon.versions.PSObject.Properties[$ext.Version]
+                    $releasedAt = if ($existing -and $existing.Value.released_at) { $existing.Value.released_at } else { $timestamp }
                     $addon.versions | Add-Member -NotePropertyName $ext.Version -NotePropertyValue @{
                         download_url = $downloadUrl
-                        released_at = $timestamp
-                        changelog = "Updated"
+                        released_at = $releasedAt
+                        changelog = if ($existing -and $existing.Value.changelog) { $existing.Value.changelog } else { "Updated" }
                     } -Force
 
                     $updatedCount++
@@ -200,14 +205,50 @@ function Update-Index {
             }
         }
 
-        # Update index version and timestamp
-        $index.version = ($index.version -as [int]) + 1
-        $index.updated_at = $timestamp
+        # Bump index version only when something actually changed. Empty bumps
+        # are noise — clients use the version to decide whether to refetch.
+        if ($updatedCount -gt 0) {
+            $index.version = ($index.version -as [int]) + 1
+            $index.updated_at = $timestamp
+            # Write back to file with proper formatting
+            $index | ConvertTo-Json -Depth 10 | Set-Content $IndexFile -Encoding UTF8
+            Write-ColorOutput "  Updated $updatedCount extensions in index.json (version $($index.version))" "Green"
+        } else {
+            Write-ColorOutput "  No index entries updated (version stays at $($index.version))" "Yellow"
+        }
 
-        # Write back to file with proper formatting
-        $index | ConvertTo-Json -Depth 10 | Set-Content $IndexFile -Encoding UTF8
+        # Consistency check: every built source should have matched an index entry.
+        # If $updatedCount < built count, some sources silently skipped indexing
+        # (usually an id mismatch between source manifest and index.json — see NOTES.md).
+        $builtCount = $Script:BuiltExtensions.Count
+        if ($updatedCount -lt $builtCount) {
+            Write-Host ""
+            Write-ColorOutput "  WARNING: $($builtCount - $updatedCount) source(s) built but NOT indexed:" "Yellow"
+            $indexedIds = @($index.addons | ForEach-Object { $_.id })
+            foreach ($ext in $Script:BuiltExtensions) {
+                if ($indexedIds -notcontains $ext.ExtId) {
+                    Write-ColorOutput "    - source '$($ext.ExtName)' has manifest id '$($ext.ExtId)' but no matching index entry" "Yellow"
+                }
+            }
+            Write-ColorOutput "  Fix: align the source manifest id to the index entry id, or vice versa." "Yellow"
+        }
 
-        Write-ColorOutput "  Updated $updatedCount extensions in index.json (version $($index.version))" "Green"
+        # Reverse check: every index entry should have a matching built source.
+        # Only meaningful on a full build — skip in -Single mode where most
+        # entries are intentionally not in $BuiltExtensions.
+        $builtIds = @($Script:BuiltExtensions | ForEach-Object { $_.ExtId })
+        $orphans = @()
+        if ($Script:IsFullBuild) {
+            $orphans = @($index.addons | Where-Object { $builtIds -notcontains $_.id })
+        }
+        if ($orphans.Count -gt 0) {
+            Write-Host ""
+            Write-ColorOutput "  WARNING: $($orphans.Count) index entry/entries have no source folder:" "Yellow"
+            foreach ($o in $orphans) {
+                Write-ColorOutput "    - '$($o.id)' is in index.json but cannot be rebuilt (sources/ missing)" "Yellow"
+            }
+            Write-ColorOutput "  Fix: restore the source folder, or remove the orphan index entry + dist/ folder." "Yellow"
+        }
     }
     catch {
         Write-ColorOutput "Error updating index.json: $_" "Red"
@@ -215,6 +256,7 @@ function Update-Index {
 }
 
 function Start-Build {
+    $Script:IsFullBuild = $true
     Write-ColorOutput "==============================================================================" "Cyan"
     Write-ColorOutput "                    Tsubaki Extensions Build Script                          " "Cyan"
     Write-ColorOutput "==============================================================================" "Cyan"

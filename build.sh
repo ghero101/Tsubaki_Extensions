@@ -144,7 +144,9 @@ update_index() {
         local manifest_url="$GITHUB_RAW_BASE/sources/$ext_name/manifest.json"
 
         # Update the addon entry in index.json
-        # This uses jq to find the addon by id and update its fields
+        # This uses jq to find the addon by id and update its fields.
+        # released_at and changelog are preserved if the version entry already exists,
+        # so rebuilding the same version doesn't churn history (clients display this).
         local updated=$(jq --arg id "$ext_id" \
                           --arg version "$version" \
                           --arg download_url "$download_url" \
@@ -158,8 +160,8 @@ update_index() {
                     .manifest_url = $manifest_url |
                     .versions[$version] = {
                         "download_url": $download_url,
-                        "released_at": $timestamp,
-                        "changelog": "Updated"
+                        "released_at": (.versions[$version].released_at // $timestamp),
+                        "changelog": (.versions[$version].changelog // "Updated")
                     }
                 else
                     .
@@ -173,19 +175,58 @@ update_index() {
         fi
     done
 
-    # Update index version and timestamp
-    local current_version=$(jq '.version // 0' "$temp_index")
-    local new_version=$((current_version + 1))
+    # Bump index version only when something actually changed. Empty bumps
+    # are noise — clients use the version to decide whether to refetch.
+    if [ "$updated_count" -gt 0 ]; then
+        local current_version=$(jq '.version // 0' "$temp_index")
+        local new_version=$((current_version + 1))
+        jq --arg timestamp "$timestamp" \
+           --argjson version "$new_version" '
+            .version = $version |
+            .updated_at = $timestamp
+        ' "$temp_index" > "$INDEX_FILE"
+        rm "$temp_index"
+        echo -e "${GREEN}  Updated $updated_count extensions in index.json (version $new_version)${NC}"
+    else
+        rm "$temp_index"
+        local current_version=$(jq '.version // 0' "$INDEX_FILE")
+        echo -e "${YELLOW}  No index entries updated (version stays at $current_version)${NC}"
+    fi
 
-    jq --arg timestamp "$timestamp" \
-       --argjson version "$new_version" '
-        .version = $version |
-        .updated_at = $timestamp
-    ' "$temp_index" > "$INDEX_FILE"
+    # Consistency check: every built source should have matched an index entry.
+    # If $updated_count < built_count, some sources silently skipped indexing
+    # (usually an id mismatch between source manifest and index.json — see NOTES.md).
+    local built_count=${#BUILT_EXTENSIONS[@]}
+    if [ "$updated_count" -lt "$built_count" ]; then
+        echo ""
+        echo -e "${YELLOW}  WARNING: $((built_count - updated_count)) source(s) built but NOT indexed:${NC}"
+        local indexed_ids=$(jq -r '.addons[].id' "$INDEX_FILE")
+        for ext_info in "${BUILT_EXTENSIONS[@]}"; do
+            IFS='|' read -r ext_id ext_name version zip_filename <<< "$ext_info"
+            if ! grep -qxF "$ext_id" <<< "$indexed_ids"; then
+                echo -e "${YELLOW}    - source '$ext_name' has manifest id '$ext_id' but no matching index entry${NC}"
+            fi
+        done
+        echo -e "${YELLOW}  Fix: align the source manifest id to the index entry id, or vice versa.${NC}"
+    fi
 
-    rm "$temp_index"
-
-    echo -e "${GREEN}  Updated $updated_count extensions in index.json (version $new_version)${NC}"
+    # Reverse check: every index entry should have a matching built source.
+    # Only meaningful on a full build — skip in --single mode where most
+    # entries are intentionally not in BUILT_EXTENSIONS.
+    local built_ids=$(printf '%s\n' "${BUILT_EXTENSIONS[@]}" | cut -d'|' -f1)
+    local orphans=""
+    if [ "${FULL_BUILD:-0}" = "1" ]; then
+        orphans=$(jq -r '.addons[].id' "$INDEX_FILE" | grep -vxF "$built_ids" 2>/dev/null || true)
+    fi
+    if [ -n "$orphans" ]; then
+        echo ""
+        local orphan_count=$(echo "$orphans" | wc -l)
+        echo -e "${YELLOW}  WARNING: $orphan_count index entry/entries have no source folder:${NC}"
+        while IFS= read -r o; do
+            [ -n "$o" ] && echo -e "${YELLOW}    - '$o' is in index.json but cannot be rebuilt (sources/ missing)${NC}"
+        done <<< "$orphans"
+        echo -e "${YELLOW}  Fix: restore the source folder, or remove the orphan index entry + dist/ folder.${NC}"
+    fi
 }
 
 # Clean old zip files (keep only current version and latest)
@@ -205,6 +246,7 @@ clean_old_versions() {
 main() {
     check_requirements
 
+    FULL_BUILD=1
     echo -e "${BLUE}Sources directory: $SOURCES_DIR${NC}"
     echo -e "${BLUE}Dist directory: $DIST_DIR${NC}"
     echo ""
