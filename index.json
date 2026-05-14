@@ -1,6 +1,6 @@
 ﻿{
-    "version":  64,
-    "updated_at":  "2026-05-14T05:33:26Z",
+    "version":  66,
+    "updated_at":  "2026-05-14T05:35:37Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -902,16 +902,16 @@
                    {
                        "id":  "mangafire-rhai",
                        "name":  "MangaFire",
-                       "version":  "1.1.1",
+                       "version":  "1.1.2",
                        "description":  "Scraper for MangaFire (mangafire.to), a popular manga aggregator with multi-language support and a large catalog.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-1.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-2.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire-rhai/manifest.json",
-                       "latest_version":  "1.1.1",
+                       "latest_version":  "1.1.2",
                        "versions":  {
                                         "1.0.0":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-0-0.zip",
@@ -922,6 +922,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-1.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.1.2":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-2.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T05:35:36Z"
                                                   }
                                     }
                    },
@@ -1208,16 +1213,16 @@
                    {
                        "id":  "mangareader",
                        "name":  "MangaReader",
-                       "version":  "1.0.1",
+                       "version":  "1.0.2",
                        "description":  "MangaReader.to - Massive manga, manhwa, and manhua library",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangareader-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_1-0-1.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_1-0-2.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangareader-rhai/manifest.json",
-                       "latest_version":  "1.0.1",
+                       "latest_version":  "1.0.2",
                        "versions":  {
                                         "1.0.0":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_latest.zip",
@@ -1228,6 +1233,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_1-0-1.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.0.2":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangareader-rhai/mangareader-rhai_1-0-2.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T05:35:37Z"
                                                   }
                                     }
                    },

@@ -27,12 +27,17 @@ fn get_headers() {
     }
 }
 
-/// Check if HTML is a CloudFlare challenge page (not real content)
+/// Check if HTML is a CloudFlare challenge page (not real content).
+/// Three challenge variants — the "Attention Required" template was being
+/// missed, so those challenge bodies slipped through as "real content".
 fn is_cloudflare_challenge(html) {
     if html.contains("Just a moment") && html.contains("_cf_chl_opt") {
         return true;
     }
     if html.contains("challenge-platform") && html.contains("Enable JavaScript") {
+        return true;
+    }
+    if html.contains("Attention Required") && html.contains("Cloudflare") {
         return true;
     }
     false
