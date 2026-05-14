@@ -82,6 +82,34 @@ Pick one of:
 
 ---
 
+## 2026-05-14 — 8 plugins still call HTTP unwrapped (defense-in-depth todo)
+
+Grep `for f in sources/*/plugin.rhai; do … grep -c "http_get_with_headers"` finds
+these plugins calling `http_get_with_headers` / `http_get_plain` directly with
+zero try/catch wrapping:
+
+- `webtoon-rhai` — 14 call sites (highest impact)
+- `dynastyscans-rhai` — 7
+- `mangasee-rhai` — 7
+- `mangatown-rhai` — 2
+- `roliascan-rhai` — 2
+- `violetscans-rhai` — 2
+- `weebcentral-rhai` — 2
+- `rule34-rhai` — 1
+
+Each unwrapped call lets a transient network exception (TLS retry, dropped
+connection, intermediate proxy 5xx) propagate up to the caller and crash the
+whole search / browse / chapter fetch instead of falling through to an empty
+result. Same class of bug fixed in `hivetoons-rhai v1.0.1` (commit 8cd5c2c)
+and `asurascans-rhai v1.9.1` (commit f0fc474).
+
+**Recommendation**: add a tiny `api_get` helper at the top of each plugin and
+route the calls through it (the same pattern used by toonily-rhai and the
+hivetoons fix). Low-risk per-plugin but high-touch across 8 sources — defer
+until you want a focused reliability sweep.
+
+---
+
 # RESOLVED LOG
 
 ## 2026-05-13 — Three index/source ID inconsistencies → fixed in `8c9d1f2`
