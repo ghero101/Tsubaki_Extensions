@@ -9,6 +9,17 @@
 const BASE_URL = "https://safebooru.org";
 const API_URL = "https://safebooru.org/index.php";
 
+/// Wrap http_get so a transient network exception falls through to "" and
+/// downstream json_parse / type_of checks see "no data" rather than crashing
+/// the entire search/browse/get_series call.
+fn safe_get(url) {
+    try {
+        return http_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Returns metadata about this source
 fn get_source_info() {
     #{
@@ -165,7 +176,7 @@ fn search_series(query, page, auth) {
 
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=` + url_encode(tags);
 
-    let body = http_get(url);
+    let body = safe_get(url);
     let data = json_parse(body);
 
     // Empty check
@@ -196,7 +207,7 @@ fn get_latest_updates(page, auth) {
     let filtered = apply_filters("", s);
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=` + url_encode(filtered);
 
-    let body = http_get(url);
+    let body = safe_get(url);
     let data = json_parse(body);
 
     // Empty check
@@ -227,7 +238,7 @@ fn get_popular(page, auth) {
     let filtered = apply_filters("sort:score", s);
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&limit=${limit}&pid=${page}&tags=` + url_encode(filtered);
 
-    let body = http_get(url);
+    let body = safe_get(url);
     let data = json_parse(body);
 
     // Empty check
@@ -255,7 +266,7 @@ fn get_popular(page, auth) {
 fn get_series(id, auth) {
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&id=${id}`;
 
-    let body = http_get(url);
+    let body = safe_get(url);
     let data = json_parse(body);
 
     // Empty check
@@ -277,7 +288,7 @@ fn get_chapter_pages(chapter_id, auth) {
     // For image posts, chapter_id is the post ID
     let url = `${API_URL}?page=dapi&s=post&q=index&json=1&id=${chapter_id}`;
 
-    let body = http_get(url);
+    let body = safe_get(url);
     let data = json_parse(body);
 
     // Empty check
@@ -311,7 +322,7 @@ fn tag_autocomplete(query, limit, auth) {
     let encoded_query = url_encode(query);
     let url = `${API_URL}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=${limit}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];

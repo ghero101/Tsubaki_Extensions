@@ -18,6 +18,16 @@
 const REALBOORU_BASE = "https://realbooru.com";
 const REALBOORU_API = "https://realbooru.com/index.php";
 
+/// Wrap http_get so a transient network exception falls through to "" and
+/// downstream json_parse / scraping checks see "no data" rather than crashing.
+fn safe_get(url) {
+    try {
+        return http_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Join array elements with a separator (Rhai doesn't have built-in join)
 fn join_array(arr, separator) {
     if arr.len() == 0 {
@@ -391,7 +401,7 @@ fn search_series(query, page, auth) {
     // Build HTML listing URL
     let url = `${REALBOORU_API}?page=post&s=list&tags=${search_tags}&pid=${pid}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Handle empty or error responses
     if response_text == "" {
@@ -434,7 +444,7 @@ fn get_latest_updates(page, auth) {
     // Build HTML listing URL
     let url = `${REALBOORU_API}?page=post&s=list&pid=${pid}${tags_param}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Handle empty or error responses
     if response_text == "" {
@@ -465,7 +475,7 @@ fn get_latest_updates(page, auth) {
 fn get_series_details(post_id, auth) {
     let url = `${REALBOORU_API}?page=post&s=view&id=${post_id}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" {
         return ();
@@ -558,7 +568,7 @@ fn get_chapters(series_id, auth) {
 fn get_chapter_pages(chapter_id, auth) {
     let url = `${REALBOORU_API}?page=post&s=view&id=${chapter_id}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" {
         return [];
@@ -647,7 +657,7 @@ fn tag_autocomplete(query, limit, auth) {
     let encoded_query = url_encode(query);
     let url = `${REALBOORU_API}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=${limit}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];
@@ -752,7 +762,7 @@ fn get_popular_tags(limit, auth) {
 //     let pid = page;
 //     let search_tags = url_encode(query);
 //     let url = `${REALBOORU_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${limit}`;
-//     let response_text = http_get(url);
+//     let response_text = safe_get(url);
 //
 //     if response_text == "" || response_text == "[]" {
 //         return #{ series: [], has_more: false, total: () };

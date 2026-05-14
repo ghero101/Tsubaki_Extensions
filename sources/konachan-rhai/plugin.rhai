@@ -14,6 +14,16 @@
 
 const KONACHAN_API = "https://konachan.com";
 
+/// Wrap http_get so a transient network exception falls through to "" and
+/// downstream json_parse checks see "no data" rather than crashing.
+fn safe_get(url) {
+    try {
+        return http_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -188,7 +198,7 @@ fn search_series(query, page, auth) {
 
     let url = `${KONACHAN_API}/post.json?tags=${search_tags}&page=${page_num}&limit=${limit}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Handle empty results
     if response_text == "" || response_text == "[]" {
@@ -228,7 +238,7 @@ fn get_latest_updates(page, auth) {
 
     let url = `${KONACHAN_API}/post.json?page=${page_num}&limit=${limit}${tags_param}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return #{ series: [], has_more: false, total: () };
@@ -256,7 +266,7 @@ fn get_latest_updates(page, auth) {
 fn get_series_details(post_id, auth) {
     let url = `${KONACHAN_API}/post.json?tags=id:${post_id}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return ();
@@ -280,7 +290,7 @@ fn get_chapters(series_id, auth) {
 fn get_chapter_pages(chapter_id, auth) {
     let url = `${KONACHAN_API}/post.json?tags=id:${chapter_id}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];
@@ -319,7 +329,7 @@ fn tag_autocomplete(query, limit, auth) {
     let encoded_query = url_encode(query);
     let url = `${KONACHAN_API}/tag.json?name=${encoded_query}*&order=count&limit=${limit}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];

@@ -12,6 +12,16 @@
 
 const HYPNOHUB_API = "https://hypnohub.net/index.php";
 
+/// Wrap http_get so a transient network exception falls through to "" and
+/// downstream json_parse checks see "no data" rather than crashing.
+fn safe_get(url) {
+    try {
+        return http_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -174,7 +184,7 @@ fn search_series(query, page, auth) {
 
     let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${limit}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Handle empty results
     if response_text == "" || response_text == "[]" {
@@ -222,7 +232,7 @@ fn get_latest_updates(page, auth) {
 
     let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&pid=${pid}&limit=${limit}${tags_param}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return #{ series: [], has_more: false, total: () };
@@ -258,7 +268,7 @@ fn get_latest_updates(page, auth) {
 fn get_series_details(post_id, auth) {
     let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&id=${post_id}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return ();
@@ -291,7 +301,7 @@ fn get_chapters(series_id, auth) {
 fn get_chapter_pages(chapter_id, auth) {
     let url = `${HYPNOHUB_API}?page=dapi&s=post&q=index&json=1&id=${chapter_id}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];
@@ -334,7 +344,7 @@ fn tag_autocomplete(query, limit, auth) {
     let encoded_query = url_encode(query);
     let url = `${HYPNOHUB_API}?page=autocomplete2&term=${encoded_query}&type=tag_query&limit=${limit}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];

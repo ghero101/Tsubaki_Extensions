@@ -13,6 +13,16 @@
 
 const RULE34_API = "https://api.rule34.xxx/index.php";
 
+/// Wrap http_get so a transient network exception falls through to "" and
+/// downstream json_parse checks see "no data" rather than crashing.
+fn safe_get(url) {
+    try {
+        return http_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -191,7 +201,7 @@ fn search_series(query, page, auth) {
 
     let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&tags=${search_tags}&pid=${pid}&limit=${limit}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Check for error responses before parsing
     if is_error_response(response_text) {
@@ -261,7 +271,7 @@ fn get_latest_updates(page, auth) {
 
     let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&pid=${pid}&limit=${limit}${tags_param}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Check for error responses before parsing
     if is_error_response(response_text) {
@@ -308,7 +318,7 @@ fn get_series(post_id, auth) {
     let auth_params = build_auth_params(auth);
     let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&id=${post_id}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return ();
@@ -335,7 +345,7 @@ fn get_chapter_pages(chapter_id, auth) {
     // For image posts, chapter_id is the post ID
     let url = `${RULE34_API}?page=dapi&s=post&q=index&json=1&id=${chapter_id}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];
@@ -371,7 +381,7 @@ fn tag_autocomplete(query, limit, auth) {
     let encoded_query = url_encode(query);
     let url = `https://api.rule34.xxx/autocomplete.php?q=${encoded_query}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == () || response_text == "" {
         return [];

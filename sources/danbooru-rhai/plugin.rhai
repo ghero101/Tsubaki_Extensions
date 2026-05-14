@@ -8,6 +8,16 @@
 
 const DANBOORU_API = "https://danbooru.donmai.us";
 
+/// Wrap http_get so a transient network exception falls through to "" and
+/// downstream json_parse checks see "no data" rather than crashing.
+fn safe_get(url) {
+    try {
+        return http_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -225,7 +235,7 @@ fn search_series(query, page, auth) {
 
     let url = `${DANBOORU_API}/posts.json?tags=${search_tags}&page=${page_num}&limit=${limit}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Handle empty results
     if response_text == "" || response_text == "[]" {
@@ -269,7 +279,7 @@ fn get_latest_updates(page, auth) {
 
     let url = `${DANBOORU_API}/posts.json?page=${page_num}&limit=${limit}${tags_param}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     // Check if we got a Cloudflare challenge page
     if response_text.contains("Just a moment") || response_text.contains("Checking your browser") {
@@ -310,7 +320,7 @@ fn get_series_details(post_id, auth) {
     let auth_params = build_auth_params(auth);
     let url = `${DANBOORU_API}/posts/${post_id}.json?${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" {
         return ();
@@ -335,7 +345,7 @@ fn get_chapter_pages(chapter_id, auth) {
     let auth_params = build_auth_params(auth);
     let url = `${DANBOORU_API}/posts/${chapter_id}.json?${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" {
         return [];
@@ -373,7 +383,7 @@ fn tag_autocomplete(query, limit, auth) {
     let auth_params = build_auth_params(auth);
     let url = `${DANBOORU_API}/tags.json?search[name_matches]=${encoded_query}*&search[order]=count&limit=${limit}${auth_params}`;
 
-    let response_text = http_get(url);
+    let response_text = safe_get(url);
 
     if response_text == "" || response_text == "[]" {
         return [];
