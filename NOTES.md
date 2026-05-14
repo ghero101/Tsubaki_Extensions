@@ -82,31 +82,37 @@ Pick one of:
 
 ---
 
-## 2026-05-14 — 8 plugins still call HTTP unwrapped (defense-in-depth todo)
+## 2026-05-14 — Unwrapped HTTP sweep (partial)
 
-Grep `for f in sources/*/plugin.rhai; do … grep -c "http_get_with_headers"` finds
-these plugins calling `http_get_with_headers` / `http_get_plain` directly with
-zero try/catch wrapping:
+Updated 2026-05-14 after partial sweep. The original survey under-counted —
+it only matched `http_get_with_headers` / `http_get_plain` patterns and
+missed plain `http_get` call sites. Re-grep:
 
-- `webtoon-rhai` — 14 call sites (highest impact)
-- `dynastyscans-rhai` — 7
-- `mangasee-rhai` — 7
-- `mangatown-rhai` — 2
-- `roliascan-rhai` — 2
-- `violetscans-rhai` — 2
-- `weebcentral-rhai` — 2
-- `rule34-rhai` — 1
+**Fixed in commit 8cd7b42** (single-call plugins, simplest to wrap):
+- `weebcentral-rhai` v1.2.2
+- `violetscans-rhai` v1.2.2
+- `roliascan-rhai`   v1.1.2
+- `mangatown-rhai`   v1.2.1
+- `mangaupdates-rhai` v1.1.5
+
+**Still on the list** (higher-touch — each needs an `api_get` helper
+rather than 5+ inline try/catch blocks):
+- `webtoon-rhai` — 13 sites (highest impact)
+- `safebooru-rhai` — 6
+- `mangasee-rhai` — 6
+- `dynastyscans-rhai` — 6
+- `xbooru-rhai` — 5
+- `rule34-rhai` — 5
+- `realbooru-rhai` — 5
+- `konachan-rhai` — 5
+- `hypnohub-rhai` — 5
+- `danbooru-rhai` — 5
 
 Each unwrapped call lets a transient network exception (TLS retry, dropped
 connection, intermediate proxy 5xx) propagate up to the caller and crash the
-whole search / browse / chapter fetch instead of falling through to an empty
-result. Same class of bug fixed in `hivetoons-rhai v1.0.1` (commit 8cd5c2c)
-and `asurascans-rhai v1.9.1` (commit f0fc474).
-
-**Recommendation**: add a tiny `api_get` helper at the top of each plugin and
-route the calls through it (the same pattern used by toonily-rhai and the
-hivetoons fix). Low-risk per-plugin but high-touch across 8 sources — defer
-until you want a focused reliability sweep.
+whole search / browse / chapter fetch. Pattern fix the same as
+`hivetoons-rhai v1.0.1` (commit 8cd5c2c) and `asurascans-rhai v1.9.1`
+(commit f0fc474) — add a tiny `api_get` helper at the top of each plugin.
 
 ---
 
