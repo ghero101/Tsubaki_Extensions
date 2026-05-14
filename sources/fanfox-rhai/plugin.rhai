@@ -729,8 +729,11 @@ fn get_chapters(series_id, auth) {
             continue;
         }
 
-        // Must contain chapter pattern /c{number}
-        if regex_find("/c[0-9]", href) == () {
+        // Must contain chapter pattern /c{number}. regex_find returns "" on
+        // no match (not unit) — the previous `== ()` never fired, so this
+        // gate was dead code. The chapter_num == "0" check below was the
+        // only thing actually filtering out non-chapter links.
+        if regex_find("/c[0-9]", href) == "" {
             continue;
         }
 
