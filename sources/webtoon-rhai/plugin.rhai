@@ -46,12 +46,24 @@ fn get_mobile_headers() {
     }
 }
 
+/// Wrap http_get_with_headers (desktop headers) so a transient network
+/// exception falls through to "" and downstream html_select / regex_find
+/// see "no data" rather than crashing the entire fetch. 13 call sites in
+/// this plugin previously had no protection.
+fn safe_get(url) {
+    try {
+        return safe_get(url);
+    } catch {
+        return "";
+    }
+}
+
 /// Search for series matching query
 fn search_series(query, page, auth) {
     let encoded_query = url_encode(query);
     let url = `${BASE_URL}/en/search?keyword=${encoded_query}&page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Check if we got blocked/redirected (more specific patterns to avoid false positives)
     if html.contains("Access Denied") || html.contains("challenge-running") || html.contains("cf-chl-widget") {
@@ -161,7 +173,7 @@ fn get_series(id_or_url, auth) {
 
         // Search the originals page to find the series URL
         let originals_url = `${BASE_URL}/en/originals`;
-        let search_html = http_get_with_headers(originals_url, get_headers());
+        let search_html = safe_get(originals_url);
 
         // Find the card with matching data-title-no
         let cards = html_select(search_html, `a[data-title-no="${title_no}"]`);
@@ -175,7 +187,7 @@ fn get_series(id_or_url, auth) {
         // If not found in originals, try search
         if url == "" {
             let search_page = `${BASE_URL}/en/search?keyword=${title_no}&page=1`;
-            let search_html2 = http_get_with_headers(search_page, get_headers());
+            let search_html2 = safe_get(search_page);
             let cards2 = html_select(search_html2, `a._card_item[data-title-no="${title_no}"]`);
             if cards2.len() > 0 {
                 let href = element_attr(cards2[0], "href");
@@ -191,7 +203,7 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract title
     let title = "";
@@ -239,7 +251,7 @@ fn get_series(id_or_url, auth) {
     if cover_url == () && title != "" {
         let encoded_title = url_encode(title);
         let search_url = `${BASE_URL}/en/search?keyword=${encoded_title}&page=1`;
-        let search_html = http_get_with_headers(search_url, get_headers());
+        let search_html = safe_get(search_url);
         let search_cards = html_select(search_html, `a._card_item[data-title-no="${title_no}"]`);
         if search_cards.len() > 0 {
             let imgs = html_select(search_cards[0], "img");
@@ -346,7 +358,7 @@ fn get_chapters(series_id, auth) {
 
         // Try originals page first
         let originals_url = `${BASE_URL}/en/originals`;
-        let search_html = http_get_with_headers(originals_url, get_headers());
+        let search_html = safe_get(originals_url);
         let cards = html_select(search_html, `a[data-title-no="${title_no}"]`);
         if cards.len() > 0 {
             let href = element_attr(cards[0], "href");
@@ -375,7 +387,7 @@ fn get_chapters(series_id, auth) {
             url = `${BASE_URL}/en/originals/series/list?title_no=${title_no}&page=${page}`;
         }
 
-        let html = http_get_with_headers(url, get_headers());
+        let html = safe_get(url);
 
         // Find episode items
         let episode_items = html_select(html, "#_listUl li a, ul._episodeList li a, .episode_lst li a");
@@ -511,7 +523,7 @@ fn get_chapter_pages(chapter_id, auth) {
     // Make sure URL is absolute
     url = make_full_url(url);
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let pages = [];
     let idx = 0;
@@ -596,7 +608,7 @@ fn get_latest_updates(page, auth) {
     if page == 1 {
         // First page: Get series from main originals page (ongoing)
         let url = `${BASE_URL}/en/originals`;
-        let html = http_get_with_headers(url, get_headers());
+        let html = safe_get(url);
         let result = parse_webtoon_cards(html);
         return #{ series: result.series, has_more: true };
     }
@@ -604,7 +616,7 @@ fn get_latest_updates(page, auth) {
     if page == 2 {
         // Second page: Completed originals sorted by MANA (first 500)
         let url = `${BASE_URL}/en/originals/complete?sortOrder=MANA`;
-        let html = http_get_with_headers(url, get_headers());
+        let html = safe_get(url);
         let result = parse_webtoon_genre_cards_limited(html, 0, 500);
         return #{ series: result.series, has_more: true };
     }
@@ -612,7 +624,7 @@ fn get_latest_updates(page, auth) {
     if page == 3 {
         // Third page: Completed originals (next 500, offset)
         let url = `${BASE_URL}/en/originals/complete?sortOrder=MANA`;
-        let html = http_get_with_headers(url, get_headers());
+        let html = safe_get(url);
         let result = parse_webtoon_genre_cards_limited(html, 500, 500);
         return #{ series: result.series, has_more: true };
     }
@@ -627,7 +639,7 @@ fn get_latest_updates(page, auth) {
     let genre = webtoon_genres[genre_index];
     let url = `${BASE_URL}/en/genres/${genre}?sortOrder=MANA`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Parse genre page cards (different structure from originals)
     let result = parse_webtoon_genre_cards_limited(html, 0, 500);
@@ -835,7 +847,7 @@ fn get_popular(page, auth) {
 
     let url = `${BASE_URL}/en/top`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let series = [];
     let seen_ids = #{};

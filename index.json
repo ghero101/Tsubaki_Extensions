@@ -1,6 +1,6 @@
 ﻿{
-    "version":  71,
-    "updated_at":  "2026-05-14T07:40:11Z",
+    "version":  72,
+    "updated_at":  "2026-05-14T07:42:27Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -843,16 +843,16 @@
                    {
                        "id":  "webtoon-rhai",
                        "name":  "Webtoon",
-                       "version":  "1.4.4",
+                       "version":  "1.4.5",
                        "description":  "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-4.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-5.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon-rhai/manifest.json",
-                       "latest_version":  "1.4.4",
+                       "latest_version":  "1.4.5",
                        "versions":  {
                                         "1.4.1":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-1.zip",
@@ -868,6 +868,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-4.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.4.5":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-5.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T07:42:27Z"
                                                   }
                                     }
                    },
