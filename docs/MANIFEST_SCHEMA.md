@@ -11,6 +11,7 @@ Complete documentation for the `manifest.json` file format.
   "name": "string (required)",
   "version": "string (required)",
   "description": "string",
+  "nsfw": "boolean",
   "author": {
     "name": "string",
     "url": "string"
@@ -23,6 +24,16 @@ Complete documentation for the `manifest.json` file format.
   "entry_point": {
     "file": "string (required)"
   },
+  "settings": [
+    {
+      "key": "string",
+      "type": "text | boolean | number",
+      "label": "string",
+      "description": "string",
+      "default": "any",
+      "required": "boolean"
+    }
+  ],
   "capabilities": {
     "level": "http_only | browser_automation",
     "allowed_domains": ["string"],
@@ -97,11 +108,12 @@ Complete documentation for the `manifest.json` file format.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `manifest_version` | number | Yes | Schema version, always `1` |
-| `id` | string | Yes | Unique identifier (lowercase, no spaces) |
+| `manifest_version` | number | Yes | Schema version. `1` is the baseline; `2` is used by a handful of metadata + settings-aware scrapers (AniList, MangaDex, Kitsu, MangaUpdates, BatCave) — no behavioural difference today, treated as a versioning placeholder for future format changes. |
+| `id` | string | Yes | Unique identifier (lowercase, no spaces). **Must match the `id` in `index.json`** — otherwise the build script silently no-op's on this entry and updates never reach users. See NOTES.md for past incidents. |
 | `name` | string | Yes | Display name |
 | `version` | string | Yes | Semantic version (e.g., `1.0.0`) |
 | `description` | string | No | Brief description |
+| `nsfw` | boolean | No | Whether the source primarily serves adult content. Surfaced in the UI for content filtering. Default `false`. |
 | `addon_type` | string | Yes | One of: `scraper`, `metadata`, `artwork` |
 | `technology` | string | Yes | One of: `rhai`, `lua`, `wasm`, `python` |
 
@@ -176,6 +188,54 @@ For metadata extensions:
   "sync_progress": true
 }
 ```
+
+### Settings (user-configurable)
+
+Use a `settings` array when your plugin needs runtime configuration that the
+user can edit through the app's addon settings UI — typically the base URL of
+a multi-tenant CMS, an opt-in feature flag, or a per-user content filter.
+
+```json
+"settings": [
+  {
+    "key": "base_url",
+    "type": "text",
+    "label": "Base URL",
+    "description": "The base URL of the HeanCMS site (e.g., https://omegascans.org)",
+    "default": "https://omegascans.org",
+    "required": true
+  },
+  {
+    "key": "use_new_chapter_endpoint",
+    "type": "boolean",
+    "label": "Use New Chapter Endpoint",
+    "description": "Enable if the site uses /chapter/query instead of seasons in series response",
+    "default": true
+  }
+]
+```
+
+| Field | Description |
+|-------|-------------|
+| `key` | Identifier the plugin reads via `safe_get_setting("key")` in Rhai |
+| `type` | One of `text`, `boolean`, `number` |
+| `label` | Shown above the input in the UI |
+| `description` | Helper text shown below the input |
+| `default` | Default value when the user hasn't set one |
+| `required` | If true, the UI blocks save until the user provides a value |
+
+Read settings inside the plugin with:
+
+```rhai
+let url = safe_get_setting("base_url");
+let enabled = safe_get_setting("use_new_chapter_endpoint");
+```
+
+The `settings` array is the framework-extension pattern. The canonical example
+is `heancms-rhai`, which lets users point one addon at any HeanCMS site (Omega
+Scans, Reaper Scans, etc.) by editing the `base_url` setting.
+
+---
 
 ### Authentication
 
