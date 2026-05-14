@@ -47,26 +47,33 @@ fn get_mobile_headers() {
     }
 }
 
-/// Fetch HTML with desktop headers, retry on failure
+/// Fetch HTML with desktop headers. Tries TLS impersonation first, falls back
+/// to plain reqwest with the same headers. Previous fallback used bare
+/// http_get(url) which threw away the User-Agent + Referer — fanfox's CDN
+/// rejects requests without Referer set.
 fn fetch_html(url) {
-    let html = "";
     try {
-        html = http_get_with_headers(url, get_headers());
+        let html = http_get_with_headers(url, get_headers());
+        if html != "" { return html; }
+    } catch {}
+    try {
+        return http_get_plain(url, get_headers());
     } catch {
-        html = http_get(url);
+        return "";
     }
-    html
 }
 
-/// Fetch HTML with mobile headers
+/// Fetch HTML with mobile headers. Same fallback shape as fetch_html.
 fn fetch_mobile_html(url) {
-    let html = "";
     try {
-        html = http_get_with_headers(url, get_mobile_headers());
+        let html = http_get_with_headers(url, get_mobile_headers());
+        if html != "" { return html; }
+    } catch {}
+    try {
+        return http_get_plain(url, get_mobile_headers());
     } catch {
-        html = http_get(url);
+        return "";
     }
-    html
 }
 
 /// Extract manga slug from URL
@@ -969,9 +976,11 @@ fn get_chapter_pages(chapter_id, auth) {
         if text.contains("comment") || text.contains("Comment") {
             continue;
         }
-        // Only include numeric pages
+        // Only include numeric pages. regex_find returns "" on no match
+        // (not unit), so the previous `== ()` check never fired and let
+        // non-numeric options through.
         let num_check = regex_find("^[0-9]+$", text);
-        if num_check == () {
+        if num_check == "" {
             continue;
         }
 

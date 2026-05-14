@@ -1,6 +1,6 @@
 ﻿{
-    "version":  61,
-    "updated_at":  "2026-05-14T02:43:27Z",
+    "version":  62,
+    "updated_at":  "2026-05-14T04:07:34Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -1057,16 +1057,16 @@
                    {
                        "id":  "fanfox",
                        "name":  "FanFox",
-                       "version":  "1.0.1",
+                       "version":  "1.0.2",
                        "description":  "FanFox (MangaFox) - Large manga aggregator with extensive library",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/fanfox-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_1-0-1.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_1-0-2.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/fanfox-rhai/manifest.json",
-                       "latest_version":  "1.0.1",
+                       "latest_version":  "1.0.2",
                        "versions":  {
                                         "1.0.0":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_latest.zip",
@@ -1077,6 +1077,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_1-0-1.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.0.2":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/fanfox-rhai/fanfox-rhai_1-0-2.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T04:07:34Z"
                                                   }
                                     }
                    },
