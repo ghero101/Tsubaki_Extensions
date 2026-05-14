@@ -11,27 +11,60 @@ fn get_headers() {
     }
 }
 
+/// Recognise the three CF-challenge HTML shapes we've seen on demonicscans.
+fn is_cloudflare_page(html) {
+    if html == () || html == "" { return true; }
+    if html.contains("Just a moment") && html.contains("_cf_chl_opt") { return true; }
+    if html.contains("challenge-platform") && html.contains("Enable JavaScript") { return true; }
+    if html.contains("Attention Required") && html.contains("Cloudflare") { return true; }
+    false
+}
+
+/// Three-tier fetch: cheap plain HTTP → FlareSolverr → browser. Every tier is
+/// wrapped so an exception or a CF-challenge response falls through cleanly
+/// rather than aborting the whole call. Previous version only checked for
+/// "Just a moment" and missed the JS-challenge / "Attention Required" variants
+/// CF serves on this domain.
 fn fetch_html(url) {
-    // Try HTTP first (faster)
-    let html = http_get_with_headers(url, get_headers());
-    if html != "" && !html.contains("Just a moment") {
-        return html;
+    // Tier 1: plain HTTP — works on quieter CF days
+    let http_html = "";
+    try {
+        http_html = http_get_with_headers(url, get_headers());
+        if http_html != "" && !is_cloudflare_page(http_html) {
+            return http_html;
+        }
+    } catch {}
+
+    // Tier 2: FlareSolverr — medium cost, shared service
+    if flaresolverr_is_available() {
+        try {
+            let fs_html = flaresolverr_get(url, 30000);
+            if fs_html != "" && !is_cloudflare_page(fs_html) {
+                return fs_html;
+            }
+        } catch {}
     }
 
-    // Fallback to browser automation for Cloudflare-protected pages
+    // Tier 3: full browser — heaviest but most reliable
     if browser_is_available() {
+        let browser_id = ();
         try {
-            let browser_id = browser_launch();
+            browser_id = browser_launch();
             browser_goto(browser_id, url);
             browser_wait_for_selector(browser_id, ".post-title, .c-tabs-item__content, .reading-content", 15000);
             let result = browser_get_html(browser_id);
-            browser_close(browser_id);
-            return result;
+            try { browser_close(browser_id); } catch {}
+            if result != "" && !is_cloudflare_page(result) {
+                return result;
+            }
         } catch {
-            // Browser failed, return whatever HTTP gave us
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
-    html
+
+    // All tiers exhausted — return the original HTTP body so callers can at
+    // least see the CF page rather than getting silent empty results.
+    http_html
 }
 
 fn get_source_info() {
@@ -175,8 +208,24 @@ fn get_chapters(series_id, auth) {
         if href == () { continue; }
 
         let ch_title = element_text(link).trim();
-        let ch_num = regex_find("chapter[\\s-]*(\\d+\\.?\\d*)", ch_title.to_lower());
-        if ch_num == () { ch_num = `${idx + 1}`; }
+
+        // regex_find returns the *full match* (not the capture group) and an
+        // empty string on no match. Previous version both compared against ()
+        // (so the fallback never fired) and stored the literal "chapter 5"
+        // string as the number, breaking chapter ordering.
+        let ch_num = "";
+        let full_match = regex_find("chapter[\\s-]*\\d+(\\.\\d+)?", ch_title.to_lower());
+        if full_match != "" {
+            // Strip the leading "chapter" + optional whitespace/dash, leaving the digits.
+            ch_num = regex_find("\\d+(\\.\\d+)?", full_match);
+        }
+        if ch_num == "" {
+            // Last resort: any number in the title, or fall back to position.
+            ch_num = regex_find("\\d+(\\.\\d+)?", ch_title);
+        }
+        if ch_num == "" {
+            ch_num = `${idx + 1}`;
+        }
 
         chapters.push(#{
             id: href,
