@@ -48,23 +48,43 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML using browser automation (bypasses Cloudflare)
-/// Falls back to HTTP if browser not available
+/// Fetch HTML through up to three tiers, picking the lightest one that returns
+/// usable content. batcave.biz sits behind Cloudflare so plain HTTP almost
+/// always fails — but plain HTTP is still the cheapest probe.
+///
+/// 1. browser_launch_stealth (heavyweight; reliable CF bypass). Wrapped in
+///    try/catch so a launch failure doesn't abort the whole call — previous
+///    code path crashed before reaching the fallback when chromium was down.
+/// 2. FlareSolverr (medium-weight; shared across requests).
+/// 3. http_get_with_headers (lightest; only works when CF is in a quiet mood).
 fn fetch_html(url) {
     if browser_is_available() {
-        let browser_id = browser_launch_stealth();
-        browser_goto(browser_id, url);
-        browser_wait_for_cloudflare(browser_id, 15000);
-
-        // Wait for content to render
-        browser_wait_for_selector(browser_id, "body", 10000);
-
-        let html = browser_get_html(browser_id);
-        browser_close(browser_id);
-        return html;
+        let browser_id = ();
+        try {
+            browser_id = browser_launch_stealth();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, "body", 10000);
+            let html = browser_get_html(browser_id);
+            try { browser_close(browser_id); } catch {}
+            if html != () && html != "" {
+                return html;
+            }
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
     }
 
-    // Fallback to HTTP (may fail with Cloudflare)
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html != () && html != "" {
+                return html;
+            }
+        } catch {}
+    }
+
+    // Last-resort plain HTTP — usually CF-blocked but cheap to attempt.
     http_get_with_headers(url, get_headers())
 }
 

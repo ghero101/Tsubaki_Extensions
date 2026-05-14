@@ -84,6 +84,49 @@ isn't keeping pace.
 
 ---
 
+## 2026-05-13 — New-source survey (round 1)
+
+Probed for gaps in our 53-source catalog. **Don't speculatively add scaffolds**
+— each new source needs site-availability verification (which I can't do from
+this sandbox: WebFetch paraphrases responses and there's no scraper container
+to spin up rquest+CF impersonation).
+
+### Candidate sites checked
+- **reaperscans.com**: 502 Bad Gateway. *Already covered* by `heancms-rhai`
+  with user-configurable `base_url` — no new addon needed; just document this
+  in `heancms-rhai` README.
+- **templescan.net**: 403 (CF challenge). Live but browser/FlareSolverr only.
+  *Not yet covered.* Worth adding when scraper container access is available.
+- **zeroscans.com → zscans.com**: domain moved per site banner. *Not yet
+  covered.* Likely HeanCMS or custom — needs investigation.
+
+### Already-covered "popular" sources (via framework adapters)
+- ReaperScans / QuantumScans / LuminousScans / OmegaScans / FlameComics:
+  all routed through `heancms-rhai` (set `base_url` in settings).
+- Generic Madara sites: route through `toonily-rhai`, `manhwaclan-rhai`,
+  `manhuaplus-rhai`, `manhuafast-rhai` (each is preconfigured for one Madara
+  domain). A *generic* "Madara" addon with configurable base_url would
+  consolidate these — current pattern duplicates ~1000 lines per addon.
+
+### Survey approach didn't work
+Tried fetching `keiyoushi/extensions-source` directory listing via WebFetch.
+The model summarizing the response **hallucinated several hundred fake folder
+names** (e.g. cascading "manascanoriginal{1..40}" entries that don't exist).
+Anything that needs raw lists rather than prose summaries should use the gh
+CLI (`gh api repos/keiyoushi/extensions-source/contents/src/en --paginate`)
+from a session that has gh auth — not WebFetch.
+
+### Decision needed
+Pick one of:
+1. **Add a generic Madara framework addon** (configurable base_url) so common
+   Madara sites can be supported without N copies. Drops ~5000 LOC.
+2. **Add specific scaffolds** for: templescan-rhai, zscans-rhai (defer until
+   we can verify in a scraper container).
+3. **Status quo**: heancms covers the framework-aware sites; Madara stays
+   per-site. Defer net-new sources entirely until user requests one.
+
+---
+
 ## 2026-05-13 — Comick BASE_URL may be stale
 
 `sources/comick-rhai/plugin.rhai` line 21: `const BASE_URL = "https://comick.art";`
