@@ -95,18 +95,19 @@ missed plain `http_get` call sites. Re-grep:
 - `mangatown-rhai`   v1.2.1
 - `mangaupdates-rhai` v1.1.5
 
-**Still on the list** (higher-touch — each needs an `api_get` helper
-rather than 5+ inline try/catch blocks):
+**Booru cluster fixed in commit 369487c** (safe_get helper pattern):
+- `safebooru-rhai` v1.0.8
+- `xbooru-rhai`    v1.0.9
+- `konachan-rhai`  v1.0.10
+- `hypnohub-rhai`  v1.0.10
+- `rule34-rhai`    v1.1.2
+- `realbooru-rhai` v1.1.3
+- `danbooru-rhai`  v1.0.9
+
+**Still on the list**:
 - `webtoon-rhai` — 13 sites (highest impact)
-- `safebooru-rhai` — 6
 - `mangasee-rhai` — 6
 - `dynastyscans-rhai` — 6
-- `xbooru-rhai` — 5
-- `rule34-rhai` — 5
-- `realbooru-rhai` — 5
-- `konachan-rhai` — 5
-- `hypnohub-rhai` — 5
-- `danbooru-rhai` — 5
 
 Each unwrapped call lets a transient network exception (TLS retry, dropped
 connection, intermediate proxy 5xx) propagate up to the caller and crash the
