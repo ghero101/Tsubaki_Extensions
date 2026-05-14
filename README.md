@@ -206,23 +206,40 @@ Browser automation extensions require admin approval in Tsubaki.
 
 ## Available APIs (Rhai)
 
-```rhai
-// HTTP
-http_get(url) -> string
-http_get_with_headers(url, headers) -> string
-http_post(url, body, headers) -> string
+For the complete reference with examples and gotchas see
+[`docs/EXTENSION_API.md`](docs/EXTENSION_API.md).
 
-// HTML Parsing
+```rhai
+// HTTP (cheapest → heaviest, fall through to the next on failure)
+http_get(url) -> string
+http_get_with_headers(url, headers) -> string    // rquest Chrome131 TLS impersonation
+http_get_plain(url, headers) -> string           // standard reqwest, no impersonation
+http_post(url, body) -> string
+http_post_form(url, body) -> string              // application/x-www-form-urlencoded
+flaresolverr_get(url, timeout_ms) -> string      // rendered HTML; only if FS service is up
+flaresolverr_is_available() -> bool
+
+// HTML parsing
 html_parse(html) -> Document
-html_select(doc, selector) -> Vec<Element>
+html_select(html, selector) -> [Element]
+html_select_first(html, selector) -> Element | ()
 element_text(el) -> string
-element_attr(el, attr) -> string
+element_attr(el, attr) -> string | ()
 
 // JSON
 json_parse(text) -> Dynamic
+json_stringify(value) -> string
 
-// Browser (requires browser_automation capability)
-browser_launch() -> BrowserId
+// Regex & utilities
+regex_find(pattern, text) -> string              // returns FULL match (not capture group!)
+regex_find_all(pattern, text) -> [string]
+url_encode(text) -> string
+parse_int(str) -> int
+parse_float(str) -> float
+
+// Browser (requires capability_level: "browser_automation")
+browser_is_available() -> bool
+browser_launch() / browser_launch_stealth() -> BrowserId
 browser_goto(id, url)
 browser_wait_for_cloudflare(id, timeout_ms)
 browser_wait_for_selector(id, selector, timeout_ms)
