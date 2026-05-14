@@ -24,12 +24,18 @@ const BASE_URL = "https://vymanga.net";
 // Helper Functions
 // ============================================================================
 
-/// Check if HTML is a CloudFlare challenge page (not real content)
+/// Check if HTML is a CloudFlare challenge page (not real content).
+/// Three challenge variants — earlier versions missed the third ("Attention
+/// Required") one, so CF challenge bodies that used that template slipped
+/// through as if they were real content and produced zero parsed results.
 fn is_cloudflare_challenge(html) {
     if html.contains("Just a moment") && html.contains("_cf_chl_opt") {
         return true;
     }
     if html.contains("challenge-platform") && html.contains("Enable JavaScript") {
+        return true;
+    }
+    if html.contains("Attention Required") && html.contains("Cloudflare") {
         return true;
     }
     false
