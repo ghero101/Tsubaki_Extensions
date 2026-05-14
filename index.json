@@ -1,6 +1,6 @@
 ﻿{
-    "version":  60,
-    "updated_at":  "2026-05-14T01:45:23Z",
+    "version":  61,
+    "updated_at":  "2026-05-14T02:43:27Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -1318,21 +1318,26 @@
                    {
                        "id":  "ravenscans",
                        "name":  "Raven Scans",
-                       "version":  "1.0.0",
+                       "version":  "1.0.1",
                        "description":  "Raven Scans - Manga and manhwa scanlation group",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/ravenscans-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/ravenscans-rhai/ravenscans-rhai_1-0-0.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/ravenscans-rhai/ravenscans-rhai_1-0-1.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/ravenscans-rhai/manifest.json",
-                       "latest_version":  "1.0.0",
+                       "latest_version":  "1.0.1",
                        "versions":  {
                                         "1.0.0":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/ravenscans-rhai/ravenscans-rhai_1-0-0.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.0.1":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/ravenscans-rhai/ravenscans-rhai_1-0-1.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T02:43:27Z"
                                                   }
                                     }
                    },

@@ -49,13 +49,26 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML from a URL
-/// Not Cloudflare protected, so we try rquest first, then plain reqwest as fallback
+/// Recognise CF challenge HTML. Ravenscans isn't currently CF-protected, but
+/// the sibling Flavor sites (arenascans, hivetoons) are — if Raven flips over
+/// later, this catches it instead of returning a useless challenge page that
+/// downstream parsing would treat as a "no results" empty payload.
+fn is_cloudflare_page(html) {
+    if html == () || html == "" { return true; }
+    if html.contains("Just a moment") && html.contains("_cf_chl_opt") { return true; }
+    if html.contains("challenge-platform") && html.contains("Enable JavaScript") { return true; }
+    if html.contains("Attention Required") && html.contains("Cloudflare") { return true; }
+    false
+}
+
+/// Three-tier fetch: rquest impersonation → plain reqwest → FlareSolverr.
+/// The FlareSolverr tier is dormant defense — only activates if the site
+/// starts serving CF challenges.
 fn fetch_html(url) {
     // Tier 1: rquest with Chrome TLS impersonation
     try {
         let html = http_get_with_headers(url, get_headers());
-        if html.len() > 500 {
+        if html.len() > 500 && !is_cloudflare_page(html) {
             return html;
         }
     } catch {
@@ -65,11 +78,23 @@ fn fetch_html(url) {
     // Tier 2: plain reqwest (no TLS impersonation)
     try {
         let html = http_get_plain(url, get_headers());
-        if html.len() > 500 {
+        if html.len() > 500 && !is_cloudflare_page(html) {
             return html;
         }
     } catch {
         // Fall through
+    }
+
+    // Tier 3: FlareSolverr (dormant defense for future CF adoption)
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html.len() > 500 && !is_cloudflare_page(html) {
+                return html;
+            }
+        } catch {
+            // Fall through
+        }
     }
 
     ""
