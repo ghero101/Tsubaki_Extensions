@@ -1,21 +1,76 @@
 // Tsubaki Metadata Add-on Template (Rhai)
 //
-// This template provides the required functions for a metadata-only add-on.
-// Metadata add-ons provide series information but do NOT download content.
+// Metadata add-ons provide series information from a tracking database
+// (AniList, MyAnimeList, MangaUpdates, Kitsu, etc.) but do NOT download
+// chapter content. They implement only `search_series` and `get_series`.
 //
-// Available APIs:
+// AVAILABLE HOST FUNCTIONS
+//
 //   http_get(url) -> string
-//   http_get_with_headers(url, headers) -> string
+//   http_get_with_headers(url, headers) -> string  (Chrome TLS impersonation)
+//   http_get_plain(url, headers) -> string         (standard reqwest)
 //   http_post(url, body) -> string
 //   json_parse(text) -> Dynamic
 //   json_stringify(value) -> string
-//   html_parse(html) -> Document (if needed)
+//   url_encode(text) -> string
+//   parse_int(str) -> int / parse_float(str) -> float
 
-// API base URL
+// ============================================================================
+// Configuration
+// ============================================================================
+
 const API_URL = "https://api.yoursource.com";
 const BASE_URL = "https://yoursource.com";
 
-/// Returns metadata about this source
+fn get_headers() {
+    #{
+        "User-Agent": "Tsubaki/1.0 (https://github.com/ghero101/Tsubaki_Extensions)",
+        "Accept": "application/json",
+        "Referer": BASE_URL
+    }
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/// Two-tier API fetch: TLS impersonation → plain reqwest. Each tier is
+/// wrapped so a network error or empty response falls through to the next.
+fn api_get(url) {
+    try {
+        let body = http_get_with_headers(url, get_headers());
+        if body != "" { return body; }
+    } catch {}
+    try {
+        return http_get_plain(url, get_headers());
+    } catch {
+        return "";
+    }
+}
+
+/// Safely read a string field. Returns () if missing/null/empty.
+fn read_str(obj, key) {
+    if obj == () { return (); }
+    let v = obj[key];
+    if v == () { return (); }
+    let s = `${v}`.trim();
+    if s == "" { return (); }
+    s
+}
+
+/// Safely read an array field. Returns [] if missing or wrong type.
+fn read_arr(obj, key) {
+    if obj == () { return []; }
+    let v = obj[key];
+    if v == () || type_of(v) != "array" { return []; }
+    v
+}
+
+// ============================================================================
+// Required interface
+// ============================================================================
+
+/// Returns metadata about this source. id MUST match manifest.id.
 fn get_source_info() {
     #{
         id: "your-metadata-id",
@@ -28,93 +83,129 @@ fn get_source_info() {
     }
 }
 
-/// Search for series matching query
+/// Search for series matching query.
 /// Returns: #{ series: [...], has_more: bool, total: int | () }
 fn search_series(query, page, auth) {
-    // Build API URL
     let per_page = 25;
-    let url = `${API_URL}/search?q=${query}&page=${page}&per_page=${per_page}`;
+    // ALWAYS url_encode the user-supplied query. Spaces and `&` break the URL.
+    let url = `${API_URL}/search?q=${url_encode(query)}&page=${page}&per_page=${per_page}`;
 
-    // Fetch JSON
-    let response = http_get(url);
-    let data = json_parse(response);
+    let body = api_get(url);
+    if body == "" {
+        return #{ series: [], has_more: false, total: () };
+    }
 
-    // Extract series
+    let data = ();
+    try { data = json_parse(body); } catch {}
+    if data == () {
+        return #{ series: [], has_more: false, total: () };
+    }
+
+    // Many APIs return rate-limit / error responses as JSON with no `results`
+    // key. Treat missing or non-array `results` as "no results" rather than
+    // crashing on iteration.
+    let results = read_arr(data, "results");
     let series = [];
-    for item in data["results"] {
+
+    for item in results {
+        let id = read_str(item, "id");
+        let title = read_str(item, "title");
+        if id == () || title == () { continue; }
+
         series.push(#{
-            id: item["id"].to_string(),
-            title: item["title"],
-            url: `${BASE_URL}/series/${item["id"]}`,
-            cover_url: item["cover_image"],
-            alternate_titles: item["alternative_titles"],
-            authors: item["authors"],
-            artists: item["artists"],
-            status: item["status"],
-            genres: item["genres"],
-            tags: item["tags"],
-            description: item["synopsis"],
-            year: item["year"],
-            content_rating: item["content_rating"]
+            id: id,
+            title: title,
+            url: `${BASE_URL}/series/${id}`,
+            cover_url: read_str(item, "cover_image"),
+            alternate_titles: read_arr(item, "alternative_titles"),
+            authors: read_arr(item, "authors"),
+            artists: read_arr(item, "artists"),
+            status: read_str(item, "status"),
+            genres: read_arr(item, "genres"),
+            tags: read_arr(item, "tags"),
+            description: read_str(item, "synopsis"),
+            year: read_str(item, "year"),
+            content_rating: read_str(item, "content_rating")
         });
     }
 
-    // Pagination info
     let total = data["total"];
-    let has_more = page * per_page < total;
+    let total_int = if total != () { parse_int(`${total}`) } else { 0 };
+    let has_more = total_int > 0 && (page * per_page) < total_int;
 
-    #{ series: series, has_more: has_more, total: total }
+    #{ series: series, has_more: has_more, total: if total_int > 0 { total_int } else { () } }
 }
 
-/// Get detailed series information
+/// Get detailed series information for one series.
 /// Returns: SeriesInfo
 fn get_series(id_or_url, auth) {
-    // Extract ID from URL if needed
     let id = id_or_url;
     if id_or_url.contains("/") {
-        // Extract ID from URL pattern like /series/12345
         let parts = id_or_url.split("/");
-        id = parts[parts.len() - 1];
+        // Take the last non-empty segment
+        for i in 0..parts.len() {
+            let p = parts[parts.len() - 1 - i];
+            if p != "" {
+                id = p;
+                break;
+            }
+        }
     }
 
     let url = `${API_URL}/series/${id}`;
-    let response = http_get(url);
-    let data = json_parse(response);
+    let body = api_get(url);
+    if body == "" {
+        throw `Failed to fetch series: ${id}`;
+    }
+
+    let data = ();
+    try { data = json_parse(body); } catch {}
+    if data == () {
+        throw `Invalid JSON response for series ${id}`;
+    }
+
+    // The wrapper key varies by API ("data" / "series" / nothing). Try common
+    // shapes; fall back to data itself.
+    let series_data = data;
+    if data["data"] != () { series_data = data["data"]; }
+    else if data["series"] != () { series_data = data["series"]; }
+
+    let canonical_id = read_str(series_data, "id");
+    if canonical_id == () { canonical_id = id; }
 
     #{
-        id: data["id"].to_string(),
-        title: data["title"],
-        alternate_titles: data["alternative_titles"],
-        description: data["synopsis"],
-        cover_url: data["cover_image"],
-        authors: data["authors"],
-        artists: data["artists"],
-        status: data["status"],
-        genres: data["genres"],
-        tags: data["tags"],
-        year: data["year"],
-        content_rating: data["content_rating"],
-        url: `${BASE_URL}/series/${data["id"]}`,
+        id: canonical_id,
+        title: read_str(series_data, "title"),
+        alternate_titles: read_arr(series_data, "alternative_titles"),
+        description: read_str(series_data, "synopsis"),
+        cover_url: read_str(series_data, "cover_image"),
+        authors: read_arr(series_data, "authors"),
+        artists: read_arr(series_data, "artists"),
+        status: read_str(series_data, "status"),
+        genres: read_arr(series_data, "genres"),
+        tags: read_arr(series_data, "tags"),
+        year: read_str(series_data, "year"),
+        content_rating: read_str(series_data, "content_rating"),
+        url: `${BASE_URL}/series/${canonical_id}`,
         extra: #{
             // Store provider-specific IDs for cross-referencing
-            provider_id: data["id"],
-            mal_id: data["mal_id"],
-            anilist_id: data["anilist_id"],
-            score: data["score"],
-            popularity: data["popularity"]
+            provider_id: read_str(series_data, "id"),
+            mal_id: read_str(series_data, "mal_id"),
+            anilist_id: read_str(series_data, "anilist_id"),
+            score: series_data["score"],
+            popularity: series_data["popularity"]
         }
     }
 }
 
-// Note: Metadata add-ons do NOT implement these functions:
-// - get_chapters()
-// - get_chapter_pages()
-// - download_page()
+// Metadata add-ons do NOT implement these functions:
+//   - get_chapters()
+//   - get_chapter_pages()
+//   - download_page()
 
 // Optional: Custom login for authenticated metadata access
 // fn login(credentials) {
 //     let api_key = credentials["api_key"];
-//     // Validate API key and return auth context
 //     #{
 //         credentials: credentials,
 //         cookies: [],
