@@ -19,6 +19,18 @@ fn get_headers() {
     }
 }
 
+/// Safe API GET — wraps http_get_with_headers in try/catch so a network
+/// exception falls through to "" instead of propagating up to the caller.
+/// Without this, a single transient blip crashed entire search / browse /
+/// get_series / get_chapters calls because the call sites had no guard.
+fn api_get(url) {
+    try {
+        return api_get(url);
+    } catch {
+        return "";
+    }
+}
+
 fn get_source_info() {
     #{
         id: "hivetoons",
@@ -39,7 +51,7 @@ fn search_series(query, page, auth) {
     }
 
     let url = `${API_URL}/query?${params}`;
-    let response = http_get_with_headers(url, get_headers());
+    let response = api_get(url);
 
     if response == "" || response == () {
         return #{ series: [], has_more: false, total: 0 };
@@ -86,7 +98,7 @@ fn browse(page, category, auth) {
 
     let params = `page=${page}&perPage=20&series_type=Comic&adult=true&order=desc&orderBy=${order_by}&status=All&tags_ids=[]`;
     let url = `${API_URL}/query?${params}`;
-    let response = http_get_with_headers(url, get_headers());
+    let response = api_get(url);
 
     if response == "" || response == () {
         return #{ series: [], has_more: false };
@@ -134,7 +146,7 @@ fn get_series(id_or_url, auth) {
 
     // Query API searching by slug to find the series
     let url = `${API_URL}/query?page=1&perPage=20&series_type=Comic&query_string=${url_encode(slug)}&adult=true&order=desc&orderBy=updated_at&status=All&tags_ids=[]`;
-    let response = http_get_with_headers(url, get_headers());
+    let response = api_get(url);
 
     if response == "" || response == () {
         return #{ id: slug, title: "", error: "Failed to fetch series" };
@@ -263,7 +275,7 @@ fn get_chapters(series_id, auth) {
 
     // Step 1: Query API to find the series and get its numeric id
     let query_url = `${API_URL}/query?page=1&perPage=20&series_type=Comic&query_string=${url_encode(slug)}&adult=true&order=desc&orderBy=updated_at&status=All&tags_ids=[]`;
-    let response = http_get_with_headers(query_url, get_headers());
+    let response = api_get(query_url);
 
     if response == "" || response == () {
         return [];
@@ -300,7 +312,7 @@ fn get_chapters(series_id, auth) {
 
     // Step 2: Fetch chapters from the dedicated chapters endpoint
     let chapters_url = `${API_URL}/post/chapters?postId=${post_id}`;
-    let ch_response = http_get_with_headers(chapters_url, get_headers());
+    let ch_response = api_get(chapters_url);
 
     if ch_response == "" || ch_response == () {
         return [];
@@ -390,11 +402,16 @@ fn get_chapter_pages(chapter_id, auth) {
         "Referer": BASE_URL
     };
 
-    let html = http_get_with_headers(url, html_headers);
+    let html = "";
+    try {
+        html = http_get_with_headers(url, html_headers);
+    } catch {}
 
     if html == "" || html == () {
         // Fallback: try plain HTTP (no TLS impersonation) for Next.js sites
-        html = http_get_plain(url, html_headers);
+        try {
+            html = http_get_plain(url, html_headers);
+        } catch {}
     }
 
     if html == "" || html == () {

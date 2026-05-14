@@ -1,6 +1,6 @@
 ﻿{
-    "version":  66,
-    "updated_at":  "2026-05-14T05:35:37Z",
+    "version":  67,
+    "updated_at":  "2026-05-14T06:04:12Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -1046,21 +1046,26 @@
                    {
                        "id":  "hivetoons",
                        "name":  "HiveToons",
-                       "version":  "1.0.0",
+                       "version":  "1.0.1",
                        "description":  "HiveToons - Manhwa and webtoon scanlation group (formerly Void Scans)",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hivetoons-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-0.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-1.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hivetoons-rhai/manifest.json",
-                       "latest_version":  "1.0.0",
+                       "latest_version":  "1.0.1",
                        "versions":  {
                                         "1.0.0":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-0.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.0.1":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-1.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T06:04:12Z"
                                                   }
                                     }
                    },
