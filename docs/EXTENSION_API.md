@@ -9,7 +9,9 @@ This document describes all available APIs for Tsubaki extensions.
 - [HTML Parsing API](#html-parsing-api)
 - [JSON API](#json-api)
 - [Browser Automation API](#browser-automation-api)
+- [Regex Utilities](#regex-utilities)
 - [Data Types](#data-types)
+- [Utility Functions](#utility-functions)
 
 ---
 
@@ -62,7 +64,10 @@ let html = http_get("https://example.com/page");
 
 ### http_get_with_headers
 
-Performs a GET request with custom headers.
+Performs a GET request with custom headers using a **TLS-impersonating client**
+(rquest with Chrome 131 fingerprint). This is the right choice for most
+Cloudflare-protected sites — the TLS fingerprint matches a real browser, so
+CF often lets the request through.
 
 ```rhai
 let headers = #{
@@ -73,17 +78,55 @@ let headers = #{
 let response = http_get_with_headers("https://api.example.com/data", headers);
 ```
 
-### http_post
+**Gotcha**: this client returns an empty string when CF serves a 403. Always
+check `response.len() > 500` before parsing.
 
-Performs a POST request with body and headers.
+### http_get_plain
+
+Performs a GET request with custom headers using a **standard reqwest client**
+— no TLS impersonation. Use this when impersonation backfires, which happens
+on some Next.js sites that fingerprint the TLS handshake and refuse responses
+that look "too perfect".
+
+```rhai
+let response = http_get_plain(url, get_headers());
+```
+
+Recommended pattern: try `http_get_with_headers` first, fall back to
+`http_get_plain` if the response looks like a Next.js error page or a CF
+challenge. See the scraper template for the full three-tier `fetch_html`.
+
+### http_post / http_post_form
+
+Performs a POST request. `http_post` sends a raw body; `http_post_form` sends
+`application/x-www-form-urlencoded`.
 
 ```rhai
 let body = `{"query": "search term"}`;
-let headers = #{
-    "Content-Type": "application/json"
-};
-let response = http_post("https://api.example.com/search", body, headers);
+let response = http_post("https://api.example.com/search", body);
+
+// WordPress Madara theme AJAX:
+let ajax_body = `action=manga_get_chapters&manga=${post_id}`;
+let html = http_post_form(`${BASE_URL}/wp-admin/admin-ajax.php`, ajax_body);
 ```
+
+### flaresolverr_get / flaresolverr_is_available
+
+Renders the page through FlareSolverr (a Chromium-based CF bypass service) and
+returns the resulting HTML. Heavier than HTTP but resolves JS challenges that
+neither impersonation nor browser_launch can.
+
+```rhai
+if flaresolverr_is_available() {
+    try {
+        let html = flaresolverr_get(url, 30000);  // 30 second timeout
+        if html.len() > 500 { return html; }
+    } catch {}
+}
+```
+
+Use as the last tier in a fallback chain, not the first — it's the slowest
+path and uses a shared resource.
 
 ---
 
@@ -256,22 +299,32 @@ browser_close(browser_id);
 
 ### Complete Browser Example
 
+Wrap every `browser_launch` in try/catch and clean up on failure. Without
+this, a single browser bring-up failure (chromium OOM, container restart)
+aborts the function before any fallback path can run.
+
 ```rhai
 fn fetch_protected_page(url) {
-    if !browser_is_available() {
-        return http_get(url);
+    if browser_is_available() {
+        let browser_id = ();
+        try {
+            browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 15000);
+            browser_wait_for_selector(browser_id, ".manga-content", 10000);
+            let html = browser_get_html(browser_id);
+            try { browser_close(browser_id); } catch {}
+            if html != () && html != "" && html.len() > 500 {
+                return html;
+            }
+        } catch {
+            // Make sure we close the browser even if it half-launched.
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
     }
 
-    let browser_id = browser_launch();
-
-    browser_goto(browser_id, url);
-    browser_wait_for_cloudflare(browser_id, 15000);
-    browser_wait_for_selector(browser_id, ".manga-content", 10000);
-
-    let html = browser_get_html(browser_id);
-    browser_close(browser_id);
-
-    html
+    // Fall through to lighter tiers — see fetch_html in scraper-rhai template.
+    http_get(url)
 }
 ```
 
@@ -375,6 +428,58 @@ fn search_series(query, page, auth) {
     // ... use headers
 }
 ```
+
+---
+
+## Regex Utilities
+
+### regex_find
+
+Returns the **full match** as a string, or `""` if there's no match.
+
+```rhai
+let m = regex_find("chapter-(\\d+)", url);
+// url = "/series/foo/chapter-5/" → m = "chapter-5"  (NOT "5")
+```
+
+**Important footgun**: `regex_find` does **not** return the capture group.
+It returns the entire match including the literal `chapter-` prefix. To pull
+out just the digits, do a second `regex_find` pass on the first result:
+
+```rhai
+let full = regex_find("chapter-\\d+(\\.\\d+)?", url);
+if full != "" {
+    let digits = regex_find("\\d+(\\.\\d+)?", full);
+    // digits = "5" ✓
+}
+```
+
+Two real bugs in this codebase were caused by missing this distinction — see
+the demonicscans and mangaowl `extract_chapter_number` fixes.
+
+### regex_find_all
+
+Returns an array of all matches (full match strings, same rule as above).
+
+```rhai
+let img_urls = regex_find_all("\"(https?://[^\"]+\\.(?:jpg|png|webp))\"", html);
+for url_match in img_urls {
+    // url_match is the full match including the quotes — strip them
+    let clean = url_match.replace("\"", "");
+    pages.push(clean);
+}
+```
+
+### url_encode
+
+Percent-encodes a string for use in a URL query parameter.
+
+```rhai
+let url = `${BASE_URL}/search?q=${url_encode(query)}&page=${page}`;
+```
+
+Always wrap user-supplied query strings — otherwise spaces, `&`, `#`, etc.
+break the URL.
 
 ---
 

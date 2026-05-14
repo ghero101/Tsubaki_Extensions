@@ -131,22 +131,31 @@ fn search_series(query, page, auth) {
 
 ### Parsing HTML
 
+Always `url_encode` query strings and guard array indexing — `html_select`
+returns an empty array if the selector doesn't match, and `[0]` on that crashes.
+
 ```rhai
 fn search_series(query, page, auth) {
-    let url = `${BASE_URL}/search?q=${query}&page=${page}`;
+    let url = `${BASE_URL}/search?q=${url_encode(query)}&page=${page}`;
     let html = http_get(url);
-    let doc = html_parse(html);
 
     let results = [];
-    let items = html_select(doc, ".manga-item");
+    let items = html_select(html, ".manga-item");
 
     for item in items {
-        let title = element_text(html_select(item, ".title")[0]);
-        let link = element_attr(html_select(item, "a")[0], "href");
-        let cover = element_attr(html_select(item, "img")[0], "src");
+        let link_els = html_select(item, "a");
+        if link_els.len() == 0 { continue; }
+
+        let link = element_attr(link_els[0], "href");
+        let title_els = html_select(item, ".title");
+        let title = if title_els.len() > 0 { element_text(title_els[0]) } else { "" };
+        if title == "" || link == () { continue; }
+
+        let imgs = html_select(item, "img");
+        let cover = if imgs.len() > 0 { element_attr(imgs[0], "src") } else { () };
 
         results.push(#{
-            id: extract_id(link),
+            id: link,
             title: title,
             cover_url: cover,
             url: link
@@ -161,7 +170,7 @@ fn search_series(query, page, auth) {
 
 ```rhai
 fn search_series(query, page, auth) {
-    let url = `${BASE_URL}/api/search?q=${query}&page=${page}`;
+    let url = `${BASE_URL}/api/search?q=${url_encode(query)}&page=${page}`;
     let response = http_get(url);
     let data = json_parse(response);
 
