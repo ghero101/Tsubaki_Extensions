@@ -20,13 +20,28 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML using HTTP (plain client to avoid TLS impersonation issues with Next.js)
+/// Fetch HTML, with TLS-impersonation client first and a plain-client retry
+/// for the Next.js error pages that the impersonation client provokes.
+///
+/// Both calls are individually try/catch'd so a network exception in tier 1
+/// doesn't abort the function before tier 2 runs. Previous version threw all
+/// the way up to callers, which then died with no fallback.
 fn fetch_html(url) {
-    let html = http_get_with_headers(url, get_headers());
-    // If impersonation client got a Next.js error page, retry with plain client
-    if html.len() == 0 || html.contains("__next_error__") || html.contains("\"FATAL\"")
-        || html.contains("NEXT_NOT_FOUND") || html.contains("Internal Server Error") {
-        return http_get_plain(url, get_headers());
+    let html = "";
+    try {
+        html = http_get_with_headers(url, get_headers());
+    } catch {}
+
+    let looks_broken = html == () || html.len() == 0
+        || html.contains("__next_error__") || html.contains("\"FATAL\"")
+        || html.contains("NEXT_NOT_FOUND") || html.contains("Internal Server Error");
+
+    if looks_broken {
+        try {
+            return http_get_plain(url, get_headers());
+        } catch {
+            return "";
+        }
     }
     html
 }
@@ -228,12 +243,17 @@ fn get_series(id_or_url, auth) {
     }
     if title == "" {
         // Regex fallback: <span class="text-xl font-bold">TITLE</span>
-        title = regex_find("<span[^>]*text-xl[^>]*font-bold[^>]*>([^<]+)</span>", html);
-        if title.contains(">") {
-            let parts = title.split(">");
-            if parts.len() > 1 { title = parts[parts.len() - 1]; }
+        // regex_find returns the full match, not the capture group. Previous
+        // version split on ">" and took parts[len-1], which is always the
+        // empty string after the closing </span> — so this fallback never
+        // produced a title. Pull the inner text with a second regex pass.
+        let span_match = regex_find("<span[^>]*text-xl[^>]*font-bold[^>]*>([^<]+)</span>", html);
+        if span_match != "" {
+            let inner = regex_find(">([^<]+)<", span_match);
+            // Strip the leading > and trailing <
+            inner = inner.replace(">", "").replace("<", "").trim();
+            if inner != "" { title = inner; }
         }
-        title = title.replace("</span>", "").trim();
     }
     if title == "" {
         // Fallback: <title> tag
