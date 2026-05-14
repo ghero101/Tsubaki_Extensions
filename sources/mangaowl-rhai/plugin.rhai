@@ -12,8 +12,14 @@
 
 const BASE_URL = "https://mangaowl.io";
 
-/// Fetch HTML using browser automation (bypasses Cloudflare)
-/// Falls back to HTTP if browser not available
+/// Three-tier fetch: browser → FlareSolverr → plain HTTP. mangaowl.io sits
+/// behind Cloudflare, so plain HTTP is almost always blocked — but it's the
+/// cheapest probe to keep around as a last resort.
+///
+/// Each tier is individually wrapped so an exception falls through to the
+/// next. The browser-tier `return html` skipped the FlareSolverr fallback
+/// even when the browser returned an empty or CF-challenge page; now we
+/// short-circuit only on a clearly non-empty body.
 fn fetch_html(url) {
     if browser_is_available() {
         let browser_id = ();
@@ -23,14 +29,29 @@ fn fetch_html(url) {
             browser_wait_for_cloudflare(browser_id, 15000);
             let html = browser_get_html(browser_id);
             try { browser_close(browser_id); } catch {}
-            return html;
+            if html != () && html != "" && html.len() > 500 {
+                return html;
+            }
         } catch {
             if browser_id != () { try { browser_close(browser_id); } catch {} }
         }
     }
 
-    // Fallback to HTTP (may fail with Cloudflare)
-    http_get_with_headers(url, get_headers())
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 30000);
+            if html != () && html != "" && html.len() > 500 {
+                return html;
+            }
+        } catch {}
+    }
+
+    // Last-resort plain HTTP. Usually CF-blocked on mangaowl.io but cheap.
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
 }
 
 /// Returns metadata about this source
@@ -690,10 +711,17 @@ fn extract_chapter_number(url) {
         }
     }
 
-    // Try to find any number pattern in the URL
-    let num_str = regex_find("chapter[-_]?(\\d+(?:\\.\\d+)?)", url);
-    if num_str != "" {
-        return num_str;
+    // Try to find any number pattern in the URL. regex_find returns the full
+    // match (e.g. "chapter-5"), not the capture group, so we do a second pass
+    // to pull out just the digits. Previous version returned "chapter-5" as
+    // the number, breaking numeric chapter ordering for any URL that hit this
+    // fallback path.
+    let full_match = regex_find("chapter[-_]?\\d+(\\.\\d+)?", url);
+    if full_match != "" {
+        let digits = regex_find("\\d+(\\.\\d+)?", full_match);
+        if digits != "" {
+            return digits;
+        }
     }
 
     // Last resort
