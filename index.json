@@ -1,6 +1,6 @@
 ﻿{
-    "version":  69,
-    "updated_at":  "2026-05-14T07:10:56Z",
+    "version":  71,
+    "updated_at":  "2026-05-14T07:40:11Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -160,16 +160,16 @@
                    {
                        "id":  "dynastyscans-rhai",
                        "name":  "Dynasty Scans",
-                       "version":  "1.0.9",
+                       "version":  "1.0.10",
                        "description":  "Scraper for Dynasty Scans (dynasty-scans.com), a yuri/shoujo-ai manga reader featuring doujins, anthologies, and original series.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/dynastyscans-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-9.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-10.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/dynastyscans-rhai/manifest.json",
-                       "latest_version":  "1.0.9",
+                       "latest_version":  "1.0.10",
                        "versions":  {
                                         "1.0.7":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-7.zip",
@@ -180,7 +180,12 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-9.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
-                                                  }
+                                                  },
+                                        "1.0.10":  {
+                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-10.zip",
+                                                       "changelog":  "Updated",
+                                                       "released_at":  "2026-05-14T07:40:11Z"
+                                                   }
                                     }
                    },
                    {
@@ -486,16 +491,16 @@
                    {
                        "id":  "mangasee-rhai",
                        "name":  "MangaSee",
-                       "version":  "1.0.7",
+                       "version":  "1.0.8",
                        "description":  "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-7.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-8.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee-rhai/manifest.json",
-                       "latest_version":  "1.0.7",
+                       "latest_version":  "1.0.8",
                        "versions":  {
                                         "1.0.4":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-4.zip",
@@ -506,6 +511,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-7.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "1.0.8":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-8.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-14T07:40:10Z"
                                                   }
                                     }
                    },

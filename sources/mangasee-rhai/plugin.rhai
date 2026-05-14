@@ -33,6 +33,17 @@ fn get_headers() {
     }
 }
 
+/// Wrap http_get_with_headers so a transient network exception falls through
+/// to "" and downstream regex_find / json_parse see "no data" rather than
+/// crashing the entire search/browse/series fetch.
+fn safe_get(url) {
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
+}
+
 /// Extract JSON from vm.Variable = [...]; pattern
 fn extract_vm_json(html, var_name) {
     // Look for vm.VarName = [...]
@@ -58,7 +69,7 @@ fn search_series(query, page, auth) {
     // We need to fetch the directory and filter
     let url = `${BASE_URL}/search/`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract directory JSON
     let directory = extract_vm_json(html, "Directory");
@@ -149,7 +160,7 @@ fn get_series(id_or_url, auth) {
 
     let url = `${BASE_URL}/manga/${slug}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract title from page
     let title = slug;
@@ -270,7 +281,7 @@ fn get_chapters(series_id, auth) {
 
     let url = `${BASE_URL}/manga/${slug}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract chapters JSON
     let chapters_data = extract_vm_json(html, "Chapters");
@@ -319,7 +330,7 @@ fn get_chapters(series_id, auth) {
 fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract chapter data
     let cur_chapter = ();
@@ -399,7 +410,7 @@ fn get_chapter_pages(chapter_id, auth) {
 fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract latest updates JSON
     let latest = extract_vm_json(html, "LatestJSON");
@@ -434,7 +445,7 @@ fn get_latest_updates(page, auth) {
 fn get_popular(page, auth) {
     let url = `${BASE_URL}/`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // Extract hot updates JSON
     let hot = extract_vm_json(html, "HotUpdateJSON");

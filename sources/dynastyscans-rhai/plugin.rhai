@@ -34,6 +34,17 @@ fn get_headers() {
     }
 }
 
+/// Wrap http_get_with_headers so a transient network exception falls through
+/// to "" and downstream html_select / json_parse see "no data" rather than
+/// crashing the entire search/browse/series fetch.
+fn safe_get(url) {
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
+}
+
 /// Search for series matching query
 /// Dynasty Scans search - searches for Series, Doujins, and Anthologies only
 /// Note: Search results on Dynasty Scans do not include cover images
@@ -42,7 +53,7 @@ fn search_series(query, page, auth) {
     // Search for Series, Doujins, and Anthologies only (not chapters)
     let url = `${BASE_URL}/search?q=${encoded_query}&page=${page}&classes[]=Series&classes[]=Doujin&classes[]=Anthology`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let series = [];
     let seen = #{};
@@ -169,7 +180,7 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     // For chapter pages, try to find parent series and redirect
     if is_chapter_page {
@@ -393,7 +404,7 @@ fn get_chapters(series_id, auth) {
         }
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let chapters = [];
     let seen = #{};
@@ -486,7 +497,7 @@ fn get_chapter_pages(chapter_id, auth) {
         url = `${BASE_URL}/chapters/${chapter_id}`;
     }
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let pages = [];
 
@@ -620,7 +631,7 @@ fn browse(page, filters, auth) {
 fn get_latest_updates(page, auth) {
     let url = `${BASE_URL}/?page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let series = [];
     let seen = #{};
@@ -709,7 +720,7 @@ fn get_latest_updates(page, auth) {
 fn get_popular(page, auth) {
     let url = `${BASE_URL}/series?page=${page}`;
 
-    let html = http_get_with_headers(url, get_headers());
+    let html = safe_get(url);
 
     let series = [];
 
