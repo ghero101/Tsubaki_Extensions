@@ -30,9 +30,14 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML with headers
+/// Fetch HTML with headers. Wrapped in try/catch so a transient network
+/// exception falls through to "" instead of crashing the caller.
 fn fetch_html(url) {
-    http_get_with_headers(url, get_headers())
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
 }
 
 /// Extract manga slug from URL

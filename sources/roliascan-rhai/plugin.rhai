@@ -18,7 +18,11 @@ fn get_headers() {
 }
 
 fn fetch_html(url) {
-    http_get_with_headers(url, get_headers())
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
 }
 
 fn get_source_info() {

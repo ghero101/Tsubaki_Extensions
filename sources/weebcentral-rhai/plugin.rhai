@@ -13,9 +13,15 @@
 
 const BASE_URL = "https://weebcentral.com";
 
-/// Fetch HTML using HTTP (WeebCentral content is server-side rendered)
+/// Fetch HTML using HTTP (WeebCentral content is server-side rendered).
+/// Wrapped in try/catch so a transient network exception returns "" instead
+/// of crashing every search/browse/series fetch.
 fn fetch_html(url) {
-    http_get_with_headers(url, get_headers())
+    try {
+        return http_get_with_headers(url, get_headers());
+    } catch {
+        return "";
+    }
 }
 
 /// Returns metadata about this source

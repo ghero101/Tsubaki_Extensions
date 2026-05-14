@@ -157,8 +157,15 @@ fn get_series(id_or_url, auth) {
     }
 
     let url = `${API_BASE}/series/${series_id}`;
-    let response = http_get(url);
-    let data = json_parse(response);
+    // Wrap the HTTP call so a network exception falls through to an error
+    // result instead of propagating up and crashing get_series.
+    let response = "";
+    try {
+        response = http_get(url);
+    } catch {}
+
+    let data = ();
+    try { data = json_parse(response); } catch {}
 
     if data == () {
         return #{
