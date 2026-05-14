@@ -82,42 +82,42 @@ Pick one of:
 
 ---
 
-## 2026-05-14 — Unwrapped HTTP sweep (partial)
-
-Updated 2026-05-14 after partial sweep. The original survey under-counted —
-it only matched `http_get_with_headers` / `http_get_plain` patterns and
-missed plain `http_get` call sites. Re-grep:
-
-**Fixed in commit 8cd7b42** (single-call plugins, simplest to wrap):
-- `weebcentral-rhai` v1.2.2
-- `violetscans-rhai` v1.2.2
-- `roliascan-rhai`   v1.1.2
-- `mangatown-rhai`   v1.2.1
-- `mangaupdates-rhai` v1.1.5
-
-**Booru cluster fixed in commit 369487c** (safe_get helper pattern):
-- `safebooru-rhai` v1.0.8
-- `xbooru-rhai`    v1.0.9
-- `konachan-rhai`  v1.0.10
-- `hypnohub-rhai`  v1.0.10
-- `rule34-rhai`    v1.1.2
-- `realbooru-rhai` v1.1.3
-- `danbooru-rhai`  v1.0.9
-
-**Still on the list**:
-- `webtoon-rhai` — 13 sites (highest impact)
-- `mangasee-rhai` — 6
-- `dynastyscans-rhai` — 6
-
-Each unwrapped call lets a transient network exception (TLS retry, dropped
-connection, intermediate proxy 5xx) propagate up to the caller and crash the
-whole search / browse / chapter fetch. Pattern fix the same as
-`hivetoons-rhai v1.0.1` (commit 8cd5c2c) and `asurascans-rhai v1.9.1`
-(commit f0fc474) — add a tiny `api_get` helper at the top of each plugin.
-
 ---
 
 # RESOLVED LOG
+
+## 2026-05-14 — Unwrapped HTTP sweep → completed across 15 plugins
+
+Started with the hivetoons fix (8cd5c2c), then a focused sweep across the
+rest of the codebase. Pattern: a tiny `safe_get` / `api_get` helper at the
+top of each plugin wrapping the bare HTTP call in try/catch, with downstream
+empty-string checks already handling the failure-case path.
+
+| Plugin              | Sites | Commit  | Version |
+| ------------------- | ----- | ------- | ------- |
+| asurascans-rhai     | 1     | f0fc474 | 1.9.1   |
+| hivetoons-rhai      | 5     | 8cd5c2c | 1.0.1   |
+| weebcentral-rhai    | 1     | 8cd7b42 | 1.2.2   |
+| violetscans-rhai    | 1     | 8cd7b42 | 1.2.2   |
+| roliascan-rhai      | 1     | 8cd7b42 | 1.1.2   |
+| mangatown-rhai      | 1     | 8cd7b42 | 1.2.1   |
+| mangaupdates-rhai   | 1     | 8cd7b42 | 1.1.5   |
+| safebooru-rhai      | 6     | 369487c | 1.0.8   |
+| xbooru-rhai         | 5     | 369487c | 1.0.9   |
+| konachan-rhai       | 5     | 369487c | 1.0.10  |
+| hypnohub-rhai       | 5     | 369487c | 1.0.10  |
+| rule34-rhai         | 5     | 369487c | 1.1.2   |
+| realbooru-rhai      | 5     | 369487c | 1.1.3   |
+| danbooru-rhai       | 5     | 369487c | 1.0.9   |
+| mangasee-rhai       | 6     | 6e340f1 | 1.0.8   |
+| dynastyscans-rhai   | 6     | 6e340f1 | 1.0.10  |
+| webtoon-rhai        | 13    | f984250 | 1.4.5   |
+
+Total: 72 call sites wrapped across 17 plugins (including asurascans &
+hivetoons fixed earlier in the loop). Each unwrapped call had been a
+potential crash point on any transient network exception — TLS retry,
+dropped connection, intermediate proxy 5xx. Now they fall through to "" /
+empty result and the caller can recover.
 
 ## 2026-05-13 — Three index/source ID inconsistencies → fixed in `8c9d1f2`
 
