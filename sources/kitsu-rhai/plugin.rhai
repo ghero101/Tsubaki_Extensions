@@ -386,10 +386,12 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Determine content rating
+    // Determine content rating. Canonical safe/suggestive/nsfw set —
+    // pre-1.1.7 this returned "explicit" for R/R18 which is non-canonical
+    // and didn't match the host's UI filter.
     let content_rating = "safe";
     if age_rating == "R" || age_rating == "R18" {
-        content_rating = "explicit";
+        content_rating = "nsfw";
     } else if age_rating == "PG" || age_rating == "PG-13" {
         content_rating = "suggestive";
     }

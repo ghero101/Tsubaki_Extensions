@@ -202,7 +202,7 @@ fn build_series_result(gallery) {
         genres: categories,
         tags: content_tags,
         year: (),
-        content_rating: "explicit",
+        content_rating: "nsfw",
         url: `${BASE_URL}/g/${id_str}/`,
         extra: #{
             media_id: media_id,

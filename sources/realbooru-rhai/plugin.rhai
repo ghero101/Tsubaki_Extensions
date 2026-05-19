@@ -167,7 +167,7 @@ fn build_scraped_result(post_id, preview_url, tags_string) {
         genres: [],
         tags: tag_list,
         year: (),
-        content_rating: "explicit",
+        content_rating: "nsfw",
         url: `${REALBOORU_BASE}/index.php?page=post&s=view&id=${post_id}`,
         extra: #{
             file_url: (),  // Use get_chapter_pages - thumbnail extension differs from actual
@@ -557,7 +557,7 @@ fn get_series_details(post_id, auth) {
         genres: [],
         tags: tag_list,
         year: (),
-        content_rating: "explicit",
+        content_rating: "nsfw",
         url: `${REALBOORU_BASE}/index.php?page=post&s=view&id=${post_id}`,
         extra: #{
             file_url: file_url,

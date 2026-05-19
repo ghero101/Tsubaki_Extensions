@@ -96,7 +96,7 @@ fn search_series(query, page, auth) {
 
             let rating = "safe";
             if media.isAdult == true {
-                rating = "adult";
+                rating = "nsfw";
             }
 
             series.push(#{
@@ -284,7 +284,7 @@ fn get_latest_updates(page, auth) {
 
             let rating = "safe";
             if media["isAdult"] == true {
-                rating = "adult";
+                rating = "nsfw";
             }
 
             let genres = [];
@@ -358,7 +358,7 @@ fn get_popular(page, auth) {
 
             let rating = "safe";
             if media["isAdult"] == true {
-                rating = "adult";
+                rating = "nsfw";
             }
 
             let genres = [];
@@ -446,7 +446,7 @@ fn get_all_manga(page, auth) {
 
             let rating = "safe";
             if media["isAdult"] == true {
-                rating = "adult";
+                rating = "nsfw";
             }
 
             let genres = [];
