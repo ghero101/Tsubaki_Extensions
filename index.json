@@ -1,6 +1,6 @@
 ﻿{
-    "version":  73,
-    "updated_at":  "2026-05-19T11:30:45Z",
+    "version":  74,
+    "updated_at":  "2026-05-19T11:36:15Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -496,16 +496,16 @@
                    {
                        "id":  "mangasee-rhai",
                        "name":  "MangaSee",
-                       "version":  "1.0.8",
+                       "version":  "1.1.0",
                        "description":  "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-8.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-1-0.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee-rhai/manifest.json",
-                       "latest_version":  "1.0.8",
+                       "latest_version":  "1.1.0",
                        "versions":  {
                                         "1.0.4":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-4.zip",
@@ -521,6 +521,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-8.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-14T07:40:10Z"
+                                                  },
+                                        "1.1.0":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-1-0.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-19T11:36:15Z"
                                                   }
                                     }
                    },

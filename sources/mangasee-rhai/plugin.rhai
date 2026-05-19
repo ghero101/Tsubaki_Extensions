@@ -162,67 +162,104 @@ fn get_series(id_or_url, auth) {
 
     let html = safe_get(url);
 
-    // Extract title from page
+    // ------------------------------------------------------------------
+    // NOTE on regex_find / regex_find_all in this host:
+    //   Both return the FULL match string, not the capture group.
+    //   Previous code was assigning the raw match to title/description/etc.
+    //   so users saw "<h1 class='...'>Title</h1>" as the title and
+    //   "/search/?author=X">Author Name" entries in the authors list.
+    //   Each extraction now does a second pass to pull the inner text.
+    // ------------------------------------------------------------------
+
+    // Extract title from page. The h1 match contains the full tag; do a
+    // second regex pass to pull just the inner text. Same idiom mangapill
+    // and readm already use.
     let title = slug;
     let title_match = regex_find(`<h1[^>]*>([^<]+)</h1>`, html);
     if title_match != () && title_match != "" {
-        title = title_match.trim();
+        let inner = regex_find(">([^<]+)<", title_match);
+        let cleaned = inner.replace(">", "").replace("<", "").trim();
+        if cleaned != "" { title = cleaned; }
     }
 
     // Extract description
     let description = ();
     let desc_match = regex_find(`<span class="mlabel">Description:</span>\\s*<div[^>]*>([^<]+)`, html);
-    if desc_match != () {
-        description = desc_match.trim();
+    if desc_match != () && desc_match != "" {
+        // The match ends just before the next `<`, so the content is whatever
+        // comes after the last `>` in the match.
+        let parts = desc_match.split(">");
+        if parts.len() > 0 {
+            let inner = parts[parts.len() - 1].trim();
+            if inner != "" { description = inner; }
+        }
     }
 
     // Try to extract from Li-PageHeading
     let heading_match = regex_find(`class=".*?Description[^"]*"[^>]*>([^<]+)`, html);
     if heading_match != () && heading_match != "" {
-        description = heading_match.trim();
+        let parts = heading_match.split(">");
+        if parts.len() > 0 {
+            let inner = parts[parts.len() - 1].trim();
+            if inner != "" { description = inner; }
+        }
     }
 
-    // Extract authors and artists by splitting the HTML on mlabel spans
+    // Extract authors and artists by splitting the HTML on mlabel spans.
+    // The regex matches `/search/?author=X">Name` (the closing `<` is NOT in
+    // the match) — so the name is whatever comes after the last `">`.
     let authors = [];
     let artists = [];
     let html_parts = html.split(`<span class="mlabel">`);
     for part in html_parts {
         if part.starts_with("Author(s):") {
-            let names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, part);
-            for n in names {
-                let cleaned = n.trim();
-                if cleaned != "" && !authors.contains(cleaned) {
-                    authors.push(cleaned);
+            let raw_names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, part);
+            for n in raw_names {
+                let bits = n.split(`">`);
+                if bits.len() > 1 {
+                    let cleaned = bits[bits.len() - 1].trim();
+                    if cleaned != "" && !authors.contains(cleaned) {
+                        authors.push(cleaned);
+                    }
                 }
             }
         } else if part.starts_with("Artist(s):") {
-            let names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, part);
-            for n in names {
-                let cleaned = n.trim();
-                if cleaned != "" && !artists.contains(cleaned) {
-                    artists.push(cleaned);
+            let raw_names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, part);
+            for n in raw_names {
+                let bits = n.split(`">`);
+                if bits.len() > 1 {
+                    let cleaned = bits[bits.len() - 1].trim();
+                    if cleaned != "" && !artists.contains(cleaned) {
+                        artists.push(cleaned);
+                    }
                 }
             }
         }
     }
     // Fallback: if label-based extraction found nothing, grab all author links
     if authors.is_empty() && artists.is_empty() {
-        let all_matches = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, html);
-        for name in all_matches {
-            let cleaned = name.trim();
-            if cleaned != "" && !authors.contains(cleaned) {
-                authors.push(cleaned);
+        let raw_names = regex_find_all(`/search/\\?author=[^"]+">([^<]+)`, html);
+        for n in raw_names {
+            let bits = n.split(`">`);
+            if bits.len() > 1 {
+                let cleaned = bits[bits.len() - 1].trim();
+                if cleaned != "" && !authors.contains(cleaned) {
+                    authors.push(cleaned);
+                }
             }
         }
     }
 
-    // Extract genres
+    // Extract genres (same `">Name` shape as authors)
     let genres = [];
     let genre_matches = regex_find_all(`/search/\\?genre=[^"]+">([^<]+)`, html);
-    for genre in genre_matches {
-        let cleaned = genre.trim();
-        if cleaned != "" && !genres.contains(cleaned) {
-            genres.push(cleaned);
+    for g in genre_matches {
+        let bits = g.split(`">`);
+        if bits.len() > 1 {
+            let cleaned = bits[bits.len() - 1].trim();
+            if cleaned != "" && !genres.contains(cleaned) {
+                genres.push(cleaned);
+            }
         }
     }
 
@@ -234,17 +271,29 @@ fn get_series(id_or_url, auth) {
         status = "Completed";
     }
 
-    // Extract alternate titles
+    // Extract alternate titles. Match was `<span ...>...</span>NAMES` — the
+    // capture is the trailing text after the closing `</span>`.
     let alt_titles = [];
     let alt_match = regex_find(`<span class="mlabel">Alternate Name\\(s\\):</span>([^<]+)`, html);
     if alt_match != () && alt_match != "" {
-        let alts = alt_match.split(",");
+        let parts = alt_match.split(`</span>`);
+        let names_blob = if parts.len() > 1 { parts[parts.len() - 1] } else { alt_match };
+        let alts = names_blob.split(",");
         for alt in alts {
             let cleaned = alt.trim();
             if cleaned != "" && cleaned != title {
                 alt_titles.push(cleaned);
             }
         }
+    }
+
+    // Extract year from "Released:" field. Pattern: `<a ...>YYYY</a>` after
+    // the `Released:` label span. Year is a 4-digit number 19xx-20xx.
+    let year = ();
+    let year_section = regex_find(`<span class="mlabel">Released:</span>[^<]*<a[^>]*>([12][0-9]{3})`, html);
+    if year_section != "" {
+        let y = regex_find("[12][0-9]{3}", year_section);
+        if y != "" { year = y; }
     }
 
     #{
@@ -258,7 +307,7 @@ fn get_series(id_or_url, auth) {
         status: status,
         genres: genres,
         tags: [],
-        year: (),
+        year: year,
         content_rating: "suggestive",
         url: url,
         extra: #{
