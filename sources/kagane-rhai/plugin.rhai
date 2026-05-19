@@ -456,7 +456,12 @@ fn search_series(query, page, auth) {
     let api_page = page - 1;
     if api_page < 0 { api_page = 0; }
 
-    let body = `{"title":"${query}"}`;
+    // Escape JSON specials in the user query before string-interpolating it
+    // into the request body. A title containing a literal `"` (e.g. a
+    // localised series name with quotes) would otherwise close the JSON
+    // string early and produce malformed POST bodies the API rejected.
+    let escaped = query.replace("\\", "\\\\").replace("\"", "\\\"");
+    let body = `{"title":"${escaped}"}`;
     let data = ();
     try {
         data = api_post(`/search/series?page=${api_page}&size=20`, body);

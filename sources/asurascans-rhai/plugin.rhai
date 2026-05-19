@@ -176,9 +176,11 @@ fn extract_series_from_html(html, query, seen) {
 
 /// Search for series matching query (HTTP with browser fallback)
 fn search_series(query, page, auth) {
-    // Build search URL — Asura supports ?name= for server-side filtering
+    // Build search URL — Asura supports ?name= for server-side filtering.
+    // Always url_encode the user-supplied query; previously raw spaces /
+    // `&` / `#` in the search string broke the URL and returned 0 results.
     let url = if query != "" {
-        `${BASE_URL}/series?name=${query}&page=${page}`
+        `${BASE_URL}/series?name=${url_encode(query)}&page=${page}`
     } else {
         `${BASE_URL}/series?page=${page}`
     };
