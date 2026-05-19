@@ -1,6 +1,6 @@
 ﻿{
-    "version":  76,
-    "updated_at":  "2026-05-19T11:41:55Z",
+    "version":  77,
+    "updated_at":  "2026-05-19T11:43:46Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -609,21 +609,26 @@
                    {
                        "id":  "myanimelist",
                        "name":  "MyAnimeList",
-                       "version":  "2.0.7",
+                       "version":  "2.0.8",
                        "description":  "MyAnimeList metadata provider - provides manga metadata via Jikan API and reading list tracking via official MAL API v2.",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "metadata",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/myanimelist/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/myanimelist/myanimelist_2-0-7.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/myanimelist/myanimelist_2-0-8.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/myanimelist/manifest.json",
-                       "latest_version":  "2.0.7",
+                       "latest_version":  "2.0.8",
                        "versions":  {
                                         "2.0.7":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/myanimelist/myanimelist_2-0-7.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-13T22:15:58Z"
+                                                  },
+                                        "2.0.8":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/myanimelist/myanimelist_2-0-8.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-19T11:43:46Z"
                                                   }
                                     }
                    },

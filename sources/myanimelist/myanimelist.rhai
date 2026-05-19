@@ -27,6 +27,22 @@ fn normalize(s) {
     result
 }
 
+// Map MyAnimeList / Jikan publication status to the canonical UI status set
+// (Ongoing / Completed / Hiatus / Cancelled / Upcoming). Returns the raw
+// value if it doesn't match — same shape as the AniList plugin's
+// normalize_status, kept in sync so UI filters work identically on series
+// pulled from either provider.
+fn normalize_status(raw) {
+    if raw == () || raw == "" { return (); }
+    let s = `${raw}`.to_lower();
+    if s == "publishing" || s == "currently publishing" { return "Ongoing"; }
+    if s == "finished" { return "Completed"; }
+    if s == "on hiatus" || s == "hiatus" { return "Hiatus"; }
+    if s == "discontinued" { return "Cancelled"; }
+    if s == "not yet published" || s == "upcoming" { return "Upcoming"; }
+    raw
+}
+
 // Search for manga series
 fn search_series(query, page, auth) {
     let url = `${BASE_URL}/manga?q=${url_encode(query)}&page=${page}&limit=20`;
@@ -91,7 +107,7 @@ fn search_series(query, page, auth) {
                 cover_url: cover_url,
                 authors: authors,
                 artists: [],
-                status: item.status,
+                status: normalize_status(item.status),
                 genres: genres,
                 tags: [],
                 year: item.published.prop.from.year,
@@ -215,7 +231,7 @@ fn get_series(id_or_url, auth) {
         cover_url: cover_url,
         authors: authors,
         artists: artists,
-        status: item.status,
+        status: normalize_status(item.status),
         genres: genres,
         tags: tags,
         year: year,
@@ -311,7 +327,7 @@ fn get_latest_updates(page, auth) {
             cover_url: cover_url,
             authors: authors,
             artists: [],
-            status: item["status"],
+            status: normalize_status(item["status"]),
             genres: genres,
             tags: [],
             year: year,
@@ -409,7 +425,7 @@ fn get_popular(page, auth) {
             cover_url: cover_url,
             authors: authors,
             artists: [],
-            status: item["status"],
+            status: normalize_status(item["status"]),
             genres: genres,
             tags: [],
             year: year,
