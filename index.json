@@ -1,6 +1,6 @@
 ﻿{
-    "version":  78,
-    "updated_at":  "2026-05-19T11:45:21Z",
+    "version":  79,
+    "updated_at":  "2026-05-19T17:20:27Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -98,16 +98,16 @@
                    {
                        "id":  "danbooru-rhai",
                        "name":  "Danbooru",
-                       "version":  "1.0.9",
+                       "version":  "1.0.10",
                        "description":  "Search and browse Danbooru for high-quality anime artwork. May contain adult content. Note: Due to Cloudflare protection, API credentials may be required - configure in addon settings.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "artwork",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-9.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-10.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru-rhai/manifest.json",
-                       "latest_version":  "1.0.9",
+                       "latest_version":  "1.0.10",
                        "versions":  {
                                         "1.0.7":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-7.zip",
@@ -123,7 +123,12 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-9.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-14T07:10:56Z"
-                                                  }
+                                                  },
+                                        "1.0.10":  {
+                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-10.zip",
+                                                       "changelog":  "Updated",
+                                                       "released_at":  "2026-05-19T17:20:27Z"
+                                                   }
                                     }
                    },
                    {
@@ -294,16 +299,16 @@
                    {
                        "id":  "hypnohub-rhai",
                        "name":  "HypnoHub",
-                       "version":  "1.0.10",
+                       "version":  "1.0.11",
                        "description":  "Search and browse HypnoHub for hypnosis-themed artwork. Contains adult content - 18+ only.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "artwork",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hypnohub-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-10.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-11.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hypnohub-rhai/manifest.json",
-                       "latest_version":  "1.0.10",
+                       "latest_version":  "1.0.11",
                        "versions":  {
                                         "1.0.7":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-7.zip",
@@ -319,6 +324,11 @@
                                                        "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-10.zip",
                                                        "changelog":  "Updated",
                                                        "released_at":  "2026-05-14T07:10:56Z"
+                                                   },
+                                        "1.0.11":  {
+                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-11.zip",
+                                                       "changelog":  "Updated",
+                                                       "released_at":  "2026-05-19T17:20:27Z"
                                                    }
                                     }
                    },
@@ -356,16 +366,16 @@
                    {
                        "id":  "konachan-rhai",
                        "name":  "Konachan",
-                       "version":  "1.0.10",
+                       "version":  "1.0.11",
                        "description":  "Search and browse Konachan for high-quality anime wallpapers and artwork. Contains adult content - 18+ only.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "artwork",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-10.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-11.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan-rhai/manifest.json",
-                       "latest_version":  "1.0.10",
+                       "latest_version":  "1.0.11",
                        "versions":  {
                                         "1.0.7":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-7.zip",
@@ -381,6 +391,11 @@
                                                        "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-10.zip",
                                                        "changelog":  "Updated",
                                                        "released_at":  "2026-05-14T07:10:56Z"
+                                                   },
+                                        "1.0.11":  {
+                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-11.zip",
+                                                       "changelog":  "Updated",
+                                                       "released_at":  "2026-05-19T17:20:27Z"
                                                    }
                                     }
                    },
@@ -687,16 +702,16 @@
                    {
                        "id":  "realbooru-rhai",
                        "name":  "RealBooru",
-                       "version":  "1.1.3",
+                       "version":  "1.1.4",
                        "description":  "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only. Uses HTML scraping since the JSON API is offline.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "artwork",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-3.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-4.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru-rhai/manifest.json",
-                       "latest_version":  "1.1.3",
+                       "latest_version":  "1.1.4",
                        "versions":  {
                                         "1.1.1":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-1.zip",
@@ -712,6 +727,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-3.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-14T07:10:56Z"
+                                                  },
+                                        "1.1.4":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-4.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-19T17:20:27Z"
                                                   }
                                     }
                    },
@@ -749,16 +769,16 @@
                    {
                        "id":  "rule34-rhai",
                        "name":  "Rule34",
-                       "version":  "1.1.2",
+                       "version":  "1.1.3",
                        "description":  "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only. API credentials (User ID + API Key) are REQUIRED.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "artwork",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/rule34-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-2.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-3.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/rule34-rhai/manifest.json",
-                       "latest_version":  "1.1.2",
+                       "latest_version":  "1.1.3",
                        "versions":  {
                                         "1.0.9":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-0-9.zip",
@@ -774,6 +794,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-2.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-14T07:10:56Z"
+                                                  },
+                                        "1.1.3":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-3.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-19T17:20:27Z"
                                                   }
                                     }
                    },
@@ -945,16 +970,16 @@
                    {
                        "id":  "xbooru-rhai",
                        "name":  "XBooru",
-                       "version":  "1.0.9",
+                       "version":  "1.0.10",
                        "description":  "Search and browse XBooru for anime-style artwork. Contains adult content - 18+ only.",
                        "author":  "Tsubaki Community",
                        "technology":  "rhai",
                        "addon_type":  "artwork",
                        "nsfw":  true,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/xbooru-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-9.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-10.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/xbooru-rhai/manifest.json",
-                       "latest_version":  "1.0.9",
+                       "latest_version":  "1.0.10",
                        "versions":  {
                                         "1.0.7":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-7.zip",
@@ -970,7 +995,12 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-9.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-14T07:10:56Z"
-                                                  }
+                                                  },
+                                        "1.0.10":  {
+                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-10.zip",
+                                                       "changelog":  "Updated",
+                                                       "released_at":  "2026-05-19T17:20:27Z"
+                                                   }
                                     }
                    },
                    {

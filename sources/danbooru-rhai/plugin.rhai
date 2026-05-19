@@ -18,6 +18,20 @@ fn safe_get(url) {
     }
 }
 
+/// Normalize Danbooru's rating letter (g/s/q/e) to the canonical UI set.
+/// Danbooru uses single letters: g=general (safe), s=sensitive (suggestive),
+/// q=questionable (suggestive), e=explicit (nsfw). Previous code returned
+/// the raw letter, which UI filters on `safe`/`suggestive`/`nsfw` never
+/// matched.
+fn normalize_rating(raw) {
+    if raw == () || raw == "" { return "nsfw"; }
+    let s = `${raw}`.to_lower().trim();
+    if s == "g" || s == "general" || s == "safe" { return "safe"; }
+    if s == "s" || s == "sensitive" || s == "q" || s == "questionable" { return "suggestive"; }
+    if s == "e" || s == "explicit" { return "nsfw"; }
+    raw
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -135,7 +149,7 @@ fn build_result(post) {
         genres: [],
         tags: tag_list,
         year: (),
-        content_rating: post["rating"],
+        content_rating: normalize_rating(post["rating"]),
         url: `${DANBOORU_API}/posts/${post_id}`,
         extra: #{
             file_url: file_url,

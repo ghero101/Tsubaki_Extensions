@@ -22,6 +22,16 @@ fn safe_get(url) {
     }
 }
 
+/// Normalize Gelbooru-style rating to the canonical safe/suggestive/nsfw set.
+fn normalize_rating(raw) {
+    if raw == () || raw == "" { return "nsfw"; }
+    let s = `${raw}`.to_lower().trim();
+    if s == "safe" || s == "s" || s == "g" || s == "general" { return "safe"; }
+    if s == "questionable" || s == "q" || s == "sensitive" { return "suggestive"; }
+    if s == "explicit" || s == "e" { return "nsfw"; }
+    raw
+}
+
 /// Returns metadata about this content provider
 fn get_source_info() {
     #{
@@ -88,7 +98,7 @@ fn build_result(post) {
         genres: [],
         tags: tag_list,
         year: (),
-        content_rating: post["rating"],
+        content_rating: normalize_rating(post["rating"]),
         url: `https://hypnohub.net/index.php?page=post&s=view&id=${post_id}`,
         extra: #{
             file_url: file_url,

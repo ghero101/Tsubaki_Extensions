@@ -22,6 +22,16 @@ fn safe_get(url) {
     }
 }
 
+/// Normalize Gelbooru-style rating to the canonical safe/suggestive/nsfw set.
+fn normalize_rating(raw) {
+    if raw == () || raw == "" { return "nsfw"; }
+    let s = `${raw}`.to_lower().trim();
+    if s == "safe" || s == "s" || s == "g" || s == "general" { return "safe"; }
+    if s == "questionable" || s == "q" || s == "sensitive" { return "suggestive"; }
+    if s == "explicit" || s == "e" { return "nsfw"; }
+    raw
+}
+
 /// Join array elements with a separator (Rhai doesn't have built-in join)
 fn join_array(arr, separator) {
     if arr.len() == 0 {
@@ -106,7 +116,7 @@ fn build_result(post) {
         genres: [],
         tags: tag_list,
         year: (),
-        content_rating: post["rating"],
+        content_rating: normalize_rating(post["rating"]),
         url: `https://xbooru.com/index.php?page=post&s=view&id=${post_id}`,
         extra: #{
             file_url: file_url,
