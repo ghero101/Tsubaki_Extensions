@@ -404,10 +404,26 @@ fn get_chapters(series_id, auth) {
         let response_text = auth_http_get(url, auth);
         let response = json_parse(response_text);
 
-        if response == () || response.result != "ok" {
+        // Surface the silent-failure reason. Before: when MangaDex returned a
+        // CF challenge, rate-limit response, or error JSON we silently broke
+        // out of the loop and the host saw "0 chapters" with no clue why.
+        // Now the host log shows exactly which response shape we bailed on,
+        // so the FindNewChapters WARN ("scraper returned 0 chapters …") has
+        // a paired plugin-side reason in the same docker log stream.
+        if response == () {
+            let snippet = if response_text.len() > 0 { response_text.sub_string(0, 200) } else { "(empty body)" };
+            print(`[mangadex-rhai] get_chapters: JSON parse failed at offset=${offset} (CF block or HTTP error?) body_snippet=${snippet}`);
+            break;
+        }
+        if response.result != "ok" {
+            let err_kind = if response.errors != () && response.errors.len() > 0 && response.errors[0].detail != () { response.errors[0].detail } else { "(no detail)" };
+            print(`[mangadex-rhai] get_chapters: API result=${response.result} at offset=${offset} error=${err_kind}`);
             break;
         }
         if response.data == () || response.data.len() == 0 {
+            if offset == 0 {
+                print(`[mangadex-rhai] get_chapters: empty data array at offset=0 series_id=${id} (series exists but no published chapters in lang=${lang})`);
+            }
             break;
         }
 
