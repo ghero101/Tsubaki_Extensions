@@ -425,7 +425,10 @@ fn parse_series_list(content) {
         let alts = item["alternate_titles"];
         if alts != () && type_of(alts) == "array" {
             for a in alts {
-                if a != () && a != "" {
+                // Skip empty, duplicates, and the main title — kagane's API
+                // sometimes includes the canonical title in this list which
+                // produced "Title (Title)" double-display in the UI.
+                if a != () && a != "" && a != title && !alt_titles.contains(a) {
                     alt_titles.push(a);
                 }
             }
@@ -508,16 +511,21 @@ fn get_series(id_or_url, auth) {
         title = raw_title;
     }
 
-    // Alt titles
+    // Alt titles. Dedup and exclude the main title.
     let alternate_titles = [];
     let alt_list = data["series_alternate_titles"];
     if alt_list != () && type_of(alt_list) == "array" {
         for alt in alt_list {
             let alt_title = alt["title"];
             if alt_title != () && alt_title != "" {
-                alternate_titles.push(alt_title);
+                // Hoist the first alt to be the main title if we don't have
+                // one yet (preserve previous behaviour). This still happens
+                // *before* the alt is added so we don't push the new title
+                // back onto alt_titles in the same iteration.
                 if title == "" {
                     title = alt_title;
+                } else if alt_title != title && !alternate_titles.contains(alt_title) {
+                    alternate_titles.push(alt_title);
                 }
             }
         }
