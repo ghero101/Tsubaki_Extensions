@@ -108,11 +108,24 @@ fn search_series(query, page, auth) {
             }
         }
 
-        // Extract status
+        // Extract status. MangaUpdates uses "Complete" rather than the
+        // canonical "Completed" the rest of our plugins emit — map it so
+        // UI filters work consistently across sources.
         let status = ();
         let status_val = record["status"];
         if status_val != () {
-            status = status_val;
+            let s_lower = `${status_val}`.to_lower().trim();
+            if s_lower == "complete" {
+                status = "Completed";
+            } else if s_lower == "ongoing" {
+                status = "Ongoing";
+            } else if s_lower == "hiatus" {
+                status = "Hiatus";
+            } else if s_lower == "cancelled" || s_lower == "canceled" || s_lower == "discontinued" {
+                status = "Cancelled";
+            } else {
+                status = status_val;
+            }
         }
 
         series.push(#{
@@ -265,12 +278,26 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Determine status
+    // Determine status. completed=true short-circuits to "Completed".
+    // Otherwise the free-form status_in_country string ("Complete",
+    // "Ongoing", etc.) is mapped to the canonical set the UI filters on,
+    // mirroring search_series.
     let status = ();
     if completed == true {
         status = "Completed";
     } else if status_in_country != () {
-        status = status_in_country;
+        let s_lower = `${status_in_country}`.to_lower().trim();
+        if s_lower == "complete" {
+            status = "Completed";
+        } else if s_lower == "ongoing" {
+            status = "Ongoing";
+        } else if s_lower == "hiatus" {
+            status = "Hiatus";
+        } else if s_lower == "cancelled" || s_lower == "canceled" || s_lower == "discontinued" {
+            status = "Cancelled";
+        } else {
+            status = status_in_country;
+        }
     }
 
     // Extract type (manga, manhwa, etc.)
