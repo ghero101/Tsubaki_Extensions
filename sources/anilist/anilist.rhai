@@ -22,6 +22,33 @@ fn normalize(s) {
     s.to_lower().trim()
 }
 
+// Wrap http_post_json so a network exception falls through to "" and
+// downstream json_parse / data-access checks see "no data" rather than
+// crashing the entire search / get_series / get_latest_updates call.
+// All 7 GraphQL call sites in this plugin route through this helper.
+fn safe_post(query) {
+    try {
+        return http_post_json(BASE_URL, query);
+    } catch {
+        return "";
+    }
+}
+
+// Map AniList status enum (RELEASING / FINISHED / HIATUS / CANCELLED /
+// NOT_YET_RELEASED) to the canonical "Ongoing / Completed / Hiatus /
+// Cancelled / Upcoming" set the UI filters on. Returns () for unknown values
+// so callers can fall through.
+fn normalize_status(raw) {
+    if raw == () || raw == "" { return (); }
+    let s = `${raw}`.to_upper();
+    if s == "RELEASING" { return "Ongoing"; }
+    if s == "FINISHED" { return "Completed"; }
+    if s == "HIATUS" { return "Hiatus"; }
+    if s == "CANCELLED" { return "Cancelled"; }
+    if s == "NOT_YET_RELEASED" { return "Upcoming"; }
+    raw
+}
+
 // Search for manga series
 fn search_series(query, page, auth) {
     let graphql_query = `{
@@ -29,7 +56,7 @@ fn search_series(query, page, auth) {
         "variables": {"search": "${query}", "page": ${page}, "perPage": 20}
     }`;
 
-    let response = http_post_json(BASE_URL, graphql_query);
+    let response = safe_post(graphql_query);
     let json = json_parse(response);
 
     let series = [];
@@ -80,7 +107,7 @@ fn search_series(query, page, auth) {
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
-                status: media.status,
+                status: normalize_status(media.status),
                 genres: media.genres,
                 tags: [],
                 year: media.startDate.year,
@@ -114,7 +141,7 @@ fn get_series(id_or_url, auth) {
         "variables": {"id": ${id}}
     }`;
 
-    let response = http_post_json(BASE_URL, graphql_query);
+    let response = safe_post(graphql_query);
     let json = json_parse(response);
     let media = json.data.Media;
 
@@ -193,7 +220,7 @@ fn get_series(id_or_url, auth) {
         cover_url: cover_url,
         authors: authors,
         artists: artists,
-        status: media.status,
+        status: normalize_status(media.status),
         genres: media.genres,
         tags: tags,
         year: media.startDate.year,
@@ -215,7 +242,7 @@ fn get_latest_updates(page, auth) {
         "variables": {"page": ${page + 1}, "perPage": 25}
     }`;
 
-    let response = http_post_json(BASE_URL, graphql_query);
+    let response = safe_post(graphql_query);
     let json = json_parse(response);
 
     let series = [];
@@ -273,7 +300,7 @@ fn get_latest_updates(page, auth) {
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
-                status: media["status"],
+                status: normalize_status(media["status"]),
                 genres: genres,
                 tags: [],
                 year: media["startDate"]["year"],
@@ -297,7 +324,7 @@ fn get_popular(page, auth) {
         "variables": {"page": ${page + 1}, "perPage": 25}
     }`;
 
-    let response = http_post_json(BASE_URL, graphql_query);
+    let response = safe_post(graphql_query);
     let json = json_parse(response);
 
     let series = [];
@@ -347,7 +374,7 @@ fn get_popular(page, auth) {
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
-                status: media["status"],
+                status: normalize_status(media["status"]),
                 genres: genres,
                 tags: [],
                 year: media["startDate"]["year"],
@@ -374,7 +401,7 @@ fn get_all_manga(page, auth) {
         "variables": {"page": ${page + 1}, "perPage": 50}
     }`;
 
-    let response = http_post_json(BASE_URL, graphql_query);
+    let response = safe_post(graphql_query);
     let json = json_parse(response);
 
     let series = [];
@@ -435,7 +462,7 @@ fn get_all_manga(page, auth) {
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
-                status: media["status"],
+                status: normalize_status(media["status"]),
                 genres: genres,
                 tags: [],
                 year: media["startDate"]["year"],
@@ -473,7 +500,7 @@ fn resolve_id(title, alt_titles) {
             "variables": {"search": "${q}"}
         }`;
 
-        let response = http_post_json(BASE_URL, graphql_query);
+        let response = safe_post(graphql_query);
         let json = json_parse(response);
 
         if json.data != () && json.data.Media != () {
@@ -889,7 +916,7 @@ fn get_recommendations(manga_id, auth) {
         "variables": {"id": ${manga_id}}
     }`;
 
-    let response = http_post_json(BASE_URL, query);
+    let response = safe_post(query);
     let json = json_parse(response);
 
     let recommendations = [];

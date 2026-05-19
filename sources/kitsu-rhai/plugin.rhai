@@ -285,7 +285,10 @@ fn get_series(id_or_url, auth) {
     // Get description
     let description = attributes["synopsis"];
 
-    // Get status
+    // Get status. Map *all* Kitsu API values — search_series already mapped
+    // unreleased + upcoming, but get_series was passing them through raw,
+    // so UI filtering on the canonical "Ongoing/Completed/Hiatus" set
+    // missed any series in those states.
     let status = attributes["status"];
     if status == "current" {
         status = "Ongoing";
@@ -293,6 +296,10 @@ fn get_series(id_or_url, auth) {
         status = "Completed";
     } else if status == "tba" {
         status = "TBA";
+    } else if status == "unreleased" {
+        status = "Unreleased";
+    } else if status == "upcoming" {
+        status = "Upcoming";
     }
 
     // Get year
