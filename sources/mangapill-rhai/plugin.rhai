@@ -137,23 +137,36 @@ fn parse_manga_card(card_html) {
 
     // Extract type, status, year if available
     let type_text = "";
-    let status = "";
-    let year = "";
+    let status = ();
+    let year = ();
 
-    // Look for metadata divs
+    // Look for metadata divs. Previous code stored the full div text
+    // ("status: publishing") as the status value — UI status filters never
+    // matched. Map the substring marker to the canonical Ongoing/Completed/
+    // Hiatus / Cancelled set instead.
     let divs = element_select(card_html, "div");
     for div in divs {
         let text = element_text(div).to_lower();
         if text.contains("manga") || text.contains("manhwa") || text.contains("manhua") {
             type_text = text;
         }
-        if text.contains("publishing") || text.contains("finished") || text.contains("hiatus") {
-            status = text;
+        if status == () {
+            if text.contains("publishing") || text.contains("ongoing") {
+                status = "Ongoing";
+            } else if text.contains("finished") || text.contains("completed") {
+                status = "Completed";
+            } else if text.contains("hiatus") {
+                status = "Hiatus";
+            } else if text.contains("cancelled") || text.contains("canceled") || text.contains("discontinued") {
+                status = "Cancelled";
+            }
         }
         // Year is usually 4 digits
-        let year_match = regex_find("(19|20)\\d{2}", text);
-        if year_match != "" {
-            year = year_match;
+        if year == () {
+            let year_match = regex_find("(19|20)\\d{2}", text);
+            if year_match != "" {
+                year = year_match;
+            }
         }
     }
 
@@ -228,7 +241,7 @@ fn parse_manga_page(html, manga_id, page_url) {
 
     // Extract metadata using regex (Type, Status, Year)
     let type_text = "";
-    let status = "";
+    let status = ();
     let year = ();
 
     // Type: <label class="text-secondary">Type</label> followed by <div>manga</div>
@@ -238,11 +251,26 @@ fn parse_manga_page(html, manga_id, page_url) {
         type_text = type_text.replace("<div>", "").replace("</div>", "").trim();
     }
 
-    // Status
+    // Status — map MangaPill's "Publishing" / "Finished" / "Hiatus" /
+    // "Discontinued" labels to the canonical Ongoing / Completed / Hiatus /
+    // Cancelled set the rest of the catalog uses. Previous code passed
+    // through the raw label so UI status filters never matched.
     let status_result = regex_find(">Status</label>\\s*<div>([^<]+)</div>", html);
     if status_result != "" {
-        status = regex_find("<div>([^<]+)</div>", status_result);
-        status = status.replace("<div>", "").replace("</div>", "").trim();
+        let raw_status = regex_find("<div>([^<]+)</div>", status_result);
+        raw_status = raw_status.replace("<div>", "").replace("</div>", "").trim();
+        let lower = raw_status.to_lower();
+        if lower == "publishing" || lower == "ongoing" {
+            status = "Ongoing";
+        } else if lower == "finished" || lower == "completed" {
+            status = "Completed";
+        } else if lower == "hiatus" || lower == "on hiatus" {
+            status = "Hiatus";
+        } else if lower == "discontinued" || lower == "cancelled" || lower == "canceled" {
+            status = "Cancelled";
+        } else if raw_status != "" {
+            status = raw_status;
+        }
     }
 
     // Year
