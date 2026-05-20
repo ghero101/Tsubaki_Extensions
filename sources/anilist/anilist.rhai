@@ -34,6 +34,39 @@ fn safe_post(query) {
     }
 }
 
+// Clean up AniList description. The API's `asHtml: false` strips most HTML
+// but leaves <br> tags, markdown bold (__text__), and AniList's own spoiler
+// syntax (~!hidden!~) in place. Pre-cleanup the UI rendered all of these
+// verbatim, which looked broken.
+fn clean_description(raw) {
+    if raw == () || raw == "" { return raw; }
+    let s = `${raw}`;
+    // Newlines
+    s = s.replace("<br>", "\n").replace("<br/>", "\n").replace("<br />", "\n");
+    // Markdown bold/italic — keep the text, drop the markers
+    s = s.replace("__", "").replace("**", "");
+    // Common HTML entities AniList sometimes leaves in
+    s = s.replace("&amp;", "&").replace("&nbsp;", " ").replace("&quot;", "\"").replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">");
+    // AniList spoiler tags. Strip whole `~!...!~` regions — users can
+    // toggle spoilers in the source UI; here they're noise.
+    let cleaned = "";
+    let i = 0;
+    let in_spoiler = false;
+    while i < s.len() {
+        if !in_spoiler && i + 1 < s.len() && s.sub_string(i, 2) == "~!" {
+            in_spoiler = true;
+            i += 2;
+        } else if in_spoiler && i + 1 < s.len() && s.sub_string(i, 2) == "!~" {
+            in_spoiler = false;
+            i += 2;
+        } else {
+            if !in_spoiler { cleaned += s.sub_string(i, 1); }
+            i += 1;
+        }
+    }
+    cleaned.trim()
+}
+
 // Map AniList status enum (RELEASING / FINISHED / HIATUS / CANCELLED /
 // NOT_YET_RELEASED) to the canonical "Ongoing / Completed / Hiatus /
 // Cancelled / Upcoming" set the UI filters on. Returns () for unknown values
@@ -103,7 +136,7 @@ fn search_series(query, page, auth) {
                 id: `${media.id}`,
                 title: title,
                 alternate_titles: alt_titles,
-                description: media.description,
+                description: clean_description(media.description),
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
@@ -216,7 +249,7 @@ fn get_series(id_or_url, auth) {
         id: `${media.id}`,
         title: title,
         alternate_titles: alt_titles,
-        description: media.description,
+        description: clean_description(media.description),
         cover_url: cover_url,
         authors: authors,
         artists: artists,
@@ -296,7 +329,7 @@ fn get_latest_updates(page, auth) {
                 id: media["id"].to_string(),
                 title: title,
                 alternate_titles: alt_titles,
-                description: media["description"],
+                description: clean_description(media["description"]),
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
@@ -370,7 +403,7 @@ fn get_popular(page, auth) {
                 id: media["id"].to_string(),
                 title: title,
                 alternate_titles: [],
-                description: media["description"],
+                description: clean_description(media["description"]),
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
@@ -458,7 +491,7 @@ fn get_all_manga(page, auth) {
                 id: media["id"].to_string(),
                 title: title,
                 alternate_titles: alt_titles,
-                description: media["description"],
+                description: clean_description(media["description"]),
                 cover_url: cover_url,
                 authors: [],
                 artists: [],
