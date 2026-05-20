@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "mangabuddy",
   "name": "MangaBuddy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MangaBuddy - Popular manga, manhwa, and manhua aggregator",
   "author": {"name": "Tsubaki Team", "url": "https://github.com/tsubaki"},
   "license": "MIT",
