@@ -1,6 +1,6 @@
 ﻿{
-    "version":  85,
-    "updated_at":  "2026-05-20T12:28:22Z",
+    "version":  86,
+    "updated_at":  "2026-05-20T12:31:15Z",
     "addons":  [
                    {
                        "id":  "anilist",
@@ -477,16 +477,16 @@
                    {
                        "id":  "mangadex-rhai",
                        "name":  "MangaDex",
-                       "version":  "1.8.4",
+                       "version":  "1.8.5",
                        "description":  "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
                        "author":  "Tsubaki Team",
                        "technology":  "rhai",
                        "addon_type":  "scraper",
                        "nsfw":  false,
                        "icon_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangadex-rhai/icon.png",
-                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-4.zip",
+                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-5.zip",
                        "manifest_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangadex-rhai/manifest.json",
-                       "latest_version":  "1.8.4",
+                       "latest_version":  "1.8.5",
                        "versions":  {
                                         "1.6.3":  {
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-6-3.zip",
@@ -507,6 +507,11 @@
                                                       "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-4.zip",
                                                       "changelog":  "Updated",
                                                       "released_at":  "2026-05-20T12:28:22Z"
+                                                  },
+                                        "1.8.5":  {
+                                                      "download_url":  "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-5.zip",
+                                                      "changelog":  "Updated",
+                                                      "released_at":  "2026-05-20T12:31:15Z"
                                                   }
                                     }
                    },

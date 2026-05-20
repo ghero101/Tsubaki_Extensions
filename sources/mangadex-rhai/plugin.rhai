@@ -211,6 +211,19 @@ fn map_status(status) {
     return status;
 }
 
+/// Map MangaDex's contentRating ("safe" / "suggestive" / "erotica" /
+/// "pornographic") to the canonical safe/suggestive/nsfw set the UI
+/// filters on. Pre-1.8.5 the plugin passed "erotica" and "pornographic"
+/// through raw — adult content slipped past the NSFW filter entirely.
+fn map_content_rating(rating) {
+    if rating == () || rating == "" { return "safe"; }
+    let s = `${rating}`.to_lower().trim();
+    if s == "safe" { return "safe"; }
+    if s == "suggestive" { return "suggestive"; }
+    if s == "erotica" || s == "pornographic" || s == "nsfw" { return "nsfw"; }
+    rating
+}
+
 /// Build content rating query parameters based on settings.
 /// Returns the query string portion for content ratings.
 fn build_content_rating_params() {
@@ -292,7 +305,7 @@ fn build_series_result(manga, preferred_lang) {
         genres: genres,
         tags: all_tags,
         year: attrs.year,
-        content_rating: attrs.contentRating,
+        content_rating: map_content_rating(attrs.contentRating),
         url: `https://mangadex.org/title/${id}`,
         extra: #{
             original_language: attrs.originalLanguage,
