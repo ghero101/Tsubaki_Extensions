@@ -52,7 +52,7 @@ fn get_mobile_headers() {
 /// this plugin previously had no protection.
 fn safe_get(url) {
     try {
-        return safe_get(url);
+        return http_get_with_headers(url, get_headers());
     } catch {
         return "";
     }
