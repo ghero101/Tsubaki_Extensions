@@ -25,7 +25,7 @@ fn get_headers() {
 /// get_series / get_chapters calls because the call sites had no guard.
 fn api_get(url) {
     try {
-        return api_get(url);
+        return http_get_with_headers(url, get_headers());
     } catch {
         return "";
     }
