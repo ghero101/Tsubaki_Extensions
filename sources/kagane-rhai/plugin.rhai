@@ -1,8 +1,14 @@
 // Kagane Scraper Add-on (Rhai)
-// Hybrid scraper for kagane.org — Yuzuki API + FlareSolverr + Browser rendering
+// Hybrid scraper for kagane.to — Yuzuki API + FlareSolverr + Browser rendering
+//
+// NOTE (2026-06): kagane migrated kagane.org → kagane.to (and the API host
+// yuzuki.kagane.org → yuzuki.kagane.to). The old yuzuki.kagane.org now hard-
+// blocks datacenter IPs at Cloudflare (FlareSolverr reports "IP banned"),
+// which silently emptied browse/search. The new yuzuki.kagane.to host serves
+// the same JSON API and responds directly (no Cloudflare challenge).
 //
 // Architecture:
-//   - Series metadata & chapters: Direct Yuzuki API (https://yuzuki.kagane.org/api/v2/)
+//   - Series metadata & chapters: Direct Yuzuki API (https://yuzuki.kagane.to/api/v2/)
 //   - Browse/homepage: FlareSolverr renders the Cloudflare-protected page
 //   - Search: Direct Yuzuki API (POST /search/series)
 //   - Chapter pages: Browser with Widevine DRM → extract CDN URLs from performance log
@@ -14,10 +20,10 @@
 //   Search:    /search?q={query}
 //
 // IDs are UUIDs (e.g., 019c4756-d998-787a-bf75-9f095ea56701)
-// Cover images: https://yuzuki.kagane.org/api/v2/image/{UUID}/compressed
+// Cover images: https://yuzuki.kagane.to/api/v2/image/{UUID}/compressed
 
-const BASE_URL = "https://kagane.org";
-const API_BASE = "https://yuzuki.kagane.org/api/v2";
+const BASE_URL = "https://kagane.to";
+const API_BASE = "https://yuzuki.kagane.to/api/v2";
 
 // ============================================================================
 // API Helpers
@@ -27,8 +33,8 @@ fn api_headers() {
     #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "Accept": "application/json",
-        "Origin": "https://kagane.org",
-        "Referer": "https://kagane.org/"
+        "Origin": "https://kagane.to",
+        "Referer": "https://kagane.to/"
     }
 }
 
@@ -97,7 +103,7 @@ fn has_real_content(html) {
     html.len() > 60000 && (
         html.contains("data-slot=\"carousel-item\"") ||
         html.contains("/series/019") ||
-        html.contains("yuzuki.kagane.org") ||
+        html.contains("yuzuki.kagane.to") ||
         html.contains("font-bold") && html.contains("/series/")
     )
 }
