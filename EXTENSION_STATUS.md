@@ -26,7 +26,7 @@ konachan, realbooru, safebooru, xbooru.
 | comix-rhai | browse, search, chapters | page images behind a JS anti-bot token (not Rhai-doable) |
 | heancms-rhai | free chapters | paywalled chapters return 0 (need account) |
 | nhentai-rhai | discover, chapters | pages flaky — per-page FlareSolverr solve times out intermittently (use **nhentai-scraper**, which is reliable) |
-| manhuafast | discover | chapters still fail at runtime — the FlareSolverr series-render path didn't extract the lazy Madara chapter list in practice (needs another pass; deprioritized) |
+| manhuafast | discover | chapters fail — Madara loads the chapter list via post-load AJAX; the `flaresolverr_get` host fn captures the page BEFORE that AJAX runs (a direct FS probe with render-wait DOES return 24 chapters), and there's no FS-POST / wait-for-selector host primitive to get them reliably. Host-limited, not a plugin bug. Added a defensive regex fallback (no-op until the HTML contains the hrefs). |
 
 ### Infra-blocked / dead (not fixable in-plugin)
 | Extension | Reason |

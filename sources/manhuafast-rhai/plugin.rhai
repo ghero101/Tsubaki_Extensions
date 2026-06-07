@@ -975,6 +975,44 @@ fn parse_chapter_list(html, series_id, seen) {
         });
     }
 
+    // Regex fallback: FlareSolverr-rendered DOMs sometimes don't expose the
+    // chapter <li> to html_select (Madara lazy-load markup), even though the
+    // chapter hrefs ARE present in the HTML. Pull them directly, restricted to
+    // THIS series' slug so we never scrape sidebar links to other series.
+    if chapters.len() == 0 {
+        let slug = series_id;
+        if series_id.contains("/manga/") {
+            slug = extract_slug(series_id);
+        }
+        if slug != "" {
+            let pat = "href=\"([^\"]*/" + slug + "/[^\"]*chapter[^\"]*)\"";
+            let href_matches = regex_find_all(pat, html);
+            for hm in href_matches {
+                let href = hm.replace("href=\"", "").replace("\"", "").trim();
+                if href == "" || !href.contains("chapter") { continue; }
+                let chapter_num = extract_chapter_number(href);
+                if chapter_num == "0" || chapter_num == "" { continue; }
+                if seen.contains(chapter_num) { continue; }
+                seen[chapter_num] = true;
+                let chapter_url = href;
+                if !href.starts_with("http") { chapter_url = make_absolute_url(href); }
+                chapters.push(#{
+                    id: chapter_url,
+                    series_id: series_id,
+                    number: chapter_num,
+                    title: (),
+                    volume: (),
+                    language: "en",
+                    scanlator: "ManhuaFast",
+                    url: chapter_url,
+                    published_at: (),
+                    page_count: (),
+                    extra: #{}
+                });
+            }
+        }
+    }
+
     chapters.reverse();
 
     chapters
