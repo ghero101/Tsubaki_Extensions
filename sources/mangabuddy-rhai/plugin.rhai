@@ -1,56 +1,46 @@
 // MangaBuddy Scraper Add-on (Rhai)
-// HTTP-only scraper for mangabuddy.com (MadTheme-based platform)
+// HTTP-only scraper for MangaK (formerly MangaBuddy)
 //
-// Website: https://mangabuddy.com
-// Features: Search, Browse, Series Details, Chapters, Page Images
+// Website: https://mangak.io   (mangabuddy.com 301-redirects here)
+// Backend: Next.js SPA. Every listing/detail/reader page is server-rendered
+//          with a `<script id="__NEXT_DATA__" type="application/json">` blob
+//          that contains the full, structured data. We parse that JSON instead
+//          of scraping the (Tailwind, class-hashed) DOM.
 //
-// URL Patterns:
-//   Search:   /search?q={query}&page={page}
-//   Browse:   /search?page={page}&sort=views (or sort=updated)
-//   Series:   /{slug}
-//   Chapters: /api/manga/{slug}/chapters?source=detail
-//   Reader:   /{slug}/chapter-{N}
+// URL / data map (confirmed live 2026-06-07):
+//   Browse:   /search?sort={popular|latest|views|rating|...}&page={n}
+//             -> props.pageProps.ssrItems[]  + props.pageProps.ssrPagination
+//   Search:   /search?q={query}&page={n}     (server-side filtered)
+//             -> same ssrItems / ssrPagination shape
+//   Series:   /{slug}                         e.g. /jinx
+//             -> props.pageProps.initialManga  (+ .chapters[] sibling)
+//   Reader:   /{slug}/{chapter-slug}          e.g. /jinx/bounus-92-5
+//             -> props.pageProps.{...}.images[]  (array of full image URLs)
 //
-// MadTheme selectors:
-//   Search items:  .book-detailed-item
-//   Series title:  .detail h1
-//   Alt title:     .detail h2
-//   Cover:         #cover img (data-src attribute)
-//   Description:   .summary .content
-//   Authors:       .detail .meta p (containing "Author")
-//   Genres:        .detail .meta p (containing "Genre")
-//   Status:        .detail .meta p (containing "Status")
-//   Chapter list:  li > a (from API response)
-//   Chapter title: strong (inside a)
-//   Page images:   var chapImages = '...' (comma-separated) + var mainServer
-//   Fallback imgs: #chapter-images img, .chapter-image[data-src]
+//   ssrItem / initialManga slug: take last path segment of `url` (e.g. "/jinx" -> "jinx")
+//   chapter id  : chapter `url` minus leading slash (e.g. "jinx/bounus-92-5")
+//   page images : full URLs on rx.*.org CDN; REQUIRE Referer: https://mangak.io/
 //
-// Available Rhai APIs:
-//   http_get(url) -> string
+// Available Rhai APIs used:
 //   http_get_with_headers(url, headers) -> string
-//   html_select(html, selector) -> array
-//   html_select_first(html, selector) -> string
-//   element_text(html) -> string
-//   element_attr(html, attr) -> string
-//   element_select(html, selector) -> array
-//   element_select_first(html, selector) -> string
+//   http_get(url) -> string
+//   json_parse(text) -> dynamic
 //   regex_find(pattern, text) -> string
-//   regex_find_all(pattern, text) -> array
 //   url_encode(text) -> string
-//   parse_int(text) -> int
+//   parse_int / parse_float
 
-const BASE_URL = "https://mangabuddy.com";
+const BASE_URL = "https://mangak.io";
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
-/// Build request headers for MangaBuddy
+/// Build request headers
 fn get_headers() {
     #{
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Language": "en-US,en;q=0.9",
         "Referer": BASE_URL
     }
 }
@@ -67,198 +57,61 @@ fn fetch_html(url) {
             html = "";
         }
     }
+    if html == () { html = ""; }
     html
 }
 
-/// Strip HTML tags from text
-fn strip_html(text) {
-    if text == () {
-        return "";
+/// Extract and parse the __NEXT_DATA__ JSON blob from a server-rendered page.
+/// Returns the parsed `props.pageProps` map, or () on failure.
+fn extract_page_props(html) {
+    if html == () || html == "" {
+        return ();
     }
 
-    let result = text;
-
-    // Replace common HTML entities and tags
-    result = result.replace("<p>", "");
-    result = result.replace("</p>", "\n");
-    result = result.replace("<br>", "\n");
-    result = result.replace("<br/>", "\n");
-    result = result.replace("<br />", "\n");
-    result = result.replace("&nbsp;", " ");
-    result = result.replace("&amp;", "&");
-    result = result.replace("&lt;", "<");
-    result = result.replace("&gt;", ">");
-    result = result.replace("&quot;", "\"");
-    result = result.replace("&#39;", "'");
-    result = result.replace("&apos;", "'");
-
-    // Remove remaining HTML tags
-    loop {
-        let start = result.index_of("<");
-        if start == () {
-            break;
-        }
-        let end = result.index_of(">");
-        if end == () {
-            break;
-        }
-        if end > start {
-            result = result.sub_string(0, start) + result.sub_string(end + 1);
-        } else {
-            break;
-        }
+    // Locate the opening of the __NEXT_DATA__ script tag.
+    let marker = "__NEXT_DATA__\"";
+    let m_idx = html.index_of(marker);
+    if m_idx == () || m_idx < 0 {
+        return ();
     }
 
-    result.trim()
-}
-
-/// Parse float from string (e.g., "123.5" -> 123.5)
-fn parse_float_str(s) {
-    if s == () || s == "" { return 0.0; }
-    let cleaned = "";
-    for c in s.chars() {
-        if (c >= '0' && c <= '9') || c == '.' {
-            cleaned += c;
-        }
+    // Find the start of the JSON object: first '{' after the '>' that closes the tag.
+    let gt_idx = html.index_of(">", m_idx);
+    if gt_idx == () || gt_idx < 0 {
+        return ();
     }
-    if cleaned == "" { return 0.0; }
-
-    let result = 0.0;
-    let parts = cleaned.split(".");
-    if parts.len() > 0 && parts[0] != "" {
-        result = parse_int(parts[0]);
-    }
-    if parts.len() > 1 && parts[1] != "" {
-        let decimal = parse_int(parts[1]);
-        let divisor = 1.0;
-        for i in 0..parts[1].len() {
-            divisor *= 10.0;
-        }
-        result += decimal / divisor;
-    }
-    result
-}
-
-/// Extract the manga slug from a URL path
-/// e.g., "/solo-leveling" -> "solo-leveling"
-///       "/one-piece/chapter-1" -> "one-piece"
-///       "https://mangabuddy.com/solo-leveling" -> "solo-leveling"
-fn extract_slug(url) {
-    let path = url;
-
-    // Remove base URL if present
-    if path.contains("mangabuddy.com") {
-        let parts = path.split("mangabuddy.com");
-        if parts.len() > 1 {
-            path = parts[1];
-        }
+    let json_start = html.index_of("{", gt_idx);
+    if json_start == () || json_start < 0 {
+        return ();
     }
 
-    // Remove leading slash
-    if path.starts_with("/") {
-        path = path.sub_string(1);
+    // The JSON ends at "</script>" following json_start.
+    let end_idx = html.index_of("</script>", json_start);
+    if end_idx == () || end_idx < 0 {
+        return ();
     }
 
-    // Remove query params
-    if path.contains("?") {
-        path = path.split("?")[0];
+    let json_str = html.sub_string(json_start, end_idx - json_start);
+
+    let parsed = ();
+    try {
+        parsed = json_parse(json_str);
+    } catch {
+        return ();
     }
 
-    // Remove trailing slash
-    if path.ends_with("/") {
-        path = path.sub_string(0, path.len() - 1);
+    if type_of(parsed) != "map" {
+        return ();
     }
-
-    // Take only the first path segment (the series slug)
-    let parts = path.split("/");
-    if parts.len() > 0 && parts[0] != "" {
-        return parts[0];
+    let props = parsed["props"];
+    if type_of(props) != "map" {
+        return ();
     }
-
-    path
-}
-
-/// Extract chapter number from URL or title text
-fn extract_chapter_number(url, title) {
-    // From URL: /series-slug/chapter-123 or chapter-123.5
-    let result = regex_find("chapter-(\\d+\\.?\\d*)", url);
-    if result != "" {
-        let num = result.replace("chapter-", "");
-        if num != "" {
-            return num;
-        }
+    let page_props = props["pageProps"];
+    if type_of(page_props) != "map" {
+        return ();
     }
-
-    // From title: "Chapter 123" or "Chapter 123: Title"
-    let title_lower = title.to_lower();
-    if title_lower.contains("chapter") {
-        let after = "";
-        let parts = title_lower.split("chapter");
-        if parts.len() > 1 {
-            after = parts[1].trim();
-        }
-        let num_str = "";
-        for c in after.chars() {
-            if (c >= '0' && c <= '9') || c == '.' {
-                num_str += c;
-            } else if num_str.len() > 0 {
-                break;
-            }
-        }
-        if num_str != "" {
-            return num_str;
-        }
-    }
-
-    // From title: "Vol.2 Chapter 143"
-    if title_lower.contains("vol") {
-        let ch_match = regex_find("chapter\\s*(\\d+\\.?\\d*)", title_lower);
-        if ch_match != "" {
-            let num = ch_match.replace("chapter", "").trim();
-            if num != "" {
-                return num;
-            }
-        }
-    }
-
-    "0"
-}
-
-/// Extract volume number from chapter title if present
-fn extract_volume(title) {
-    let title_lower = title.to_lower();
-    if title_lower.contains("vol") {
-        let vol_match = regex_find("vol\\.?\\s*(\\d+)", title_lower);
-        if vol_match != "" {
-            let num = regex_find("\\d+", vol_match);
-            if num != "" {
-                return num;
-            }
-        }
-    }
-    ()
-}
-
-/// Extract chapter title from full chapter text
-/// e.g., "Chapter 110: Season 1 Finale" -> "Season 1 Finale"
-///       "Chapter 123" -> ()
-fn extract_chapter_title(text) {
-    if text.contains(":") {
-        let parts = text.split(":");
-        if parts.len() > 1 {
-            // Join everything after the first colon
-            let title_text = "";
-            for i in 1..parts.len() {
-                if title_text != "" { title_text += ":"; }
-                title_text += parts[i];
-            }
-            title_text = title_text.trim();
-            if title_text != "" && title_text.len() > 1 {
-                return title_text;
-            }
-        }
-    }
-    ()
+    page_props
 }
 
 /// Make URL absolute
@@ -278,9 +131,74 @@ fn make_absolute_url(url) {
     `${BASE_URL}/${url}`
 }
 
+/// Extract the manga slug (last path segment) from a site URL/path.
+/// e.g. "/jinx" -> "jinx", "https://mangak.io/jinx" -> "jinx"
+fn slug_from_url(url) {
+    if url == () { return ""; }
+    let path = url;
+
+    if path.contains("://") {
+        let parts = path.split("://");
+        if parts.len() > 1 {
+            path = parts[1];
+            // drop host
+            let seg = path.split("/");
+            if seg.len() > 1 {
+                path = "";
+                for i in 1..seg.len() {
+                    path += "/" + seg[i];
+                }
+            } else {
+                path = "";
+            }
+        }
+    }
+
+    if path.contains("?") {
+        path = path.split("?")[0];
+    }
+    if path.starts_with("/") {
+        path = path.sub_string(1);
+    }
+    if path.ends_with("/") {
+        path = path.sub_string(0, path.len() - 1);
+    }
+    // Series slug is the single segment (series URLs are /{slug}); if a longer
+    // path is given, take the FIRST segment as the series slug.
+    let parts = path.split("/");
+    if parts.len() > 0 && parts[0] != "" {
+        return parts[0];
+    }
+    path
+}
+
+/// Strip the leading slash from a chapter URL to form a stable chapter id.
+/// e.g. "/jinx/bounus-92-5" -> "jinx/bounus-92-5"
+fn chapter_id_from_url(url) {
+    if url == () { return ""; }
+    let path = url;
+    if path.contains("://") {
+        let parts = path.split("://");
+        if parts.len() > 1 {
+            let seg = parts[1].split("/");
+            path = "";
+            for i in 1..seg.len() {
+                if path != "" { path += "/"; }
+                path += seg[i];
+            }
+            return path;
+        }
+    }
+    if path.starts_with("/") {
+        path = path.sub_string(1);
+    }
+    path
+}
+
 /// Map status text to standard format
 fn map_status(text) {
-    let lower = text.to_lower();
+    if text == () { return (); }
+    let lower = `${text}`.to_lower();
     if lower.contains("ongoing") || lower.contains("releasing") {
         return "Ongoing";
     }
@@ -294,6 +212,53 @@ fn map_status(text) {
         return "Cancelled";
     }
     ()
+}
+
+/// Pull a string field from a map, returning "" when absent/null
+fn get_str(map, key) {
+    if type_of(map) != "map" { return ""; }
+    let v = map[key];
+    if v == () { return ""; }
+    `${v}`
+}
+
+/// Convert a chapter number (int/float) to a clean STRING.
+/// 164 -> "164", 85.5 -> "85.5"
+fn num_to_str(n) {
+    if n == () { return ""; }
+    let t = type_of(n);
+    if t == "i64" || t == "int" {
+        return `${n}`;
+    }
+    if t == "f64" || t == "float" {
+        // Drop trailing ".0" for whole numbers
+        let i = n.to_int();
+        let frac = n - i.to_float();
+        if frac < 0.0001 && frac > -0.0001 {
+            return `${i}`;
+        }
+        return `${n}`;
+    }
+    `${n}`
+}
+
+/// Build a search/browse series-card map from an ssrItem object
+fn item_to_series(item) {
+    let url = get_str(item, "url");
+    let slug = slug_from_url(url);
+    if slug == "" {
+        slug = get_str(item, "slug");
+    }
+    let title = get_str(item, "name");
+    let cover = make_absolute_url(get_str(item, "cover"));
+
+    #{
+        id: slug,
+        title: title,
+        url: make_absolute_url(url),
+        cover_url: cover,
+        status: map_status(get_str(item, "status"))
+    }
 }
 
 // ============================================================================
@@ -315,113 +280,72 @@ fn get_source_info() {
     }
 }
 
-/// Search for manga matching a query
-fn search_series(query, page, auth) {
-    let encoded_query = url_encode(query);
-    let url = `${BASE_URL}/search?q=${encoded_query}&page=${page}`;
-
+/// Internal: fetch a /search listing page and turn ssrItems into series cards.
+/// Returns #{ series, has_more }.
+fn fetch_listing(url, page) {
     let html = fetch_html(url);
+    let props = extract_page_props(html);
 
-    if html == "" {
+    if props == () {
         return #{ series: [], has_more: false, total: 0 };
     }
 
     let series = [];
     let seen = #{};
 
-    // MadTheme uses .book-detailed-item for search results
-    let items = html_select(html, ".book-detailed-item");
-
-    for item in items {
-        // Get the primary link from the thumbnail area
-        let link = element_select_first(item, ".thumb a");
-        if link == "" {
-            link = element_select_first(item, "a");
+    let items = props["ssrItems"];
+    if type_of(items) == "array" {
+        for item in items {
+            if type_of(item) != "map" { continue; }
+            let card = item_to_series(item);
+            if card.id == "" || card.title == "" { continue; }
+            if seen[card.id] != () { continue; }
+            seen[card.id] = true;
+            series.push(card);
         }
-        if link == "" {
-            continue;
-        }
+    }
 
-        let href = element_attr(link, "href");
-        if href == () || href == "" {
-            continue;
-        }
-
-        let slug = extract_slug(href);
-        if slug == "" || slug == "search" || slug == "az-list" {
-            continue;
-        }
-
-        // Skip duplicates
-        if seen[slug] != () {
-            continue;
-        }
-        seen[slug] = true;
-
-        // Get title from link title attribute or text
-        let title = element_attr(link, "title");
-        if title == () || title == "" {
-            // Try the title from a heading element
-            let title_el = element_select_first(item, "h3 a, h2 a, .title a");
-            if title_el != "" {
-                title = element_text(title_el).trim();
+    // Pagination from ssrPagination.has_next / total_pages
+    let has_more = false;
+    let pag = props["ssrPagination"];
+    if type_of(pag) == "map" {
+        let hn = pag["has_next"];
+        if hn == true {
+            has_more = true;
+        } else {
+            let tp = pag["total_pages"];
+            if type_of(tp) == "i64" || type_of(tp) == "int" {
+                if page < tp { has_more = true; }
             }
         }
-        if title == () || title == "" {
-            title = element_text(link).trim();
-        }
-        if title == () || title == "" {
-            continue;
-        }
+    }
 
-        // Get cover image
-        let cover_url = "";
-        let img = element_select_first(item, "img");
-        if img != "" {
-            cover_url = element_attr(img, "data-src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(img, "src");
-            }
-        }
-        if cover_url == () {
-            cover_url = "";
-        }
-        cover_url = make_absolute_url(cover_url);
+    #{ series: series, has_more: has_more, total: 0 }
+}
 
-        // Try to get description snippet
-        let description = ();
-        let desc_el = element_select_first(item, ".summary, .description, .meta .content");
-        if desc_el != "" {
-            description = strip_html(element_text(desc_el));
-            if description == "" {
-                description = ();
-            }
-        }
+/// Search for manga matching a query (server-side filtered via ?q=)
+fn search_series(query, page, auth) {
+    let encoded = url_encode(query);
+    let url = `${BASE_URL}/search?q=${encoded}&page=${page}`;
+    let result = fetch_listing(url, page);
 
-        // Get genres from meta links
-        let genres = [];
-        let genre_links = element_select(item, ".genres a, .meta a[href*='/genre/']");
-        for g_link in genre_links {
-            let genre = element_text(g_link).trim();
-            if genre != "" && !genres.contains(genre) {
-                genres.push(genre);
-            }
-        }
-
-        series.push(#{
-            id: slug,
-            title: title,
+    // Enrich cards with the metadata fields the search contract expects.
+    let out = [];
+    for c in result.series {
+        out.push(#{
+            id: c.id,
+            title: c.title,
             alternate_titles: [],
-            description: description,
-            cover_url: cover_url,
+            description: (),
+            cover_url: c.cover_url,
             authors: [],
             artists: [],
-            status: (),
-            genres: genres,
+            status: c.status,
+            genres: [],
             tags: [],
             year: (),
             content_rating: "suggestive",
-            url: make_absolute_url(href),
+            url: c.url,
             extra: #{
                 source_site: "mangabuddy",
                 auto_match_metadata: true,
@@ -430,96 +354,7 @@ fn search_series(query, page, auth) {
         });
     }
 
-    // If no items found with .book-detailed-item, try regex fallback
-    // This handles cases where the HTML structure varies
-    if series.len() == 0 {
-        // Try to find manga links with title attributes
-        let all_links = html_select(html, "a[title]");
-        for link in all_links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-
-            // Skip non-manga links
-            if href.contains("/search") || href.contains("/genre/") || href.contains("/az-list") {
-                continue;
-            }
-            if href.contains("/chapter-") {
-                continue;
-            }
-
-            let slug = extract_slug(href);
-            if slug == "" || seen[slug] != () {
-                continue;
-            }
-            seen[slug] = true;
-
-            let title = element_attr(link, "title");
-            if title == () || title == "" {
-                continue;
-            }
-            title = title.trim();
-
-            // Get cover from img inside the link
-            let cover_url = "";
-            let img = element_select_first(link, "img");
-            if img != "" {
-                cover_url = element_attr(img, "data-src");
-                if cover_url == () || cover_url == "" {
-                    cover_url = element_attr(img, "src");
-                }
-            }
-            if cover_url == () {
-                cover_url = "";
-            }
-            cover_url = make_absolute_url(cover_url);
-
-            series.push(#{
-                id: slug,
-                title: title,
-                alternate_titles: [],
-                description: (),
-                cover_url: cover_url,
-                authors: [],
-                artists: [],
-                status: (),
-                genres: [],
-                tags: [],
-                year: (),
-                content_rating: "suggestive",
-                url: make_absolute_url(href),
-                extra: #{
-                    source_site: "mangabuddy",
-                    auto_match_metadata: true,
-                    source_name: "MangaBuddy"
-                }
-            });
-        }
-    }
-
-    // Check for next page
-    let has_more = false;
-    let next_page = page + 1;
-    if html.contains(`page=${next_page}`) {
-        has_more = true;
-    }
-    // Also check pagination elements
-    let page_links = html_select(html, ".pagination a, nav a");
-    for p_link in page_links {
-        let p_href = element_attr(p_link, "href");
-        if p_href != () && p_href.contains(`page=${next_page}`) {
-            has_more = true;
-            break;
-        }
-        let text = element_text(p_link).to_lower();
-        if text.contains("next") || text == ">" || text == ">>" {
-            has_more = true;
-            break;
-        }
-    }
-
-    #{ series: series, has_more: has_more, total: 0 }
+    #{ series: out, has_more: result.has_more, total: 0 }
 }
 
 /// Get detailed series information by slug or URL
@@ -528,226 +363,117 @@ fn get_series(id_or_url, auth) {
     let url = "";
 
     if id_or_url.starts_with("http") {
-        slug = extract_slug(id_or_url);
-        url = id_or_url;
+        slug = slug_from_url(id_or_url);
+        url = `${BASE_URL}/${slug}`;
     } else if id_or_url.starts_with("/") {
-        slug = extract_slug(id_or_url);
-        url = `${BASE_URL}${id_or_url}`;
+        slug = slug_from_url(id_or_url);
+        url = `${BASE_URL}/${slug}`;
     } else {
+        slug = id_or_url;
         url = `${BASE_URL}/${slug}`;
     }
 
     let html = fetch_html(url);
+    let props = extract_page_props(html);
 
-    if html == "" {
+    if props == () {
         throw `Failed to fetch series page: ${url}`;
     }
 
+    let manga = props["initialManga"];
+    if type_of(manga) != "map" {
+        throw `Series data not found: ${url}`;
+    }
+
     // --- Title ---
-    // MadTheme: .detail h1
-    let title = "";
-    let title_els = html_select(html, ".detail h1");
-    if title_els.len() > 0 {
-        title = element_text(title_els[0]).trim();
-    }
-    // Fallback to plain h1
-    if title == "" {
-        let h1_els = html_select(html, "h1");
-        if h1_els.len() > 0 {
-            title = element_text(h1_els[0]).trim();
-        }
-    }
-    // Fallback to og:title meta tag
-    if title == "" {
-        let og_title = regex_find("og:title[\"']\\s*content=[\"']([^\"']+)", html);
-        if og_title != "" {
-            title = regex_find("content=[\"']([^\"']+)", og_title);
-            title = title.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
-            // Remove " - MangaBuddy" suffix
-            if title.contains(" - MangaBuddy") {
-                let idx = title.index_of(" - MangaBuddy");
-                if idx != () && idx > 0 {
-                    title = title.sub_string(0, idx);
-                }
-            }
-            // Remove "Read " prefix
-            if title.starts_with("Read ") {
-                title = title.sub_string(5);
-            }
-        }
-    }
+    let title = get_str(manga, "name");
     if title == "" {
         title = slug.replace("-", " ");
     }
 
-    // --- Alternate Titles ---
-    // MadTheme: .detail h2
+    // --- Alternate Titles (altNames: [{name, language?}]) ---
     let alt_titles = [];
-    let alt_els = html_select(html, ".detail h2");
-    if alt_els.len() > 0 {
-        let alt_text = element_text(alt_els[0]).trim();
-        if alt_text != "" && alt_text != title {
-            // Split by semicolons or commas
-            let separator = ";";
-            if !alt_text.contains(";") && alt_text.contains(",") {
-                separator = ",";
+    let alt_names = manga["altNames"];
+    if type_of(alt_names) == "array" {
+        for a in alt_names {
+            let nm = "";
+            if type_of(a) == "map" {
+                nm = get_str(a, "name");
+            } else {
+                nm = `${a}`;
             }
-            let parts = alt_text.split(separator);
-            for part in parts {
-                let cleaned = part.trim();
-                if cleaned != "" && cleaned != title && !alt_titles.contains(cleaned) {
-                    alt_titles.push(cleaned);
-                }
+            nm = nm.trim();
+            if nm != "" && nm != title && !alt_titles.contains(nm) {
+                alt_titles.push(nm);
             }
         }
     }
-
-    // --- Cover Image ---
-    // MadTheme: #cover img with data-src
-    let cover_url = "";
-    let cover_els = html_select(html, "#cover img");
-    if cover_els.len() > 0 {
-        cover_url = element_attr(cover_els[0], "data-src");
-        if cover_url == () || cover_url == "" {
-            cover_url = element_attr(cover_els[0], "src");
+    if alt_titles.len() == 0 {
+        let an = get_str(manga, "altName");
+        if an != "" && an != title {
+            alt_titles.push(an);
         }
     }
-    // Fallback: og:image meta tag
-    if cover_url == () || cover_url == "" {
-        let og_img = regex_find("og:image[\"']\\s*content=[\"']([^\"']+)", html);
-        if og_img != "" {
-            cover_url = regex_find("content=[\"']([^\"']+)", og_img);
-            cover_url = cover_url.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
-        }
-    }
-    if cover_url == () {
-        cover_url = "";
-    }
-    cover_url = make_absolute_url(cover_url);
 
-    // --- Description ---
-    // MadTheme: .summary .content
+    // --- Cover ---
+    let cover_url = make_absolute_url(get_str(manga, "cover"));
+
+    // --- Description (summary) ---
     let description = ();
-    let desc_els = html_select(html, ".summary .content");
-    if desc_els.len() > 0 {
-        description = strip_html(element_text(desc_els[0]));
-    }
-    // Fallback: .summary p
-    if description == () || description == "" {
-        let desc_p_els = html_select(html, ".summary p");
-        let desc_parts = [];
-        for p in desc_p_els {
-            let text = element_text(p).trim();
-            if text != "" && text.len() > 10 {
-                desc_parts.push(text);
-            }
-        }
-        if desc_parts.len() > 0 {
-            description = "";
-            let first = true;
-            for part in desc_parts {
-                if !first { description += "\n\n"; }
-                description += part;
-                first = false;
-            }
-        }
-    }
-    // Fallback: meta description
-    if description == () || description == "" {
-        let meta_desc = regex_find("name=[\"']description[\"'][^>]*content=[\"']([^\"']+)", html);
-        if meta_desc != "" {
-            description = regex_find("content=[\"']([^\"']+)", meta_desc);
-            description = description.replace("content=\"", "").replace("content='", "").replace("\"", "").replace("'", "").trim();
-        }
-    }
-    if description == () {
-        description = ();
+    let summary = get_str(manga, "summary");
+    if summary != "" {
+        description = summary;
     }
 
     // --- Authors ---
-    // MadTheme: .detail .meta p containing "Author" with sibling <a> tags
     let authors = [];
-    let meta_ps = html_select(html, ".detail .meta p");
-    for p in meta_ps {
-        let p_text = element_text(p).to_lower();
-        if p_text.contains("author") {
-            let author_links = element_select(p, "a");
-            for a_link in author_links {
-                let author = element_text(a_link).trim();
-                if author != "" && author != "Updating" && !authors.contains(author) {
-                    authors.push(author);
-                }
+    let author_arr = manga["authors"];
+    if type_of(author_arr) == "array" {
+        for a in author_arr {
+            let nm = "";
+            if type_of(a) == "map" { nm = get_str(a, "name"); } else { nm = `${a}`; }
+            nm = nm.trim();
+            if nm != "" && nm != "Updating" && !authors.contains(nm) {
+                authors.push(nm);
             }
         }
     }
 
     // --- Artists ---
     let artists = [];
-    for p in meta_ps {
-        let p_text = element_text(p).to_lower();
-        if p_text.contains("artist") {
-            let artist_links = element_select(p, "a");
-            for a_link in artist_links {
-                let artist = element_text(a_link).trim();
-                if artist != "" && artist != "Updating" && !artists.contains(artist) {
-                    artists.push(artist);
-                }
+    let artist_arr = manga["artists"];
+    if type_of(artist_arr) == "array" {
+        for a in artist_arr {
+            let nm = "";
+            if type_of(a) == "map" { nm = get_str(a, "name"); } else { nm = `${a}`; }
+            nm = nm.trim();
+            if nm != "" && nm != "Updating" && !artists.contains(nm) {
+                artists.push(nm);
             }
         }
     }
 
     // --- Genres ---
     let genres = [];
-    for p in meta_ps {
-        let p_text = element_text(p).to_lower();
-        if p_text.contains("genre") {
-            let genre_links = element_select(p, "a");
-            for a_link in genre_links {
-                let genre = element_text(a_link).trim();
-                if genre != "" && !genres.contains(genre) {
-                    genres.push(genre);
-                }
-            }
-        }
-    }
-    // Fallback: look for genre links anywhere
-    if genres.len() == 0 {
-        let genre_links = html_select(html, "a[href*='/genre/']");
-        for g_link in genre_links {
-            let genre = element_text(g_link).trim();
-            if genre != "" && genre.len() < 50 && !genres.contains(genre) {
-                genres.push(genre);
+    let genre_arr = manga["genres"];
+    if type_of(genre_arr) == "array" {
+        for g in genre_arr {
+            let nm = "";
+            if type_of(g) == "map" { nm = get_str(g, "name"); } else { nm = `${g}`; }
+            nm = nm.trim();
+            if nm != "" && !genres.contains(nm) {
+                genres.push(nm);
             }
         }
     }
 
     // --- Status ---
-    let status = ();
-    for p in meta_ps {
-        let p_text = element_text(p).to_lower();
-        if p_text.contains("status") {
-            let status_links = element_select(p, "a");
-            if status_links.len() > 0 {
-                status = map_status(element_text(status_links[0]));
-            }
-            if status == () {
-                status = map_status(p_text);
-            }
-        }
-    }
+    let status = map_status(get_str(manga, "status"));
 
-    // --- Year ---
-    let year = ();
-    let year_match = regex_find("(19|20)\\d{2}", html);
-    if year_match != "" {
-        // Only use if it looks like a publication year context
-        for p in meta_ps {
-            let p_text = element_text(p);
-            if p_text.contains(year_match) {
-                year = year_match;
-                break;
-            }
-        }
+    // --- Content rating (isAdult flag) ---
+    let content_rating = "suggestive";
+    if manga["isAdult"] == true {
+        content_rating = "pornographic";
     }
 
     #{
@@ -761,8 +487,8 @@ fn get_series(id_or_url, auth) {
         status: status,
         genres: genres,
         tags: [],
-        year: year,
-        content_rating: "suggestive",
+        year: (),
+        content_rating: content_rating,
         url: url,
         extra: #{
             source_site: "mangabuddy",
@@ -775,160 +501,83 @@ fn get_series(id_or_url, auth) {
 /// Get all chapters for a series
 fn get_chapters(series_id, auth) {
     let slug = series_id;
-
-    if series_id.starts_with("http") {
-        slug = extract_slug(series_id);
-    } else if series_id.starts_with("/") {
-        slug = extract_slug(series_id);
+    if series_id.starts_with("http") || series_id.starts_with("/") {
+        slug = slug_from_url(series_id);
     }
 
-    // MadTheme exposes a chapters API endpoint
-    let url = `${BASE_URL}/api/manga/${slug}/chapters?source=detail`;
-
+    let url = `${BASE_URL}/${slug}`;
     let html = fetch_html(url);
+    let props = extract_page_props(html);
 
-    if html == "" {
-        // Fallback: try to get chapters from the series page itself
-        let series_url = `${BASE_URL}/${slug}`;
-        html = fetch_html(series_url);
+    if props == () {
+        return [];
     }
 
-    if html == "" {
+    // The full chapter list lives in pageProps.chapters[] (sibling of initialManga).
+    let chapter_arr = props["chapters"];
+    if type_of(chapter_arr) != "array" {
+        // Some payloads nest it under initialManga.chapters
+        let manga = props["initialManga"];
+        if type_of(manga) == "map" {
+            chapter_arr = manga["chapters"];
+        }
+    }
+    if type_of(chapter_arr) != "array" {
         return [];
     }
 
     let chapters = [];
     let seen = #{};
 
-    // Parse chapter list from API response
-    // Structure: <li><a href="/{slug}/chapter-{N}" title="..."><strong>Chapter N</strong>Date</a></li>
-    let chapter_items = html_select(html, "li");
+    for item in chapter_arr {
+        if type_of(item) != "map" { continue; }
 
-    for item in chapter_items {
-        let link = element_select_first(item, "a");
-        if link == "" {
-            continue;
+        let ch_url = get_str(item, "url");
+        if ch_url == "" {
+            // build from slug + chapter slug
+            let cslug = get_str(item, "slug");
+            if cslug == "" { cslug = get_str(item, "id"); }
+            if cslug == "" { continue; }
+            ch_url = `/${slug}/${cslug}`;
         }
 
-        let href = element_attr(link, "href");
-        if href == () || href == "" {
-            continue;
+        let ch_id = chapter_id_from_url(ch_url);
+        if ch_id == "" { continue; }
+        if seen[ch_id] != () { continue; }
+        seen[ch_id] = true;
+
+        let name = get_str(item, "name");
+
+        // Chapter number: prefer the numeric `chapterNumber` field.
+        let number = num_to_str(item["chapterNumber"]);
+        if number == "" {
+            // Fallback: pull a number out of the name.
+            let n = regex_find("\\d+\\.?\\d*", name);
+            if n != "" { number = n; } else { number = "0"; }
         }
 
-        // Skip non-chapter links
-        if !href.contains(slug) {
-            continue;
-        }
-
-        // Deduplicate
-        if seen[href] != () {
-            continue;
-        }
-        seen[href] = true;
-
-        // Get chapter text from <strong> element
-        let ch_text = "";
-        let strong_el = element_select_first(link, "strong");
-        if strong_el != "" {
-            ch_text = element_text(strong_el).trim();
-        }
-        if ch_text == "" {
-            ch_text = element_text(link).trim();
-        }
-        if ch_text == "" {
-            continue;
-        }
-
-        // Get title attribute for full chapter name
-        let link_title = element_attr(link, "title");
-        if link_title == () {
-            link_title = "";
-        }
-
-        // Extract chapter number from URL or text
-        let chapter_num = extract_chapter_number(href, ch_text);
-
-        // Extract volume if present
-        let volume = extract_volume(ch_text);
-
-        // Extract chapter title (after colon)
-        let chapter_title = extract_chapter_title(ch_text);
-
-        // Build display title
-        let display_title = ch_text;
+        let display_title = name;
         if display_title == "" {
-            display_title = `Chapter ${chapter_num}`;
+            display_title = `Chapter ${number}`;
         }
 
-        // Build chapter URL
-        let chapter_url = make_absolute_url(href);
-
-        // Build a unique chapter ID using slug and chapter path
-        let ch_path = href;
-        if ch_path.starts_with("/") {
-            ch_path = ch_path.sub_string(1);
-        }
+        let published = get_str(item, "updatedAt");
+        if published == "" { published = get_str(item, "date"); }
+        if published == "" { published = (); }
 
         chapters.push(#{
-            id: ch_path,
+            id: ch_id,
             series_id: slug,
-            number: chapter_num,
+            number: number,
             title: display_title,
-            volume: volume,
+            volume: (),
             language: "en",
             scanlator: (),
-            url: chapter_url,
-            published_at: (),
+            url: make_absolute_url(ch_url),
+            published_at: published,
             page_count: (),
             extra: #{}
         });
-    }
-
-    // Fallback: if no <li> items found, try direct <a> links with chapter patterns
-    if chapters.len() == 0 {
-        let chapter_links = html_select(html, "a[href*='/chapter-']");
-
-        for link in chapter_links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-
-            if seen[href] != () {
-                continue;
-            }
-            seen[href] = true;
-
-            let ch_text = element_text(link).trim();
-            if ch_text == "" {
-                // Try strong element
-                let strong = element_select_first(link, "strong");
-                if strong != "" {
-                    ch_text = element_text(strong).trim();
-                }
-            }
-
-            let chapter_num = extract_chapter_number(href, ch_text);
-
-            let ch_path = href;
-            if ch_path.starts_with("/") {
-                ch_path = ch_path.sub_string(1);
-            }
-
-            chapters.push(#{
-                id: ch_path,
-                series_id: slug,
-                number: chapter_num,
-                title: if ch_text != "" { ch_text } else { `Chapter ${chapter_num}` },
-                volume: extract_volume(ch_text),
-                language: "en",
-                scanlator: (),
-                url: make_absolute_url(href),
-                published_at: (),
-                page_count: (),
-                extra: #{}
-            });
-        }
     }
 
     chapters
@@ -937,182 +586,94 @@ fn get_chapters(series_id, auth) {
 /// Get page URLs for a chapter
 fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
-
-    if !chapter_id.starts_with("http") {
+    if chapter_id.starts_with("http") {
+        url = chapter_id;
+    } else if chapter_id.starts_with("/") {
+        url = `${BASE_URL}${chapter_id}`;
+    } else {
         url = `${BASE_URL}/${chapter_id}`;
     }
 
     let html = fetch_html(url);
-
-    if html == "" {
-        return [];
-    }
+    let props = extract_page_props(html);
 
     let pages = [];
     let idx = 0;
 
-    // Method 1: Extract from JavaScript variable 'chapImages'
-    // MadTheme stores page images in: var chapImages = 'url1,url2,url3'
-    let chap_images_match = regex_find("chapImages\\s*=\\s*['\"]([^'\"]+)['\"]", html);
-    if chap_images_match != "" {
-        // Extract the value between quotes
-        let images_str = regex_find("['\"]([^'\"]+)['\"]", chap_images_match);
-        images_str = images_str.replace("'", "").replace("\"", "").trim();
+    // Page images: a flat array of full CDN URLs. It may sit directly under
+    // pageProps, or under a nested chapter object. Search a few likely spots.
+    let images = ();
 
-        // Check for mainServer variable to build full URLs
-        let main_server = "";
-        let server_match = regex_find("mainServer\\s*=\\s*['\"]([^'\"]+)['\"]", html);
-        if server_match != "" {
-            main_server = regex_find("['\"]([^'\"]+)['\"]", server_match);
-            main_server = main_server.replace("'", "").replace("\"", "").trim();
+    if type_of(props) == "map" {
+        // Page images live under pageProps.initialChapter.images (flat array of
+        // full CDN URLs). Fall back to a top-level `images` array, then to any
+        // nested map exposing an `images` array.
+        let ic = props["initialChapter"];
+        if type_of(ic) == "map" && type_of(ic["images"]) == "array" {
+            images = ic["images"];
         }
-
-        if images_str != "" {
-            let image_urls = images_str.split(",");
-
-            for img_url in image_urls {
-                let clean_url = img_url.trim();
-                if clean_url == "" {
-                    continue;
+        if type_of(images) != "array" && type_of(props["images"]) == "array" {
+            images = props["images"];
+        }
+        if type_of(images) != "array" {
+            for k in props.keys() {
+                let v = props[k];
+                if type_of(v) == "map" && type_of(v["images"]) == "array" {
+                    images = v["images"];
+                    break;
                 }
-
-                // Build full URL if needed
-                if !clean_url.starts_with("http") {
-                    if main_server != "" {
-                        clean_url = `${main_server}${clean_url}`;
-                    } else {
-                        clean_url = make_absolute_url(clean_url);
-                    }
-                }
-
-                pages.push(#{
-                    index: idx,
-                    url: clean_url,
-                    headers: #{
-                        "Referer": url
-                    },
-                    referer: url
-                });
-                idx += 1;
             }
         }
     }
 
-    // Method 2: Try chapImages as JSON array
-    if pages.len() == 0 {
-        let json_match = regex_find("chapImages\\s*=\\s*\\[([^\\]]+)\\]", html);
-        if json_match != "" {
-            let array_content = regex_find("\\[([^\\]]+)\\]", json_match);
-            array_content = array_content.replace("[", "").replace("]", "");
-
-            let main_server = "";
-            let server_match = regex_find("mainServer\\s*=\\s*['\"]([^'\"]+)['\"]", html);
-            if server_match != "" {
-                main_server = regex_find("['\"]([^'\"]+)['\"]", server_match);
-                main_server = main_server.replace("'", "").replace("\"", "").trim();
-            }
-
-            let image_paths = regex_find_all("\"([^\"]+)\"", array_content);
-
-            for img_path in image_paths {
-                let clean_path = img_path.replace("\"", "").trim();
-                if clean_path == "" {
-                    continue;
+    if type_of(images) == "array" {
+        for img in images {
+            let img_url = "";
+            if type_of(img) == "map" {
+                // Object form: {url} or {storage_key}
+                img_url = get_str(img, "url");
+                if img_url == "" {
+                    img_url = get_str(img, "image");
                 }
-
-                let full_url = clean_path;
-                if !full_url.starts_with("http") {
-                    if main_server != "" {
-                        full_url = `${main_server}${clean_path}`;
-                    } else {
-                        full_url = make_absolute_url(clean_path);
-                    }
-                }
-
-                pages.push(#{
-                    index: idx,
-                    url: full_url,
-                    headers: #{
-                        "Referer": url
-                    },
-                    referer: url
-                });
-                idx += 1;
+            } else {
+                img_url = `${img}`;
             }
+            img_url = img_url.trim();
+            if img_url == "" { continue; }
+            img_url = make_absolute_url(img_url);
+
+            pages.push(#{
+                index: idx,
+                url: img_url,
+                headers: #{
+                    "Referer": `${BASE_URL}/`,
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                },
+                referer: `${BASE_URL}/`
+            });
+            idx += 1;
         }
     }
 
-    // Method 3: Parse img elements from chapter reader container
-    if pages.len() == 0 {
-        let selectors = [
-            "#chapter-images img",
-            ".chapter-image img",
-            ".chapter-image[data-src]",
-            ".reading-content img",
-            ".container-chapter-reader img",
-            ".page-img img"
-        ];
-
-        for selector in selectors {
-            let page_imgs = html_select(html, selector);
-
-            for img in page_imgs {
-                let img_url = element_attr(img, "data-src");
-                if img_url == () || img_url == "" {
-                    img_url = element_attr(img, "src");
-                }
-                if img_url == () || img_url == "" {
-                    img_url = element_attr(img, "data-lazy");
-                }
-
-                if img_url != () && img_url != "" {
-                    // Skip non-page images
-                    let lower_url = img_url.to_lower();
-                    if lower_url.contains("logo") || lower_url.contains("icon") ||
-                       lower_url.contains("avatar") || lower_url.contains("banner") ||
-                       lower_url.contains("loading") || lower_url.contains("placeholder") ||
-                       lower_url.starts_with("data:") || lower_url.contains("blank.gif") {
-                        continue;
-                    }
-
-                    let full_url = make_absolute_url(img_url);
-
-                    pages.push(#{
-                        index: idx,
-                        url: full_url,
-                        headers: #{
-                            "Referer": url
-                        },
-                        referer: url
-                    });
-                    idx += 1;
-                }
-            }
-
-            // If we found pages with this selector, stop trying others
-            if pages.len() > 0 {
-                break;
-            }
-        }
-    }
-
-    // Method 4: Try .chapter-image elements with data-src attribute directly
-    if pages.len() == 0 {
-        let ch_images = html_select(html, ".chapter-image[data-src]");
-        for ch_img in ch_images {
-            let img_url = element_attr(ch_img, "data-src");
-            if img_url != () && img_url != "" && !img_url.starts_with("data:") {
-                let full_url = make_absolute_url(img_url);
-                pages.push(#{
-                    index: idx,
-                    url: full_url,
-                    headers: #{
-                        "Referer": url
-                    },
-                    referer: url
-                });
-                idx += 1;
-            }
+    // Fallback: regex over the raw HTML for the images array if JSON parse missed it.
+    if pages.len() == 0 && html != "" {
+        let img_urls = regex_find_all("https?://[a-zA-Z0-9._/-]+\\.(?:webp|jpg|jpeg|png)", html);
+        let seen = #{};
+        for u in img_urls {
+            // Only accept CDN page images (rx.* hosts), skip cover/asset URLs.
+            if !u.contains("/r/p/") && !u.contains("/p/") { continue; }
+            if seen[u] != () { continue; }
+            seen[u] = true;
+            pages.push(#{
+                index: idx,
+                url: u,
+                headers: #{
+                    "Referer": `${BASE_URL}/`,
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                },
+                referer: `${BASE_URL}/`
+            });
+            idx += 1;
         }
     }
 
@@ -1121,139 +682,21 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest manga updates
 fn get_latest_updates(page, auth) {
-    // MadTheme latest updates: search sorted by "updated"
-    let url = `${BASE_URL}/search?page=${page}&sort=updated`;
-
-    let html = fetch_html(url);
-
-    if html == "" {
-        return #{ series: [], has_more: false };
-    }
+    let url = `${BASE_URL}/search?sort=latest&page=${page}`;
+    let result = fetch_listing(url, page);
 
     let series = [];
-    let seen = #{};
-
-    // Parse items using the same structure as search
-    let items = html_select(html, ".book-detailed-item");
-
-    for item in items {
-        let link = element_select_first(item, ".thumb a");
-        if link == "" {
-            link = element_select_first(item, "a");
-        }
-        if link == "" {
-            continue;
-        }
-
-        let href = element_attr(link, "href");
-        if href == () || href == "" {
-            continue;
-        }
-
-        let slug = extract_slug(href);
-        if slug == "" || slug == "search" || slug == "az-list" {
-            continue;
-        }
-
-        if seen[slug] != () {
-            continue;
-        }
-        seen[slug] = true;
-
-        let title = element_attr(link, "title");
-        if title == () || title == "" {
-            let title_el = element_select_first(item, "h3 a, h2 a, .title a");
-            if title_el != "" {
-                title = element_text(title_el).trim();
-            }
-        }
-        if title == () || title == "" {
-            title = element_text(link).trim();
-        }
-        if title == () || title == "" {
-            continue;
-        }
-
-        let cover_url = "";
-        let img = element_select_first(item, "img");
-        if img != "" {
-            cover_url = element_attr(img, "data-src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(img, "src");
-            }
-        }
-        if cover_url == () {
-            cover_url = "";
-        }
-        cover_url = make_absolute_url(cover_url);
-
+    for c in result.series {
         series.push(#{
-            id: slug,
-            title: title,
-            url: make_absolute_url(href),
-            cover_url: cover_url,
+            id: c.id,
+            title: c.title,
+            url: c.url,
+            cover_url: c.cover_url,
             updated_at: ()
         });
     }
 
-    // Fallback: if .book-detailed-item not found, try finding manga links directly
-    if series.len() == 0 {
-        let all_links = html_select(html, "a[title]");
-        for link in all_links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-            if href.contains("/search") || href.contains("/genre/") || href.contains("/chapter-") {
-                continue;
-            }
-
-            let slug = extract_slug(href);
-            if slug == "" || seen[slug] != () {
-                continue;
-            }
-            seen[slug] = true;
-
-            let title = element_attr(link, "title");
-            if title == () || title == "" {
-                continue;
-            }
-
-            let cover_url = "";
-            let img = element_select_first(link, "img");
-            if img != "" {
-                cover_url = element_attr(img, "data-src");
-                if cover_url == () || cover_url == "" {
-                    cover_url = element_attr(img, "src");
-                }
-            }
-            if cover_url == () {
-                cover_url = "";
-            }
-            cover_url = make_absolute_url(cover_url);
-
-            series.push(#{
-                id: slug,
-                title: title,
-                url: make_absolute_url(href),
-                cover_url: cover_url,
-                updated_at: ()
-            });
-        }
-    }
-
-    // Check for next page
-    let has_more = false;
-    let next_page = page + 1;
-    if html.contains(`page=${next_page}`) {
-        has_more = true;
-    }
-    // Assume more if we got a decent number of results
-    if !has_more && series.len() >= 20 {
-        has_more = true;
-    }
-
-    #{ series: series, has_more: has_more }
+    #{ series: series, has_more: result.has_more }
 }
 
 /// Browse manga (main browse endpoint)
@@ -1262,133 +705,26 @@ fn browse(page, category, auth) {
         return get_latest_updates(page, auth);
     }
 
-    // Default: browse by popularity (views)
-    let url = `${BASE_URL}/search?page=${page}&sort=views`;
-
-    let html = fetch_html(url);
-
-    if html == "" {
-        return #{ series: [], has_more: false };
+    // Map category to a supported sort; default to popularity.
+    let sort = "popular";
+    if category == "views" || category == "rating" || category == "newest" ||
+       category == "chapters" || category == "alphabetical" || category == "completed" ||
+       category == "ongoing" || category == "hiatus" {
+        sort = category;
     }
 
+    let url = `${BASE_URL}/search?sort=${sort}&page=${page}`;
+    let result = fetch_listing(url, page);
+
     let series = [];
-    let seen = #{};
-
-    let items = html_select(html, ".book-detailed-item");
-
-    for item in items {
-        let link = element_select_first(item, ".thumb a");
-        if link == "" {
-            link = element_select_first(item, "a");
-        }
-        if link == "" {
-            continue;
-        }
-
-        let href = element_attr(link, "href");
-        if href == () || href == "" {
-            continue;
-        }
-
-        let slug = extract_slug(href);
-        if slug == "" || slug == "search" || slug == "az-list" {
-            continue;
-        }
-
-        if seen[slug] != () {
-            continue;
-        }
-        seen[slug] = true;
-
-        let title = element_attr(link, "title");
-        if title == () || title == "" {
-            let title_el = element_select_first(item, "h3 a, h2 a, .title a");
-            if title_el != "" {
-                title = element_text(title_el).trim();
-            }
-        }
-        if title == () || title == "" {
-            title = element_text(link).trim();
-        }
-        if title == () || title == "" {
-            continue;
-        }
-
-        let cover_url = "";
-        let img = element_select_first(item, "img");
-        if img != "" {
-            cover_url = element_attr(img, "data-src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(img, "src");
-            }
-        }
-        if cover_url == () {
-            cover_url = "";
-        }
-        cover_url = make_absolute_url(cover_url);
-
+    for c in result.series {
         series.push(#{
-            id: slug,
-            title: title,
-            url: make_absolute_url(href),
-            cover_url: cover_url
+            id: c.id,
+            title: c.title,
+            url: c.url,
+            cover_url: c.cover_url
         });
     }
 
-    // Fallback for missing .book-detailed-item
-    if series.len() == 0 {
-        let all_links = html_select(html, "a[title]");
-        for link in all_links {
-            let href = element_attr(link, "href");
-            if href == () || href == "" {
-                continue;
-            }
-            if href.contains("/search") || href.contains("/genre/") || href.contains("/chapter-") {
-                continue;
-            }
-
-            let slug = extract_slug(href);
-            if slug == "" || seen[slug] != () {
-                continue;
-            }
-            seen[slug] = true;
-
-            let title = element_attr(link, "title");
-            if title == () || title == "" {
-                continue;
-            }
-
-            let cover_url = "";
-            let img = element_select_first(link, "img");
-            if img != "" {
-                cover_url = element_attr(img, "data-src");
-                if cover_url == () || cover_url == "" {
-                    cover_url = element_attr(img, "src");
-                }
-            }
-            if cover_url == () {
-                cover_url = "";
-            }
-            cover_url = make_absolute_url(cover_url);
-
-            series.push(#{
-                id: slug,
-                title: title,
-                url: make_absolute_url(href),
-                cover_url: cover_url
-            });
-        }
-    }
-
-    // Check for next page
-    let has_more = false;
-    let next_page = page + 1;
-    if html.contains(`page=${next_page}`) {
-        has_more = true;
-    }
-    if !has_more && series.len() >= 20 {
-        has_more = true;
-    }
-
-    #{ series: series, has_more: has_more }
+    #{ series: series, has_more: result.has_more }
 }

@@ -48,37 +48,117 @@ fn get_headers() {
     }
 }
 
-/// Fetch HTML through up to three tiers, picking the lightest one that returns
-/// usable content. batcave.biz sits behind Cloudflare so plain HTTP almost
-/// always fails — but plain HTTP is still the cheapest probe.
+/// batcave.biz sits behind TWO gates that defeat plain HTTP and FlareSolverr:
 ///
-/// 1. browser_launch_stealth (heavyweight; reliable CF bypass). Wrapped in
-///    try/catch so a launch failure doesn't abort the whole call — previous
-///    code path crashed before reaching the fallback when chromium was down.
-/// 2. FlareSolverr (medium-weight; shared across requests).
-/// 3. http_get_with_headers (lightest; only works when CF is in a quiet mood).
-fn fetch_html(url) {
-    if browser_is_available() {
-        let browser_id = ();
-        try {
-            browser_id = browser_launch_stealth();
-            browser_goto(browser_id, url);
-            browser_wait_for_cloudflare(browser_id, 15000);
-            browser_wait_for_selector(browser_id, "body", 10000);
-            let html = browser_get_html(browser_id);
-            try { browser_close(browser_id); } catch {}
-            if html != () && html != "" {
+///   1. A Cloudflare *managed* challenge ("Just a moment..." / Turnstile) —
+///      the outer gate. Only a real JS-running browser clears it; plain HTTP
+///      gets 403 and FlareSolverr's body comes back empty-titled.
+///   2. A custom proof-of-work guard (the INNER gate). After CF clears, the
+///      site serves a tiny spinner page that, in JS, computes a SHA-256 PoW
+///      (hash of `token:nonce` starting with "00"), POSTs the result + browser
+///      fingerprint to `/_v`, receives an upgraded `__guard_token` cookie, then
+///      `location.replace()`s to the real URL. FlareSolverr returns BEFORE this
+///      JS runs (it only waits out the CF Turnstile), so its body is always the
+///      spinner page — which is why discover returned 0.
+///
+/// The headless stealth browser is the ONLY tier that solves both: it runs the
+/// guard's PoW JS and follows the redirect. The catch is timing — the spinner
+/// page has a `<body>` instantly, so we must NOT grab HTML the moment `body`
+/// appears; we have to poll until the guard has redirected to real content.
+///
+/// Tier order: browser (solves both gates) -> FlareSolverr (CF only, usually
+/// stuck on the guard) -> plain HTTP (cheap probe, almost always 403).
+
+/// True when `html` is the CF "Just a moment" / managed-challenge page.
+fn is_cf_challenge(html) {
+    if html == () || html == "" { return true; }
+    if html.contains("Just a moment") { return true; }
+    if html.contains("cf_chl_opt") || html.contains("__cf_chl") { return true; }
+    if html.contains("challenge-platform") { return true; }
+    false
+}
+
+/// True when `html` is the custom PoW guard spinner page (inner gate).
+/// Signatures: the `/_v` PoW POST, the obfuscated spinner class names, the
+/// `__guard_token` script, or a guard `/_c?t=...&u=...` redirect URL — all with
+/// no real listing content.
+fn is_guard_page(html) {
+    if html == () || html == "" { return true; }
+    // Real content always carries comic cards; if we see those, it's NOT a gate.
+    if html.contains("readed") || html.contains("grid-item") || html.contains("poster__") {
+        return false;
+    }
+    if html.contains("/_v") && html.contains("pow_nonce") { return true; }
+    if html.contains("powHash") || html.contains("runModern") || html.contains("runLegacy") { return true; }
+    if html.contains("x46429") || html.contains("x78247") { return true; } // spinner divs
+    if html.contains("__guard_token") || html.contains("/_c?t=") { return true; }
+    false
+}
+
+/// True when `html` looks like a fully-rendered batcave content page.
+fn is_real_content(html) {
+    if html == () || html == "" { return false; }
+    if is_cf_challenge(html) || is_guard_page(html) { return false; }
+    true
+}
+
+/// Drive the stealth browser through CF + the PoW guard, polling until the
+/// guard's JS has finished its PoW/redirect cycle and real content is in the DOM.
+fn fetch_via_browser(url) {
+    let browser_id = ();
+    try {
+        browser_id = browser_launch_stealth();
+        browser_goto(browser_id, url);
+        // Clear the Cloudflare managed challenge first.
+        try { browser_wait_for_cloudflare(browser_id, 20000); } catch {}
+        try { browser_wait_for_selector(browser_id, "body", 10000); } catch {}
+
+        // Now poll: the guard spinner shows instantly, runs a ~1s SHA-256 PoW,
+        // POSTs /_v, then location.replace()s to the target. Re-read the DOM on a
+        // short cadence until we either see real content or run out of patience.
+        // Budget ~24s (12 * 2s) — the modern PoW caps itself at 900ms but the
+        // /_v round-trip + redirect + content render needs headroom.
+        let html = browser_get_html(browser_id);
+        let tries = 0;
+        while tries < 12 {
+            if is_real_content(html) {
+                try { browser_close(browser_id); } catch {}
                 return html;
             }
-        } catch {
-            if browser_id != () { try { browser_close(browser_id); } catch {} }
+            // If we're still on the CF challenge, give it extra room to clear.
+            if is_cf_challenge(html) {
+                try { browser_wait_for_cloudflare(browser_id, 8000); } catch {}
+            }
+            browser_sleep(2000);
+            html = browser_get_html(browser_id);
+            tries += 1;
+        }
+        // Final attempt: a directly-named content selector may have appeared even
+        // if our heuristic was conservative.
+        try { browser_wait_for_selector(browser_id, "a[href$='.html']", 6000); } catch {}
+        html = browser_get_html(browser_id);
+        try { browser_close(browser_id); } catch {}
+        return html;
+    } catch {
+        if browser_id != () { try { browser_close(browser_id); } catch {} }
+    }
+    ()
+}
+
+fn fetch_html(url) {
+    if browser_is_available() {
+        let html = fetch_via_browser(url);
+        if html != () && html != "" {
+            return html;
         }
     }
 
     if flaresolverr_is_available() {
         try {
-            let html = flaresolverr_get(url, 30000);
-            if html != () && html != "" {
+            let html = flaresolverr_get(url, 40000);
+            // FlareSolverr clears CF but typically stalls on the PoW guard; only
+            // accept its body if it actually carries content.
+            if is_real_content(html) {
                 return html;
             }
         } catch {}
@@ -151,14 +231,21 @@ fn build_comic_url(id, slug) {
 
 /// Extract chapter ID from reader URL
 /// URL format: /reader/{comic-id}/{chapter-id}
+/// Returns the combined "{comic-id}/{chapter-id}" so get_chapter_pages can
+/// rebuild the full /reader/ URL. (Returning only the chapter-id loses the
+/// comic-id and makes the page fetch impossible.)
 fn extract_chapter_id(url) {
     if url.contains("/reader/") {
         let parts = url.split("/reader/");
         if parts.len() > 1 {
-            let path_parts = parts[1].split("/");
+            let tail = parts[1].split("?")[0].split("#")[0];
+            // Strip any trailing slash
+            while tail.ends_with("/") { tail = tail.sub_string(0, tail.len() - 1); }
+            let path_parts = tail.split("/");
             if path_parts.len() >= 2 {
-                return path_parts[1].split("?")[0];
+                return `${path_parts[0]}/${path_parts[1]}`;
             }
+            return tail;
         }
     }
     url
@@ -240,7 +327,111 @@ fn is_valid_image(url) {
     if lower.contains("banner") { return false; }
     if lower.contains("advertisement") { return false; }
     if lower.contains("/ads/") { return false; }
+    if lower.starts_with("data:") { return false; } // base64 lazyload placeholder
     true
+}
+
+/// Pull the real cover URL from a card's <img>, preferring lazy-load attrs.
+/// batcave lazy-loads listing thumbnails: `src` is a base64/blank placeholder
+/// and the real path lives in `data-src`.
+fn extract_card_cover(item) {
+    let imgs = html_select(item, "img");
+    if imgs.len() == 0 { return (); }
+    extract_card_cover_el(imgs[0])
+}
+
+/// Same as extract_card_cover but for an already-selected <img> element.
+fn extract_card_cover_el(img) {
+    let candidates = [
+        element_attr(img, "data-src"),
+        element_attr(img, "data-original"),
+        element_attr(img, "data-lazy-src"),
+        element_attr(img, "src")
+    ];
+    for c in candidates {
+        if c != () && c != "" && is_valid_image(c) {
+            return make_absolute_url(c);
+        }
+    }
+    ()
+}
+
+/// Parse a comic listing/grid from a rendered page into the series[] shape.
+/// Handles both card layouts batcave uses:
+///   - `.readed` cards (search results, /comix/ list): link = a.readed__img
+///   - `.poster.grid-item` cards (home page): the <a> itself is the card
+fn parse_comic_cards(doc) {
+    let series = [];
+    let seen = #{};
+
+    // Collect candidate card elements from both known layouts.
+    let cards = html_select(doc, "div.readed, a.poster.grid-item, .poster.grid-item");
+
+    for card in cards {
+        // Resolve the comic link + title.
+        let href = ();
+        let title = "";
+
+        // Card is itself an <a> (poster grid-item)?
+        let self_href = element_attr(card, "href");
+        if self_href != () && self_href.ends_with(".html") {
+            href = self_href;
+        } else {
+            // Look for the primary link inside the card.
+            let links = html_select(card, "a.readed__img, h2.readed__title a, .poster__title, a[href$='.html']");
+            for l in links {
+                let h = element_attr(l, "href");
+                if h != () && h.ends_with(".html") {
+                    href = h;
+                    break;
+                }
+            }
+        }
+
+        if href == () || href == "" { continue; }
+        if href.contains("index.php") || href.contains("/page/") { continue; }
+
+        let comic_url = make_absolute_url(href);
+        let id = extract_comic_id(comic_url);
+        if id == () || id == "" { continue; }
+        if seen.contains(id) { continue; }
+        seen[id] = true;
+
+        // Title: prefer dedicated title elements, then img alt, then link text.
+        let title_els = html_select(card, "h2.readed__title, .poster__title, h2, h3, .title");
+        if title_els.len() > 0 {
+            title = element_text(title_els[0]).trim();
+        }
+        if title == "" {
+            let imgs = html_select(card, "img");
+            if imgs.len() > 0 {
+                let alt = element_attr(imgs[0], "alt");
+                if alt != () { title = alt.trim(); }
+            }
+        }
+        if title == "" {
+            title = element_text(card).trim();
+        }
+        if title == "" || title.len() < 2 { continue; }
+
+        let cover_url = extract_card_cover(card);
+
+        series.push(#{
+            id: id,
+            title: title,
+            url: comic_url,
+            cover_url: cover_url,
+            alternate_titles: [],
+            authors: [],
+            artists: [],
+            status: (),
+            genres: [],
+            tags: [],
+            description: ()
+        });
+    }
+
+    series
 }
 
 // ============================================================================
@@ -274,131 +465,11 @@ fn search_series(query, page, auth) {
     let html = fetch_html(url);
     let doc = html_parse(html);
 
-    let series = [];
-    let seen = #{};
+    let series = parse_comic_cards(doc);
 
-    // Try multiple selectors for search results
-    // BatCave likely uses article or div elements for comic cards
-    let items = html_select(doc, "article, div.short-story, div.shortstory, div.movie-item, div.item");
-
-    // Fallback: try links to .html pages
-    if items.len() == 0 {
-        items = html_select(doc, "div.content a[href$='.html'], div.main a[href$='.html']");
-    }
-
-    for item in items {
-        // Get the link to comic page
-        let links = html_select(item, "a[href$='.html']");
-        if links.len() == 0 {
-            // Item might be the link itself
-            let href = element_attr(item, "href");
-            if href != () && href.ends_with(".html") {
-                links = [item];
-            } else {
-                continue;
-            }
-        }
-
-        let link = links[0];
-        let href = element_attr(link, "href");
-
-        if href == () || href == "" {
-            continue;
-        }
-
-        // Skip non-comic pages
-        if href.contains("index.php") || href.contains("register") || href.contains("login") {
-            continue;
-        }
-
-        let comic_url = make_absolute_url(href);
-        let id = extract_comic_id(comic_url);
-
-        // Skip duplicates
-        if seen.contains(id) {
-            continue;
-        }
-        seen[id] = true;
-
-        // Get title
-        let title = "";
-        let title_els = html_select(item, "h2, h3, h4, .title, .name, a.title");
-        if title_els.len() > 0 {
-            title = element_text(title_els[0]).trim();
-        }
-
-        // Fallback: use link text
-        if title == "" {
-            title = element_text(link).trim();
-        }
-
-        // Clean up title (remove extra info like year)
-        if title != "" {
-            // Keep original title with year info
-            title = title.trim();
-        }
-
-        if title == "" || title.len() < 2 {
-            continue;
-        }
-
-        // Get cover image
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "data-src");
-            }
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "data-original");
-            }
-            if cover_url != () && cover_url != "" {
-                cover_url = make_absolute_url(cover_url);
-            }
-        }
-
-        // Get description if available
-        let description = ();
-        let desc_els = html_select(item, ".description, .desc, .story-desc, p");
-        if desc_els.len() > 0 {
-            description = element_text(desc_els[0]).trim();
-            if description.len() < 20 {
-                description = ();
-            }
-        }
-
-        series.push(#{
-            id: id,
-            title: title,
-            url: comic_url,
-            cover_url: cover_url,
-            alternate_titles: [],
-            authors: [],
-            artists: [],
-            status: (),
-            genres: [],
-            tags: [],
-            description: description
-        });
-    }
-
-    // Check for next page
-    let has_more = false;
-    let pagination = html_select(doc, "div.navigation a, ul.pagination a, a.next, a.pnext");
-    for pager in pagination {
-        let href = element_attr(pager, "href");
-        let text = element_text(pager).to_lower();
-        if text.contains("next") || text.contains(">") || text == ">" {
-            has_more = true;
-            break;
-        }
-        // Check for page number links
-        if href != () && (href.contains(`search_start=${page + 1}`) || href.contains(`page=${page + 1}`)) {
-            has_more = true;
-            break;
-        }
-    }
+    // Search returns one DLE result page; "more" is true only if we filled a
+    // full page of cards (batcave shows 10 per page).
+    let has_more = series.len() >= 10;
 
     #{ series: series, has_more: has_more, total: () }
 }
@@ -424,50 +495,33 @@ fn get_series(id_or_url, auth) {
     let html = fetch_html(url);
     let doc = html_parse(html);
 
-    // Extract title
+    // Extract title (page__head h1)
     let title = "";
-    let title_els = html_select(doc, "h1, h2.title, .full-title, .movie-title, article h1");
+    let title_els = html_select(doc, "h1, .page__title, h2.title");
     if title_els.len() > 0 {
         title = element_text(title_els[0]).trim();
     }
 
-    // Extract cover image
+    // Extract cover image (.page__poster img — real poster, not lazy thumb)
     let cover_url = ();
-    let cover_els = html_select(doc, ".full-left img, .movie-img img, .poster img, article img, .short-img img");
+    let cover_els = html_select(doc, ".page__poster img, .poster__img img");
     if cover_els.len() > 0 {
-        cover_url = element_attr(cover_els[0], "src");
-        if cover_url == () || cover_url == "" {
-            cover_url = element_attr(cover_els[0], "data-src");
-        }
-        if cover_url != () && cover_url != "" && is_valid_image(cover_url) {
-            cover_url = make_absolute_url(cover_url);
-        } else {
-            cover_url = ();
-        }
+        cover_url = extract_card_cover_el(cover_els[0]);
     }
 
-    // Extract description
+    // Extract description (.page__text / .full-text)
     let description = ();
-    let desc_els = html_select(doc, ".full-text, .full-story, .description, .movie-desc, article p");
+    let desc_els = html_select(doc, ".page__text, .full-text, .full-story");
     if desc_els.len() > 0 {
-        let desc_text = "";
-        for el in desc_els {
-            let text = element_text(el).trim();
-            if text.len() > 50 {
-                if desc_text != "" {
-                    desc_text += "\n\n";
-                }
-                desc_text += text;
-            }
-        }
-        if desc_text != "" {
+        let desc_text = element_text(desc_els[0]).trim();
+        if desc_text.len() > 20 {
             description = desc_text;
         }
     }
 
-    // Extract genres/categories
+    // Extract genres/categories (.page__tags a)
     let genres = [];
-    let genre_els = html_select(doc, "a[href*='genre'], a[href*='category'], .categories a, .tags a");
+    let genre_els = html_select(doc, ".page__tags a, a[href*='/genres/']");
     for el in genre_els {
         let genre = element_text(el).trim();
         if genre != "" && !genres.contains(genre) && genre.len() > 1 {
@@ -475,15 +529,17 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract status
+    // Metadata rows: ul.page__list > li, each "<div>Label:</div> value(s)"
+    let info_els = html_select(doc, "ul.page__list li, .page__list li");
+
+    // Extract status (label "Release type" or "Status")
     let status = ();
-    let info_els = html_select(doc, ".full-info li, .movie-info li, table tr, dl dt, dl dd");
     for el in info_els {
         let text = element_text(el);
         let lower = text.to_lower();
-        if lower.contains("status") {
+        if lower.contains("status") || lower.contains("release type") {
             status = map_status(text);
-            break;
+            if status != () { break; }
         }
     }
 
@@ -604,51 +660,42 @@ fn get_chapters(series_id, auth) {
 
     let comic_id = extract_comic_id(url);
 
-    // Look for chapter/issue links
-    // BatCave reader format: /reader/{comic-id}/{chapter-id}
-    let chapter_links = html_select(doc, "a[href*='/reader/'], ul.chapters a, .chapter-list a, .issues a");
+    // Preferred: structured chapter rows. Each `.cl__item` carries
+    //   .cl__item-num    -> "#4"
+    //   .cl__item-title a -> /reader/{comic}/{chapter}, title text
+    //   .cl__item-pages  -> "94 pages"
+    let rows = html_select(doc, ".cl__item, li.cl__item, .page__chapters-list .cl__item");
 
-    // Fallback: look for any links with "issue" or "chapter" text
-    if chapter_links.len() == 0 {
-        chapter_links = html_select(doc, "a");
-    }
-
-    for link in chapter_links {
+    for row in rows {
+        let links = html_select(row, ".cl__item-title a, a[href*='/reader/']");
+        if links.len() == 0 { continue; }
+        let link = links[0];
         let href = element_attr(link, "href");
-        if href == () || href == "" {
-            continue;
-        }
-
-        // Filter for reader links or issue links
-        if !href.contains("/reader/") && !href.to_lower().contains("issue") && !href.to_lower().contains("chapter") {
-            continue;
-        }
+        if href == () || href == "" || !href.contains("/reader/") { continue; }
 
         let chapter_url = make_absolute_url(href);
-
-        // Extract chapter ID
-        let ch_id = "";
-        if href.contains("/reader/") {
-            ch_id = extract_chapter_id(chapter_url);
-        } else {
-            ch_id = href;
-        }
-
-        // Skip duplicates
-        if seen.contains(ch_id) {
-            continue;
-        }
+        let ch_id = extract_chapter_id(chapter_url);
+        if seen.contains(ch_id) { continue; }
         seen[ch_id] = true;
 
-        // Get chapter title/name
         let chapter_title = element_text(link).trim();
 
-        // Parse chapter/issue number
-        let number = parse_chapter_number(chapter_title);
+        // Chapter number: prefer .cl__item-num ("#4"), else parse title/url.
+        let number = "0";
+        let num_els = html_select(row, ".cl__item-num");
+        if num_els.len() > 0 {
+            let n = regex_find("\\d+(?:\\.\\d+)?", element_text(num_els[0]));
+            if n != "" { number = n; }
+        }
+        if number == "0" { number = parse_chapter_number(chapter_title); }
+        if number == "0" { number = parse_chapter_number(href); }
 
-        // If number is 0, try extracting from URL
-        if number == "0" {
-            number = parse_chapter_number(href);
+        // Page count from .cl__item-pages
+        let page_count = ();
+        let pg_els = html_select(row, ".cl__item-pages");
+        if pg_els.len() > 0 {
+            let pc = regex_find("\\d+", element_text(pg_els[0]));
+            if pc != "" { page_count = parse_int(pc); }
         }
 
         chapters.push(#{
@@ -661,9 +708,41 @@ fn get_chapters(series_id, auth) {
             scanlator: (),
             url: chapter_url,
             published_at: (),
-            page_count: (),
+            page_count: page_count,
             extra: #{}
         });
+    }
+
+    // Fallback: bare reader links if structured rows weren't found.
+    if chapters.len() == 0 {
+        let chapter_links = html_select(doc, "a[href*='/reader/']");
+        for link in chapter_links {
+            let href = element_attr(link, "href");
+            if href == () || href == "" || !href.contains("/reader/") { continue; }
+
+            let chapter_url = make_absolute_url(href);
+            let ch_id = extract_chapter_id(chapter_url);
+            if seen.contains(ch_id) { continue; }
+            seen[ch_id] = true;
+
+            let chapter_title = element_text(link).trim();
+            let number = parse_chapter_number(chapter_title);
+            if number == "0" { number = parse_chapter_number(href); }
+
+            chapters.push(#{
+                id: ch_id,
+                series_id: comic_id,
+                number: number,
+                title: chapter_title,
+                volume: (),
+                language: "en",
+                scanlator: (),
+                url: chapter_url,
+                published_at: (),
+                page_count: (),
+                extra: #{}
+            });
+        }
     }
 
     // If no chapters found via links, the comic might be a single volume
@@ -711,332 +790,103 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let html = fetch_html(url);
-    let doc = html_parse(html);
 
     let pages = [];
     let idx = 0;
     let seen_urls = #{};
 
-    // BatCave reader likely shows images in sequence
-    // Look for page images
-    let page_imgs = html_select(doc, ".reader-content img, .chapter-content img, #reader img, .page img, img.page-image");
-
-    // Fallback: all images in main content area
-    if page_imgs.len() == 0 {
-        page_imgs = html_select(doc, "main img, article img, .content img, #content img");
-    }
-
-    // Fallback: any images that look like comic pages
-    if page_imgs.len() == 0 {
-        page_imgs = html_select(doc, "img[src*='page'], img[src*='comic'], img[data-src*='page']");
-    }
-
-    for img in page_imgs {
-        let img_url = element_attr(img, "src");
-        if img_url == () || img_url == "" {
-            img_url = element_attr(img, "data-src");
-        }
-        if img_url == () || img_url == "" {
-            img_url = element_attr(img, "data-original");
-        }
-        if img_url == () || img_url == "" {
-            img_url = element_attr(img, "data-lazy-src");
-        }
-
-        if img_url == () || img_url == "" {
-            continue;
-        }
-
-        // Validate image URL
-        if !is_valid_image(img_url) {
-            continue;
-        }
-
-        img_url = make_absolute_url(img_url);
-
-        // Skip duplicates
-        if seen_urls.contains(img_url) {
-            continue;
-        }
-        seen_urls[img_url] = true;
-
-        pages.push(#{
-            index: idx,
-            url: img_url,
-            headers: #{
-                "Referer": url
-            },
-            referer: url
-        });
-        idx += 1;
-    }
-
-    // Try to find embedded JSON with page list (common pattern)
-    if pages.len() == 0 {
-        let json_match = regex_find("(?:pages|images)\\s*[=:]\\s*(\\[.*?\\])", html);
-        if json_match != "" {
-            // Extract the array part
-            let array_match = regex_find("\\[.*?\\]", json_match);
-            if array_match != "" {
-                let page_data = json_parse(array_match);
-                if page_data != () {
-                    for item in page_data {
-                        let img_url = "";
-                        if item.is_string() {
-                            img_url = item;
-                        } else if item.contains("url") {
-                            img_url = item["url"];
-                        } else if item.contains("src") {
-                            img_url = item["src"];
-                        } else if item.contains("image") {
-                            img_url = item["image"];
-                        }
-
-                        if img_url != "" && is_valid_image(img_url) {
-                            img_url = make_absolute_url(img_url);
-                            if !seen_urls.contains(img_url) {
-                                seen_urls[img_url] = true;
-                                pages.push(#{
-                                    index: idx,
-                                    url: img_url,
-                                    headers: #{
-                                        "Referer": url
-                                    },
-                                    referer: url
-                                });
-                                idx += 1;
-                            }
-                        }
+    // Primary path: the reader ships its page list inside
+    //   window.__DATA__ = { ... "images":["https:\/\/img.batcave.biz\/..."] ... }
+    // Grab the "images" array specifically (NOT the earlier "chapters"/"fav_folders"
+    // arrays). The URL strings contain no ']', so the array ends at the first ']'.
+    let images_match = regex_find("\"images\"\\s*:\\s*\\[[^\\]]*\\]", html);
+    if images_match != "" {
+        let array_match = regex_find("\\[[^\\]]*\\]", images_match);
+        if array_match != "" {
+            let page_data = json_parse(array_match);
+            if page_data != () && type_of(page_data) == "array" {
+                for item in page_data {
+                    let img_url = ();
+                    if type_of(item) == "string" {
+                        img_url = item;
+                    } else if type_of(item) == "map" {
+                        if item.contains("url") { img_url = item["url"]; }
+                        else if item.contains("src") { img_url = item["src"]; }
+                        else if item.contains("image") { img_url = item["image"]; }
                     }
+                    if img_url == () || img_url == "" { continue; }
+                    if !is_valid_image(img_url) { continue; }
+                    img_url = make_absolute_url(img_url);
+                    if seen_urls.contains(img_url) { continue; }
+                    seen_urls[img_url] = true;
+                    pages.push(#{
+                        index: idx,
+                        url: img_url,
+                        headers: #{ "Referer": url },
+                        referer: url
+                    });
+                    idx += 1;
                 }
             }
+        }
+    }
+
+    // Fallback: scrape <img> tags from the rendered reader DOM.
+    if pages.len() == 0 {
+        let doc = html_parse(html);
+        let page_imgs = html_select(doc, ".reader__item img, .reader img, #reader img, .reading-content img, main img, article img");
+        for img in page_imgs {
+            let img_url = element_attr(img, "data-src");
+            if img_url == () || img_url == "" { img_url = element_attr(img, "src"); }
+            if img_url == () || img_url == "" { img_url = element_attr(img, "data-original"); }
+            if img_url == () || img_url == "" { continue; }
+            if !is_valid_image(img_url) { continue; }
+            img_url = make_absolute_url(img_url);
+            if seen_urls.contains(img_url) { continue; }
+            seen_urls[img_url] = true;
+            pages.push(#{
+                index: idx,
+                url: img_url,
+                headers: #{ "Referer": url },
+                referer: url
+            });
+            idx += 1;
         }
     }
 
     pages
 }
 
-/// Get latest updates
+/// Get latest updates (newest comics). Uses the /comix/ list which is sorted
+/// newest-first and paginates via /comix/page/{n}.
 fn get_latest_updates(page, auth) {
-    let url = BASE_URL;
+    let url = `${BASE_URL}/comix/`;
     if page > 1 {
-        url = `${BASE_URL}/page/${page}/`;
+        url = `${BASE_URL}/comix/page/${page}/`;
     }
 
     let html = fetch_html(url);
     let doc = html_parse(html);
 
-    let series = [];
-    let seen = #{};
-
-    // Latest updates typically on home page
-    let items = html_select(doc, "article, .short-story, .shortstory, .item, .movie-item");
-
-    // Fallback
-    if items.len() == 0 {
-        items = html_select(doc, "div.content a[href$='.html']");
-    }
-
-    for item in items {
-        let links = html_select(item, "a[href$='.html']");
-        if links.len() == 0 {
-            let href = element_attr(item, "href");
-            if href != () && href.ends_with(".html") {
-                links = [item];
-            } else {
-                continue;
-            }
-        }
-
-        let link = links[0];
-        let href = element_attr(link, "href");
-
-        if href == () || href == "" {
-            continue;
-        }
-
-        if href.contains("index.php") || href.contains("register") || href.contains("login") {
-            continue;
-        }
-
-        let comic_url = make_absolute_url(href);
-        let id = extract_comic_id(comic_url);
-
-        if seen.contains(id) {
-            continue;
-        }
-        seen[id] = true;
-
-        // Get title
-        let title = "";
-        let title_els = html_select(item, "h2, h3, h4, .title, .name, a.title");
-        if title_els.len() > 0 {
-            title = element_text(title_els[0]).trim();
-        }
-        if title == "" {
-            title = element_text(link).trim();
-        }
-
-        if title == "" || title.len() < 2 {
-            continue;
-        }
-
-        // Get cover
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "data-src");
-            }
-            if cover_url != () && cover_url != "" && is_valid_image(cover_url) {
-                cover_url = make_absolute_url(cover_url);
-            } else {
-                cover_url = ();
-            }
-        }
-
-        series.push(#{
-            id: id,
-            title: title,
-            url: comic_url,
-            cover_url: cover_url,
-            updated_at: ()
-        });
-    }
-
-    // Check for next page
-    let has_more = false;
-    let pagination = html_select(doc, "div.navigation a, ul.pagination a, a.next, a.pnext");
-    for pager in pagination {
-        let text = element_text(pager).to_lower();
-        let href = element_attr(pager, "href");
-        if text.contains("next") || text == ">" {
-            has_more = true;
-            break;
-        }
-        if href != () && href.contains(`/page/${page + 1}/`) {
-            has_more = true;
-            break;
-        }
-    }
+    let series = parse_comic_cards(doc);
+    let has_more = series.len() >= 10;
 
     #{ series: series, has_more: has_more }
 }
 
-/// Get popular comics
+/// Get popular comics. batcave's home page shows the curated/hot grid
+/// (`.poster.grid-item` cards); fall back to the /comix/ list for deeper pages.
 fn get_popular(page, auth) {
-    // Try popular or top-rated page
-    let url = `${BASE_URL}/comix/`;
+    let url = BASE_URL;
     if page > 1 {
-        url = `${BASE_URL}/comix/?page=${page}`;
+        url = `${BASE_URL}/comix/page/${page}/`;
     }
 
     let html = fetch_html(url);
     let doc = html_parse(html);
 
-    let series = [];
-    let seen = #{};
-
-    let items = html_select(doc, "article, .short-story, .shortstory, .item, .movie-item");
-
-    if items.len() == 0 {
-        items = html_select(doc, "div.content a[href$='.html']");
-    }
-
-    for item in items {
-        let links = html_select(item, "a[href$='.html']");
-        if links.len() == 0 {
-            let href = element_attr(item, "href");
-            if href != () && href.ends_with(".html") {
-                links = [item];
-            } else {
-                continue;
-            }
-        }
-
-        let link = links[0];
-        let href = element_attr(link, "href");
-
-        if href == () || href == "" {
-            continue;
-        }
-
-        if href.contains("index.php") || href.contains("register") || href.contains("login") {
-            continue;
-        }
-
-        let comic_url = make_absolute_url(href);
-        let id = extract_comic_id(comic_url);
-
-        if seen.contains(id) {
-            continue;
-        }
-        seen[id] = true;
-
-        // Get title
-        let title = "";
-        let title_els = html_select(item, "h2, h3, h4, .title, .name, a.title");
-        if title_els.len() > 0 {
-            title = element_text(title_els[0]).trim();
-        }
-        if title == "" {
-            title = element_text(link).trim();
-        }
-
-        if title == "" || title.len() < 2 {
-            continue;
-        }
-
-        // Get cover
-        let cover_url = ();
-        let imgs = html_select(item, "img");
-        if imgs.len() > 0 {
-            cover_url = element_attr(imgs[0], "src");
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "data-src");
-            }
-            if cover_url != () && cover_url != "" && is_valid_image(cover_url) {
-                cover_url = make_absolute_url(cover_url);
-            } else {
-                cover_url = ();
-            }
-        }
-
-        // Get genres if available
-        let genres = [];
-        let genre_els = html_select(item, ".genre a, .category a, .tags a");
-        for el in genre_els {
-            let genre = element_text(el).trim();
-            if genre != "" && !genres.contains(genre) {
-                genres.push(genre);
-            }
-        }
-
-        series.push(#{
-            id: id,
-            title: title,
-            url: comic_url,
-            cover_url: cover_url,
-            genres: genres
-        });
-    }
-
-    // Check for next page
-    let has_more = false;
-    let pagination = html_select(doc, "div.navigation a, ul.pagination a, a.next, a.pnext");
-    for pager in pagination {
-        let text = element_text(pager).to_lower();
-        let href = element_attr(pager, "href");
-        if text.contains("next") || text == ">" {
-            has_more = true;
-            break;
-        }
-        if href != () && href.contains(`page=${page + 1}`) {
-            has_more = true;
-            break;
-        }
-    }
+    let series = parse_comic_cards(doc);
+    let has_more = series.len() >= 10;
 
     #{ series: series, has_more: has_more }
 }

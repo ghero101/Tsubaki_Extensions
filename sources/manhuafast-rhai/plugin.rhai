@@ -745,6 +745,21 @@ fn get_series(id_or_url, auth) {
 }
 
 /// Get all chapters for a series
+///
+/// ManhuaFast is behind a Cloudflare *JS* challenge (not just a TLS-fingerprint
+/// check), so impersonation clients receive the "Just a moment..." 403 page for
+/// every URL — including the `/manga/{slug}/ajax/chapters/` endpoint that older
+/// Madara forks expose. The ONLY thing that reliably returns the chapter list at
+/// runtime is a FlareSolverr-rendered fetch.
+///
+/// Crucially, this site's rendered SERIES PAGE *does* contain the full
+/// `<li class="wp-manga-chapter">` list (verified live: ~31 <li> on the series
+/// page). So we render the series page with FlareSolverr first.
+///
+/// IMPORTANT: a cold Cloudflare challenge solve on this domain takes ~70-75s.
+/// The previous 30s/60s FlareSolverr timeouts aborted before the challenge was
+/// solved (silent failure → 0 chapters). The host's FlareSolverr HTTP client
+/// has a 120s ceiling, so we request maxTimeout=110000ms.
 fn get_chapters(series_id, auth) {
     let url = series_id;
     let slug = series_id;
@@ -755,14 +770,65 @@ fn get_chapters(series_id, auth) {
         slug = extract_slug(series_id);
     }
 
-    let html = fetch_html(url);
+    // Normalise the series URL so we can append `ajax/chapters/`.
+    let series_url = url;
+    if !series_url.ends_with("/") {
+        series_url += "/";
+    }
 
+    let seen = #{};
+
+    // --- Tier 1: FlareSolverr render of the SERIES PAGE (primary) ------------
+    // The rendered series page contains the complete <li.wp-manga-chapter> list.
+    // 110s timeout to outlast the ~70-75s cold CF challenge solve.
+    if flaresolverr_is_available() {
+        try {
+            let fs_html = flaresolverr_get(series_url, 110000);
+            if fs_html != () && fs_html != "" && fs_html.len() > 500 && !is_cloudflare_page(fs_html) {
+                let fs_chapters = parse_chapter_list(fs_html, series_id, seen);
+                if fs_chapters.len() > 0 {
+                    return fs_chapters;
+                }
+            }
+        } catch {}
+    }
+
+    // --- Tier 2: FlareSolverr render of the AJAX endpoint --------------------
+    // Some Madara skins emit the chapter <li> only at /ajax/chapters/. The
+    // FlareSolverr session is warm after Tier 1, so this is fast.
+    let ajax_url = `${series_url}ajax/chapters/`;
+    if flaresolverr_is_available() {
+        try {
+            let fs_html = flaresolverr_get(ajax_url, 110000);
+            if fs_html != () && fs_html != "" && fs_html.len() > 500 && !is_cloudflare_page(fs_html) {
+                seen = #{};
+                let fs_chapters = parse_chapter_list(fs_html, series_id, seen);
+                if fs_chapters.len() > 0 {
+                    return fs_chapters;
+                }
+            }
+        } catch {}
+    }
+
+    // --- Tier 3: impersonation POST to ajax/chapters (cheap, usually CF-blocked) ---
+    try {
+        // A non-empty form body keeps the impersonation client happy and mirrors
+        // what the site's own JS sends.
+        let ajax_html = http_post_form(ajax_url, "action=manga_get_chapters");
+        if ajax_html != () && ajax_html != "" && ajax_html.len() > 50 && !is_cloudflare_page(ajax_html) {
+            seen = #{};
+            let ajax_chapters = parse_chapter_list(ajax_html, series_id, seen);
+            if ajax_chapters.len() > 0 {
+                return ajax_chapters;
+            }
+        }
+    } catch {}
+
+    // --- Tier 4: legacy admin-ajax.php (older Madara forks) ------------------
+    let html = fetch_html(url);
     if html == "" {
         return [];
     }
-
-    let chapters = [];
-    let seen = #{};
 
     let post_id = "";
     let id_match = regex_find("data-id=\"(\\d+)\"", html);
@@ -781,25 +847,33 @@ fn get_chapters(series_id, auth) {
             post_id = regex_find("\\d+", id_match3);
         }
     }
+    // body class `postid-{n}` is the most reliable id source on this theme.
+    if post_id == "" {
+        let id_match4 = regex_find("postid-(\\d+)", html);
+        if id_match4 != "" {
+            post_id = regex_find("\\d+", id_match4);
+        }
+    }
 
     if post_id != "" {
         try {
-            let ajax_url = `${BASE_URL}/wp-admin/admin-ajax.php`;
-            let ajax_body = `action=manga_get_chapters&manga=${post_id}`;
-            let ajax_html = http_post_form(ajax_url, ajax_body);
+            let legacy_url = `${BASE_URL}/wp-admin/admin-ajax.php`;
+            let legacy_body = `action=manga_get_chapters&manga=${post_id}`;
+            let legacy_html = http_post_form(legacy_url, legacy_body);
 
-            if ajax_html != () && ajax_html != "" && ajax_html.len() > 50 {
-                let ajax_chapters = parse_chapter_list(ajax_html, series_id, seen);
-                if ajax_chapters.len() > 0 {
-                    return ajax_chapters;
+            if legacy_html != () && legacy_html != "" && legacy_html.len() > 50 {
+                seen = #{};
+                let legacy_chapters = parse_chapter_list(legacy_html, series_id, seen);
+                if legacy_chapters.len() > 0 {
+                    return legacy_chapters;
                 }
             }
         } catch {}
     }
 
-    chapters = parse_chapter_list(html, series_id, seen);
-
-    chapters
+    // --- Tier 5: parse whatever the series page itself contained ------------
+    seen = #{};
+    parse_chapter_list(html, series_id, seen)
 }
 
 /// Parse chapter list from HTML
@@ -922,10 +996,13 @@ fn get_chapter_pages(chapter_id, auth) {
 
     let pages = extract_page_images(html, url);
 
-    // If no images found, retry with FlareSolverr which renders JS
+    // If no images found, retry with FlareSolverr which renders JS.
+    // Cold CF challenge solves on this domain take ~70-75s, so use a 110s
+    // timeout (host FlareSolverr client ceiling is 120s) — a 30s timeout aborts
+    // the solve and silently yields 0 pages.
     if pages.len() == 0 && flaresolverr_is_available() {
         try {
-            let fs_html = flaresolverr_get(url, 30000);
+            let fs_html = flaresolverr_get(url, 110000);
             if fs_html.len() > 500 {
                 pages = extract_page_images(fs_html, url);
             }

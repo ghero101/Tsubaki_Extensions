@@ -37,12 +37,20 @@ fn get_headers() {
     }
 }
 
-/// Check if HTML looks like a Cloudflare challenge page
+/// Check if HTML looks like a Cloudflare challenge or origin-error page.
+/// manhwaclan.com sits behind Cloudflare with a JS challenge that plain HTTP
+/// clients (even Chrome-TLS-impersonating ones) cannot solve — they always get
+/// a 403 "Just a moment" page. FlareSolverr can solve the challenge, but when
+/// the site's origin is down Cloudflare serves a 5xx interstitial (520/521/522)
+/// that contains no real content; we must treat those as failures too.
 fn is_cloudflare_page(html) {
     if html.len() < 500 {
         return true;
     }
-    if html.contains("Just a moment") && html.contains("_cf_chl_opt") {
+    if html.contains("Just a moment") {
+        return true;
+    }
+    if html.contains("_cf_chl_opt") || html.contains("cf-challenge") {
         return true;
     }
     if html.contains("challenge-platform") && html.contains("Enable JavaScript") {
@@ -51,12 +59,45 @@ fn is_cloudflare_page(html) {
     if html.contains("Attention Required") && html.contains("Cloudflare") {
         return true;
     }
+    if html.contains("Verifying you are human") {
+        return true;
+    }
+    // Cloudflare origin-error interstitials (origin unreachable / down)
+    if html.contains("Web server is down") ||
+       html.contains("Error code 521") || html.contains("521: Web server is down") ||
+       html.contains("Error code 520") || html.contains("Error code 522") ||
+       html.contains("Error code 523") || html.contains("Error code 524") ||
+       html.contains("Origin DNS error") {
+        return true;
+    }
     false
 }
 
-/// Fetch HTML with Cloudflare bypass (4-tier approach for heavy CF protection)
+/// FlareSolverr timeout (ms). manhwaclan's CF challenge can take 50-120s to
+/// solve, so we give it a generous window.
+const FS_TIMEOUT = 60000;
+
+/// Fetch HTML with Cloudflare bypass.
+///
+/// manhwaclan.com always returns HTTP 403 ("Just a moment") to plain/impersonated
+/// HTTP, so FlareSolverr (which runs a real headless Chrome and solves the CF JS
+/// challenge) is the ONLY reliable path. We try it first. The cheap HTTP tiers
+/// are kept as a fast-path in case CF ever drops the challenge for a given IP,
+/// and browser automation remains a last resort.
 fn fetch_html(url) {
-    // Tier 1: rquest with Chrome TLS impersonation
+    // Tier 1 (primary): FlareSolverr — solves the CF JS challenge.
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, FS_TIMEOUT);
+            if html.len() > 500 && !is_cloudflare_page(html) {
+                return html;
+            }
+        } catch {
+            // Fall through
+        }
+    }
+
+    // Tier 2: rquest with Chrome TLS impersonation (fast-path if CF lets us through)
     try {
         let html = http_get_with_headers(url, get_headers());
         if html.len() > 500 && !is_cloudflare_page(html) {
@@ -66,7 +107,7 @@ fn fetch_html(url) {
         // Fall through
     }
 
-    // Tier 2: plain reqwest
+    // Tier 3: plain reqwest
     try {
         let html = http_get_plain(url, get_headers());
         if html.len() > 500 && !is_cloudflare_page(html) {
@@ -74,18 +115,6 @@ fn fetch_html(url) {
         }
     } catch {
         // Fall through
-    }
-
-    // Tier 3: FlareSolverr (headless browser, solves CF challenges)
-    if flaresolverr_is_available() {
-        try {
-            let html = flaresolverr_get(url, 45000);
-            if html.len() > 500 && !is_cloudflare_page(html) {
-                return html;
-            }
-        } catch {
-            // Fall through
-        }
     }
 
     // Tier 4: Browser automation (puppeteer/chrome) if available
@@ -1002,8 +1031,8 @@ fn get_chapter_pages(chapter_id, auth) {
     // If no images found, retry with FlareSolverr which renders JS
     if pages.len() == 0 && flaresolverr_is_available() {
         try {
-            let fs_html = flaresolverr_get(url, 30000);
-            if fs_html.len() > 500 {
+            let fs_html = flaresolverr_get(url, FS_TIMEOUT);
+            if fs_html.len() > 500 && !is_cloudflare_page(fs_html) {
                 pages = extract_page_images(fs_html, url);
             }
         } catch {}

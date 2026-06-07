@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "toonclash",
   "name": "ToonClash",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "ToonClash - Manga, manhwa, and manhua reader",
   "author": {
     "name": "Tsubaki Team",
@@ -18,13 +18,14 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "http_only",
+    "level": "flaresolverr",
     "allowed_domains": [
+      "mangaclash.com",
       "toonclash.com"
     ],
     "requires_cookies": false,
     "requires_javascript": true,
-    "cloudflare_protected": false
+    "cloudflare_protected": true
   },
   "features": {
     "search": true,
@@ -39,7 +40,7 @@
     "type": "none"
   },
   "source_info": {
-    "base_url": "https://toonclash.com",
+    "base_url": "https://mangaclash.com",
     "language": "en",
     "supported_languages": [
       "en"

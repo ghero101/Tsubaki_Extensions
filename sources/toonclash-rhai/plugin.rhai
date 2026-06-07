@@ -1,12 +1,14 @@
 // ToonClash Scraper Add-on (Rhai)
-// WordPress Madara theme scraper for toonclash.com (not Cloudflare protected)
+// WordPress Madara theme scraper.
 //
-// ToonClash is a manga/manhwa/manhua reader site built on the WordPress Madara theme.
-// The site is NOT behind Cloudflare, but we still use the same tiered fetch approach
-// for robustness.
+// MIGRATION (2026-06): toonclash.com now 301-redirects all archive/search/chapter
+// URLs to mangaclash.com, which is Cloudflare-protected (plain HTTP returns 403
+// "Attention Required"). The site effectively moved to mangaclash.com. We therefore
+// target mangaclash.com and fetch through FlareSolverr (which solves the CF challenge).
+// Plain HTTP is kept only as a last-resort fallback.
 //
-// URL Patterns:
-//   Search: /?s={query}&post_type=wp-manga
+// URL Patterns (mangaclash.com, Madara theme):
+//   Search: /?s={query}&post_type=wp-manga&paged={page}
 //   Browse: /manga/?m_orderby=latest&page={page}
 //   Series: /manga/{slug}/
 //   Chapter: /manga/{slug}/{chapter-slug}/
@@ -21,7 +23,8 @@
 //          regex_find_all(pattern, text)
 //   url_encode(text) -> string
 
-const BASE_URL = "https://toonclash.com";
+// Live backend. toonclash.com redirects here; mangaclash.com is the real (CF-protected) host.
+const BASE_URL = "https://mangaclash.com";
 
 // ============================================================================
 // Helper Functions
@@ -54,23 +57,38 @@ fn is_cloudflare_page(html) {
     false
 }
 
-/// Fetch HTML with fallback tiers:
-/// 1. Try http_get_with_headers (rquest with Chrome131 TLS impersonation)
-/// 2. Fall back to http_get_plain (standard reqwest, no impersonation)
+/// Fetch HTML. The backend (mangaclash.com) is Cloudflare-protected: plain HTTP
+/// returns a 403 "Attention Required" challenge page. FlareSolverr solves the
+/// challenge, so it is the PRIMARY fetch path here. Plain HTTP tiers are kept as a
+/// best-effort fallback in case CF lets a request through (e.g. cached edge pages).
 fn fetch_html(url) {
-    // Tier 1: rquest with Chrome TLS impersonation
-    try {
-        let html = http_get_with_headers(url, get_headers());
-        if html.len() > 500 && !is_cloudflare_page(html) {
-            return html;
-        }
-    } catch {
-        // Fall through to next tier
+    // Rewrite any legacy toonclash.com URL (stored in old DB rows / chapter ids)
+    // to the live mangaclash.com host so we don't pay an extra 301 round-trip.
+    if type_of(url) == "string" && url.contains("toonclash.com") {
+        url = url.replace("toonclash.com", "mangaclash.com");
     }
 
-    // Tier 2: plain reqwest (no TLS impersonation)
+    // Tier 1: FlareSolverr (solves the Cloudflare challenge) — primary path.
+    // mangaclash's CF challenge solves in ~6-8s when FlareSolverr/Chrome is warm,
+    // but a COLD solve (Chrome cold-start, or while queued behind the host's
+    // FlareSolverr semaphore during a concurrent connector test sweep) can take
+    // much longer. The previous 40000ms (40s) cap was marginal and would
+    // intermittently time out, leaving discover with 0 series. Use 90000ms (host
+    // cap is ~120s) so cold/queued solves still complete.
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 90000);
+            if html.len() > 500 && !is_cloudflare_page(html) {
+                return html;
+            }
+        } catch {
+            // Fall through to plain HTTP tiers
+        }
+    }
+
+    // Tier 2: rquest with Chrome TLS impersonation (may hit a cached edge page).
     try {
-        let html = http_get_plain(url, get_headers());
+        let html = http_get_with_headers(url, get_headers());
         if html.len() > 500 && !is_cloudflare_page(html) {
             return html;
         }
@@ -78,16 +96,14 @@ fn fetch_html(url) {
         // Fall through
     }
 
-    // Tier 3: FlareSolverr if available
-    if flaresolverr_is_available() {
-        try {
-            let html = flaresolverr_get(url, 30000);
-            if html.len() > 500 && !is_cloudflare_page(html) {
-                return html;
-            }
-        } catch {
-            // Fall through
+    // Tier 3: plain reqwest (no TLS impersonation).
+    try {
+        let html = http_get_plain(url, get_headers());
+        if html.len() > 500 && !is_cloudflare_page(html) {
+            return html;
         }
+    } catch {
+        // Fall through
     }
 
     ""
@@ -102,7 +118,7 @@ fn get_source_info() {
         language: "en",
         supported_languages: ["en"],
         requires_authentication: false,
-        capability_level: "http_only",
+        capability_level: "flaresolverr",
         nsfw: false,
         content_types: ["manga", "manhwa", "manhua"]
     }
@@ -202,6 +218,16 @@ fn extract_number(s) {
     num
 }
 
+/// Build a Madara archive (browse) URL for the given order + page.
+/// Madara paginates the /manga/ archive via /manga/page/N/?m_orderby=ORDER —
+/// the ?page=N query param is ignored by WordPress, so it must be a path segment.
+fn madara_archive_url(order, page) {
+    if page <= 1 {
+        return `${BASE_URL}/manga/?m_orderby=${order}`;
+    }
+    `${BASE_URL}/manga/page/${page}/?m_orderby=${order}`
+}
+
 /// Make a URL absolute if it is relative
 fn make_absolute_url(url) {
     if url == () || url == "" {
@@ -233,6 +259,13 @@ fn get_image_url(img) {
     }
     if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") {
         url = element_attr(img, "src");
+    }
+
+    // Madara chapter <img src> values are often padded with leading/trailing
+    // whitespace (tabs/newlines). Trim early so downstream starts_with("http")
+    // checks (make_absolute_url) don't mis-classify the URL as relative.
+    if url != () && url != "" {
+        url = url.trim();
     }
 
     // Skip placeholder/invalid images
@@ -303,6 +336,72 @@ fn strip_html(text) {
     // Clean up whitespace
     cleaned = cleaned.trim();
     cleaned
+}
+
+/// Fallback card parser: extract series straight from /manga/{slug}/ anchors.
+/// Used when the structured .page-item-detail / .c-tabs-item__content selectors
+/// yield nothing (e.g. minor Madara markup drift). Operates on the whole page
+/// HTML and de-dupes by slug. Skips non-series /manga/ paths like /manga/page/.
+fn parse_cards_from_anchors(html) {
+    let series = [];
+    let seen = #{};
+
+    let links = html_select(html, "a[href*='/manga/']");
+    for link in links {
+        let href = element_attr(link, "href");
+        if href == () || href == "" {
+            continue;
+        }
+        // Only series detail links: must have a slug after /manga/ and not be a
+        // pagination/order link (/manga/page/N, /manga/?m_orderby=...).
+        if href.contains("/manga/page/") {
+            continue;
+        }
+        let slug = extract_slug(href);
+        if slug == "" || slug == "page" || slug.starts_with("?") {
+            continue;
+        }
+        if seen.contains(slug) {
+            continue;
+        }
+
+        // Prefer the anchor text as the title; fall back to the title attribute.
+        let title = element_text(link).trim();
+        if title == "" {
+            let title_attr = element_attr(link, "title");
+            if title_attr != () { title = title_attr.trim(); }
+        }
+        // Skip empty/placeholder anchors (cover-image-only links carry no text).
+        if title == "" || title.len() < 2 {
+            continue;
+        }
+
+        seen[slug] = true;
+
+        // Try to find a cover image inside the anchor.
+        let cover_url = ();
+        let imgs = html_select(link, "img");
+        if imgs.len() > 0 {
+            cover_url = get_image_url(imgs[0]);
+        }
+        cover_url = make_absolute_url(cover_url);
+
+        series.push(#{
+            id: slug,
+            title: title,
+            url: make_absolute_url(href),
+            cover_url: cover_url,
+            alternate_titles: [],
+            authors: [],
+            artists: [],
+            status: (),
+            genres: [],
+            tags: [],
+            description: ()
+        });
+    }
+
+    series
 }
 
 // ============================================================================
@@ -424,6 +523,11 @@ fn search_series(query, page, auth) {
         });
     }
 
+    // Fallback: if structured selectors found nothing, scrape /manga/ anchors.
+    if series.len() == 0 {
+        series = parse_cards_from_anchors(html);
+    }
+
     // Check for next page using Madara pagination
     let has_more = false;
     let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .wp-pagenavi a.next, .nextprev a, .pagination a.next");
@@ -466,7 +570,7 @@ fn browse(page, category, auth) {
         order = "alphabet";
     }
 
-    let url = `${BASE_URL}/manga/?m_orderby=${order}&page=${page}`;
+    let url = madara_archive_url(order, page);
 
     let html = fetch_html(url);
 
@@ -540,6 +644,11 @@ fn browse(page, category, auth) {
             tags: [],
             description: ()
         });
+    }
+
+    // Fallback: if structured selectors found nothing, scrape /manga/ anchors.
+    if series.len() == 0 {
+        series = parse_cards_from_anchors(html);
     }
 
     // Check for more pages
@@ -977,18 +1086,9 @@ fn get_chapter_pages(chapter_id, auth) {
         url = make_absolute_url(chapter_id);
     }
 
-    // ToonClash loads chapter images via JavaScript after page load.
-    // Standard HTTP fetch won't have images. Try FlareSolverr first (renders JS),
-    // then fall back to regular HTTP.
-    let html = "";
-    if flaresolverr_is_available() {
-        try {
-            html = flaresolverr_get(url, 30000);
-        } catch {}
-    }
-    if html == "" || html.len() < 500 {
-        html = fetch_html(url);
-    }
+    // Chapter pages live on the CF-protected backend, so fetch_html (FlareSolverr-first)
+    // is required — plain HTTP returns a 403 challenge.
+    let html = fetch_html(url);
 
     if html == "" {
         return [];
@@ -1001,6 +1101,8 @@ fn get_chapter_pages(chapter_id, auth) {
     // Madara theme reader: div.page-break img or div.reading-content img
     // These are the standard selectors in order of specificity
     let selectors = [
+        ".reading-content .wp-manga-chapter-img",
+        ".wp-manga-chapter-img",
         "div.page-break img",
         ".reading-content .page-break img",
         ".reading-content img",
@@ -1079,8 +1181,10 @@ fn get_chapter_pages(chapter_id, auth) {
 
 /// Get latest manga updates
 fn get_latest_updates(page, auth) {
-    // Madara latest: /manga/?m_orderby=latest&page={page}
-    let url = `${BASE_URL}/manga/?m_orderby=latest&page=${page}`;
+    // Madara archive paginates via /manga/page/N/, NOT a ?page= query string.
+    // (?page=N is silently ignored, so every page returned page 1 — harmless for
+    //  page 1 but broke has_more/pagination.)
+    let url = madara_archive_url("latest", page);
 
     let html = fetch_html(url);
 
@@ -1159,6 +1263,11 @@ fn get_latest_updates(page, auth) {
             cover_url: cover_url,
             updated_at: updated_at
         });
+    }
+
+    // Fallback: if structured selectors found nothing, scrape /manga/ anchors.
+    if series.len() == 0 {
+        series = parse_cards_from_anchors(html);
     }
 
     // Check for next page

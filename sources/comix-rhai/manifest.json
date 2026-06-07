@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "comix-rhai",
   "name": "Comix",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Scraper for Comix (comix.to), a modern manga/manhwa/manhua reader with a large library and multiple scanlation groups.",
   "author": {
     "name": "Tsubaki Community",

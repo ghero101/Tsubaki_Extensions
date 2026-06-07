@@ -694,10 +694,16 @@ fn get_chapter_pages(chapter_id, auth) {
         return [];
     }
 
-    let pages = [];
-    let idx = 0;
+    // Paywalled chapters return {"paywall": true, "chapter": {...no chapter_data...}}
+    // with HTTP 200. There are no images to fetch without a purchased account, so
+    // return [] explicitly (the caller treats 0 pages as "needs auth / locked").
+    if data["paywall"] == true {
+        return [];
+    }
 
-    // Try new format: chapter.chapterData.images or chapter.chapter_data.images
+    // Try new format: chapter.chapterData.images / chapter.chapter_data.images.
+    // Modern HeanCMS returns chapter_data as a nested object, but some forks
+    // serialize it as a JSON *string* — handle both.
     let chapter = data["chapter"];
     if chapter != () {
         let chapter_data = chapter["chapterData"];
@@ -705,55 +711,71 @@ fn get_chapter_pages(chapter_id, auth) {
             chapter_data = chapter["chapter_data"];
         }
 
-        if chapter_data != () {
-            let images = chapter_data["images"];
-            if images != () {
-                for img_url in images {
-                    if img_url != () && img_url != "" {
-                        pages.push(create_page(idx, img_url, referer_url));
-                        idx += 1;
-                    }
-                }
+        // chapter_data may be a JSON string that itself contains {"images":[...]}
+        if type_of(chapter_data) == "string" && chapter_data != "" {
+            let parsed = json_parse(chapter_data);
+            if parsed != () {
+                chapter_data = parsed;
+            }
+        }
+
+        if chapter_data != () && type_of(chapter_data) == "map" {
+            let pages = build_pages(chapter_data["images"], referer_url);
+            if pages.len() > 0 {
                 return pages;
             }
+        }
+
+        // Some payloads put images straight on the chapter object
+        let pages = build_pages(chapter["images"], referer_url);
+        if pages.len() > 0 {
+            return pages;
         }
     }
 
     // Try: data array directly in response
-    let images = data["data"];
-    if images != () {
-        for img_url in images {
-            if img_url != () && img_url != "" {
-                pages.push(create_page(idx, img_url, referer_url));
-                idx += 1;
-            }
-        }
+    let pages = build_pages(data["data"], referer_url);
+    if pages.len() > 0 {
         return pages;
     }
 
     // Try: images array at root level
-    images = data["images"];
-    if images != () {
-        for img_url in images {
-            if img_url != () && img_url != "" {
-                pages.push(create_page(idx, img_url, referer_url));
-                idx += 1;
-            }
-        }
+    pages = build_pages(data["images"], referer_url);
+    if pages.len() > 0 {
         return pages;
     }
 
     // Try: content.images
     let content = data["content"];
-    if content != () {
-        images = content["images"];
-        if images != () {
-            for img_url in images {
-                if img_url != () && img_url != "" {
-                    pages.push(create_page(idx, img_url, referer_url));
-                    idx += 1;
-                }
-            }
+    if content != () && type_of(content) == "map" {
+        pages = build_pages(content["images"], referer_url);
+    }
+
+    pages
+}
+
+/// Build page objects from a HeanCMS images array and RETURN them.
+/// (Rhai passes args by value, so we return a new array rather than mutate one.)
+/// Each element may be a plain URL string or an object like {url}/{src}/{image}.
+fn build_pages(images, referer_url) {
+    let pages = [];
+    if images == () || type_of(images) != "array" {
+        return pages;
+    }
+
+    for img in images {
+        let img_url = ();
+        if type_of(img) == "string" {
+            img_url = img;
+        } else if type_of(img) == "map" {
+            img_url = img["url"];
+            if img_url == () { img_url = img["src"]; }
+            if img_url == () { img_url = img["image"]; }
+            if img_url == () { img_url = img["path"]; }
+        }
+
+        if img_url != () && img_url != "" {
+            pages.push(create_page(pages.len(), img_url, referer_url));
         }
     }
 

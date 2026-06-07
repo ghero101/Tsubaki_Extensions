@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "id": "mangabuddy",
   "name": "MangaBuddy",
-  "version": "1.0.1",
-  "description": "MangaBuddy - Popular manga, manhwa, and manhua aggregator",
+  "version": "1.0.3",
+  "description": "MangaBuddy / MangaK - Popular manga, manhwa, and manhua aggregator",
   "author": {"name": "Tsubaki Team", "url": "https://github.com/tsubaki"},
   "license": "MIT",
   "repository": "https://github.com/ghero101/Tsubaki_Extensions",
@@ -14,7 +14,7 @@
   "entry_point": {"file": "plugin.rhai"},
   "capabilities": {
     "level": "http_only",
-    "allowed_domains": ["mangabuddy.com"],
+    "allowed_domains": ["mangak.io", "mangabuddy.com", "resmk.org", "qvzrb.org"],
     "requires_cookies": false,
     "requires_javascript": false,
     "cloudflare_protected": false
@@ -30,7 +30,7 @@
   },
   "authentication": {"type": "none"},
   "source_info": {
-    "base_url": "https://mangabuddy.com",
+    "base_url": "https://mangak.io",
     "language": "en",
     "supported_languages": ["en"],
     "content_rating": "suggestive",
