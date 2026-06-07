@@ -280,6 +280,39 @@ fn get_chapters(series_id, auth) {
     chapters
 }
 
+// Build the standard page-image header map. The page CDN
+// (cdn2.love4awalk.xyz, formerly cdn2.fandommanga.xyz) hotlink-protects
+// images: the proxy layer supplies Chrome TLS impersonation, but we must
+// emit the correct Referer (the chapter page URL on the site origin).
+fn page_headers(referer) {
+    #{
+        "Referer": referer,
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+    }
+}
+
+// True if a URL looks like a real manga page image hosted on the
+// (rotating) RoliaScan page CDN, not a site asset/logo/ad/cover.
+fn is_page_image(src) {
+    if src == () || src == "" { return false; }
+    let s = src.to_lower();
+    // Site assets / chrome — never pages.
+    if s.contains("/assets/") || s.contains("roliascann.com") { return false; }
+    if s.contains("logo") || s.contains("icon") || s.contains("avatar") { return false; }
+    if s.contains("banner") || s.contains("loading") || s.contains("favicon") { return false; }
+    // Must be an image extension.
+    if !(s.contains(".webp") || s.contains(".jpg") || s.contains(".jpeg") || s.contains(".png")) {
+        return false;
+    }
+    // Known/likely page CDNs. love4awalk is the current host (2026);
+    // fandommanga is the legacy host. Also accept any CDN-style host that
+    // carries a manga page path so future CDN renames keep working.
+    if s.contains("love4awalk.xyz") || s.contains("fandommanga.xyz") { return true; }
+    if s.contains("//cdn") && (s.contains("/chapters/") || s.contains("/manga/")) { return true; }
+    return false;
+}
+
 fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
     if !chapter_id.starts_with("http") {
@@ -289,53 +322,51 @@ fn get_chapter_pages(chapter_id, auth) {
     let html = fetch_html(url);
     let doc = html_parse(html);
     let pages = [];
+    let seen = #{};
     let idx = 0;
 
-    // Find all images that are manga pages
-    let imgs = html_select(doc, "img");
+    // Page images live as <img src='https://cdn2.love4awalk.xyz/.../N.webp'
+    // class='... img-fluid'> inside the reading-content container. Prefer
+    // those, but fall back to scanning every <img> on the page.
+    let imgs = html_select(doc, ".reading-content img, .read-content img, img.img-fluid");
+    if imgs.len() == 0 {
+        imgs = html_select(doc, "img");
+    }
+
     for img in imgs {
         let src = element_attr(img, "src");
         if src == () || src == "" {
             src = element_attr(img, "data-src");
         }
         if src == () || src == "" { continue; }
+        src = src.trim();
 
-        // Skip non-manga images
-        let src_lower = src.to_lower();
-        if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
-            continue;
-        }
-        if src_lower.contains("banner") || src_lower.contains("ad") || src_lower.contains("loading") {
-            continue;
-        }
+        if !is_page_image(src) { continue; }
+        if seen.contains(src) { continue; }
+        seen[src] = true;
 
-        // Include CDN images (actual manga pages) and any /read/ path images
-        if src.contains("cdn2.fandommanga.xyz") || src.contains("fandommanga.xyz") || src.contains("/chapters/") || src.contains("/manga/") || src.contains("/read/") {
-            pages.push(#{
-                index: idx,
-                url: src,
-                headers: #{
-                    "Referer": BASE_URL,
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
-                }
-            });
-            idx += 1;
-        }
+        pages.push(#{
+            index: idx,
+            url: src,
+            referer: url,
+            headers: page_headers(url)
+        });
+        idx += 1;
     }
 
-    // Fallback: try to find images via regex (some readers embed URLs in JS)
+    // Fallback: some layouts embed the URLs in JS/JSON rather than <img>.
+    // Match any love4awalk/fandommanga page image URL in the raw HTML.
     if pages.len() == 0 {
-        let cdn_urls = regex_find_all("https://cdn2\\.fandommanga\\.xyz/[^\"'\\s]+\\.(jpg|png|webp)", html);
+        let cdn_urls = regex_find_all("https?://[a-z0-9.-]*(?:love4awalk|fandommanga)\\.xyz/[^\"'\\s)]+\\.(?:webp|jpg|jpeg|png)", html);
         for img_url in cdn_urls {
+            let clean = img_url.trim();
+            if seen.contains(clean) { continue; }
+            seen[clean] = true;
             pages.push(#{
                 index: idx,
-                url: img_url,
-                headers: #{
-                    "Referer": BASE_URL,
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
-                }
+                url: clean,
+                referer: url,
+                headers: page_headers(url)
             });
             idx += 1;
         }

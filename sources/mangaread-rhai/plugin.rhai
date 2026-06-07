@@ -216,27 +216,47 @@ fn make_absolute_url(url) {
     `${BASE_URL}/${url}`
 }
 
+/// Trim leading/trailing ASCII whitespace (spaces, tabs, CR, LF) from a string.
+/// mangaread.org wraps chapter-image `src` values in tabs/newlines, e.g.
+///   <img src="\t\t\n\thttps://.../3.jpeg">
+/// .trim() in Rhai only strips spaces reliably, so do it explicitly.
+fn clean_url(url) {
+    if url == () || url == "" {
+        return "";
+    }
+    let s = url.replace("\t", "").replace("\r", "").replace("\n", "").trim();
+    s
+}
+
 /// Get the best image URL from an img element, handling lazy loading
 fn get_image_url(img) {
     // Madara theme uses multiple lazy-loading patterns
     // Priority: data-src > data-lazy-src > data-lazy > src
-    let url = element_attr(img, "data-src");
+    // NOTE: mangaread.org pads the chapter-image `src` with tabs/newlines, so
+    // every candidate must be whitespace-cleaned BEFORE the placeholder checks
+    // (otherwise "data:" / "blank.gif" guards miss and make_absolute_url mangles
+    // a "http"-prefixed value into ${BASE_URL}/\thttps://... ).
+    let url = clean_url(element_attr(img, "data-src"));
 
-    if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") || url.contains("dflazy.jpg") {
-        url = element_attr(img, "data-lazy-src");
+    if url == "" || url.contains("blank.gif") || url.starts_with("data:") || url.contains("dflazy.jpg") {
+        url = clean_url(element_attr(img, "data-lazy-src"));
     }
-    if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") || url.contains("dflazy.jpg") {
-        url = element_attr(img, "data-lazy");
+    if url == "" || url.contains("blank.gif") || url.starts_with("data:") || url.contains("dflazy.jpg") {
+        url = clean_url(element_attr(img, "data-lazy"));
     }
-    if url == () || url == "" || url.contains("blank.gif") || url.starts_with("data:") || url.contains("dflazy.jpg") {
-        url = element_attr(img, "src");
+    if url == "" || url.contains("blank.gif") || url.starts_with("data:") || url.contains("dflazy.jpg") {
+        url = clean_url(element_attr(img, "src"));
     }
 
     // Skip placeholder/invalid images
-    if url != () && url != "" {
+    if url != "" {
         if url.contains("blank.gif") || url.starts_with("data:") || url.contains("loading") || url.contains("dflazy.jpg") {
             return ();
         }
+    }
+
+    if url == "" {
+        return ();
     }
 
     url
@@ -970,6 +990,7 @@ fn extract_page_images(html, referer_url) {
     let seen_urls = #{};
 
     let selectors = [
+        "img.wp-manga-chapter-img",
         "div.page-break img",
         ".reading-content .page-break img",
         ".reading-content img",
@@ -1010,21 +1031,43 @@ fn extract_page_images(html, referer_url) {
         }
     }
 
-    // Fallback: regex extraction for image URLs
+    // Fallback A: regex straight for Madara's canonical page-image path.
+    // mangaread.org serves pages from /wp-content/uploads/WP-manga/data/...
+    // and pads the src with tabs/newlines, so match the bare URL (no quote
+    // anchoring) and whitespace-clean each hit.
+    if pages.len() == 0 {
+        let data_matches = regex_find_all("https?://[^\"'\\s]+/WP-manga/data/[^\"'\\s]+\\.(?:jpg|jpeg|png|webp|gif)", html);
+        for raw in data_matches {
+            let curl = clean_url(raw);
+            if curl == "" || seen_urls.contains(curl) {
+                continue;
+            }
+            seen_urls[curl] = true;
+            pages.push(#{
+                index: idx,
+                url: curl,
+                headers: #{ "Referer": referer_url },
+                referer: referer_url
+            });
+            idx += 1;
+        }
+    }
+
+    // Fallback B: generic image-URL regex extraction
     if pages.len() == 0 {
         let img_matches = regex_find_all("\"(https?://[^\"]+(?:\\.jpg|\\.jpeg|\\.png|\\.webp)[^\"]*)\"", html);
         for img_url in img_matches {
-            let clean_url = img_url.replace("\"", "").trim();
+            let curl = clean_url(img_url.replace("\"", ""));
 
-            if is_valid_page_image(clean_url) {
-                if seen_urls.contains(clean_url) {
+            if curl != "" && is_valid_page_image(curl) {
+                if seen_urls.contains(curl) {
                     continue;
                 }
-                seen_urls[clean_url] = true;
+                seen_urls[curl] = true;
 
                 pages.push(#{
                     index: idx,
-                    url: clean_url,
+                    url: curl,
                     headers: #{ "Referer": referer_url },
                     referer: referer_url
                 });
