@@ -26,7 +26,7 @@ konachan, realbooru, safebooru, xbooru.
 | comix-rhai | browse, search, chapters | page images behind a JS anti-bot token (not Rhai-doable) |
 | heancms-rhai | free chapters | paywalled chapters return 0 (need account) |
 | nhentai-rhai | discover, chapters | pages flaky — per-page FlareSolverr solve times out intermittently (use **nhentai-scraper**, which is reliable) |
-| manhuafast | discover | chapters via FlareSolverr series-render (~73s) can exceed the harness budget; works given time |
+| manhuafast | discover | chapters still fail at runtime — the FlareSolverr series-render path didn't extract the lazy Madara chapter list in practice (needs another pass; deprioritized) |
 
 ### Infra-blocked / dead (not fixable in-plugin)
 | Extension | Reason |
