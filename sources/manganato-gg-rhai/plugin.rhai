@@ -69,6 +69,37 @@ fn get_headers(referer) {
     }
 }
 
+/// True if the HTML is a Cloudflare/interstitial challenge rather than real
+/// content. Some mirrors (natomanga.com, nelomanga.net) serve a "Just a
+/// moment..." challenge for detail pages while manganato.gg serves them plainly,
+/// so callers must skip blocked pages and fall through to the next mirror.
+fn looks_blocked(html) {
+    html.contains("Just a moment")
+        || html.contains("cf-browser-verification")
+        || html.contains("cf-challenge")
+        || html.contains("Checking if the site connection is secure")
+        || html.contains("Enable JavaScript and cookies to continue")
+}
+
+/// Fetch a JSON API endpoint across mirrors (sets the XHR header the site's
+/// own JS uses). Skips CF-challenge/empty responses. Returns the raw JSON body.
+fn fetch_api(path) {
+    let mirrors = get_mirror_list();
+    for mirror in mirrors {
+        let url = `${mirror}${path}`;
+        let headers = get_headers(mirror);
+        headers["X-Requested-With"] = "XMLHttpRequest";
+        headers["Accept"] = "application/json, text/plain, */*";
+        let body = "";
+        try { body = http_get_with_headers(url, headers); } catch {}
+        if body == "" { try { body = http_get(url); } catch {} }
+        if body != "" && !looks_blocked(body) && body.contains("\"success\"") {
+            return body;
+        }
+    }
+    ""
+}
+
 /// Fetch HTML with mirror fallback - tries each mirror until one works
 /// Uses browser automation if available, falls back to HTTP
 fn fetch_with_fallback(path) {
@@ -104,7 +135,7 @@ fn fetch_with_fallback(path) {
             }
         }
 
-        if html != "" && html.len() > 500 && !html.contains("404") && !html.contains("Page not found") {
+        if html != "" && html.len() > 500 && !looks_blocked(html) && !html.contains("Page not found") {
             return html;
         }
     }
@@ -147,43 +178,46 @@ fn fetch_url(url) {
     html
 }
 
-/// Fetch with browser, waiting for chapter list to load
+/// Fetch a series detail page. The working mirror (manganato.gg) serves the
+/// full chapter list in static HTML, so we try plain HTTP first (fast, no CF
+/// headless fingerprinting) and only fall back to the browser if no mirror
+/// yields chapter links over HTTP. CF-challenge pages are skipped so we fall
+/// through to a clean mirror.
 fn fetch_series_page(path) {
     let mirrors = get_mirror_list();
 
+    // Pass 1: HTTP across mirrors, require chapter markers + not CF-blocked.
     for mirror in mirrors {
         let url = `${mirror}${path}`;
         let html = "";
+        try {
+            html = http_get_with_headers(url, get_headers(mirror));
+        } catch {
+            try { html = http_get(url); } catch { html = ""; }
+        }
+        if html != "" && html.len() > 500 && !looks_blocked(html)
+            && !html.contains("Page not found") && html.contains("/chapter-") {
+            return html;
+        }
+    }
 
-        // Series pages need browser to load AJAX chapter list
-        if browser_is_available() {
+    // Pass 2: browser fallback for mirrors whose chapter list is JS-rendered.
+    if browser_is_available() {
+        for mirror in mirrors {
+            let url = `${mirror}${path}`;
+            let html = "";
             try {
                 let browser_id = browser_launch();
                 browser_goto(browser_id, url);
-                // Wait for chapter list to load (AJAX-rendered)
                 browser_wait_for_selector(browser_id, "ul.row-content-chapter, div.chapter-list, a[href*='/chapter-']", 15000);
                 html = browser_get_html(browser_id);
                 browser_close(browser_id);
             } catch {
                 html = "";
             }
-        }
-
-        // HTTP fallback (chapter list may not load without JS)
-        if html == "" || html.len() < 500 {
-            try {
-                html = http_get_with_headers(url, get_headers(mirror));
-            } catch {
-                try {
-                    html = http_get(url);
-                } catch {
-                    html = "";
-                }
+            if html != "" && html.len() > 500 && !looks_blocked(html) && !html.contains("Page not found") {
+                return html;
             }
-        }
-
-        if html != "" && html.len() > 500 && !html.contains("404") {
-            return html;
         }
     }
 
@@ -595,55 +629,73 @@ fn get_chapters(series_id, auth) {
         slug = extract_slug(series_id);
     }
 
-    let path = `/manga/${slug}`;
-
-    // Use browser-capable fetch to let AJAX chapter list load
-    let html = fetch_series_page(path);
-
-    if html == "" {
-        return [];
-    }
-
     let chapters = [];
     let seen = #{};
 
-    // Find chapter links - try multiple selector patterns
-    let chapter_links = html_select(html, "ul.row-content-chapter li a.chapter-name");
-
-    if chapter_links.len() == 0 {
-        chapter_links = html_select(html, "div.chapter-list div.row a");
+    // Primary: the chapter list loads via a JSON API (the series page ships only
+    // a "chapter-list-loading" stub plus sidebar links to OTHER series — the old
+    // a[href*='/chapter-'] selector wrongly scraped those, producing chapters
+    // that don't belong to this series). Returns the most recent ~50 chapters.
+    let json_str = fetch_api(`/api/manga/${slug}/chapters`);
+    if json_str != "" {
+        let parsed = ();
+        try { parsed = json_parse(json_str); } catch {}
+        if parsed != () && parsed["success"] == true && parsed["data"] != () {
+            let list = parsed["data"]["chapters"];
+            if list != () {
+                for ch in list {
+                    let num = `${ch["chapter_num"]}`;
+                    if num == "" || seen[num] != () { continue; }
+                    seen[num] = true;
+                    let cslug = ch["chapter_slug"];
+                    if cslug == () || cslug == "" { cslug = `chapter-${num}`; }
+                    let cname = ch["chapter_name"];
+                    if cname == () || cname == "" { cname = `Chapter ${num}`; }
+                    let chapter_path = `/manga/${slug}/${cslug}`;
+                    chapters.push(#{
+                        id: chapter_path,
+                        series_id: slug,
+                        number: num,
+                        title: cname,
+                        volume: (),
+                        language: "en",
+                        scanlator: (),
+                        url: chapter_path,
+                        published_at: ch["updated_at"],
+                        page_count: (),
+                        extra: #{}
+                    });
+                }
+            }
+        }
     }
-    if chapter_links.len() == 0 {
-        // Broader fallback: any link containing /chapter-
-        chapter_links = html_select(html, "a[href*='/chapter-']");
+    if chapters.len() > 0 {
+        return chapters;
     }
 
+    // Fallback: scrape the static page, but ONLY links under this series' slug
+    // (so we never pick up sidebar links to other series).
+    let html = fetch_series_page(`/manga/${slug}`);
+    if html == "" {
+        return [];
+    }
+    let chapter_links = html_select(html, `a[href*='/manga/${slug}/chapter-']`);
+    if chapter_links.len() == 0 {
+        chapter_links = html_select(html, "ul.row-content-chapter li a.chapter-name");
+    }
     for link in chapter_links {
         let href = element_attr(link, "href");
-        if href == () || href == "" {
-            continue;
-        }
-
-        // Skip non-chapter links (navigation, etc.)
-        if !href.contains("/chapter-") {
-            continue;
-        }
+        if href == () || href == "" { continue; }
+        // Guard: the link must belong to THIS series.
+        if !href.contains(`/manga/${slug}/chapter-`) { continue; }
 
         let chapter_title = element_text(link).trim();
         let chapter_num = extract_chapter_number(href, chapter_title);
-
-        // Deduplicate by chapter number
-        if seen[chapter_num] != () {
-            continue;
-        }
+        if seen[chapter_num] != () { continue; }
         seen[chapter_num] = true;
 
-        // Normalize chapter URL to use slug-based ID
         let chapter_path = `/manga/${slug}/chapter-${chapter_num}`;
-
-        if chapter_title == "" {
-            chapter_title = `Chapter ${chapter_num}`;
-        }
+        if chapter_title == "" { chapter_title = `Chapter ${chapter_num}`; }
 
         chapters.push(#{
             id: chapter_path,
@@ -809,14 +861,24 @@ fn get_latest_updates(page, auth) {
     let series = [];
     let seen = #{};
 
-    // Parse latest updates items
-    let items = html_select(html, "div.content-genres-item");
+    // Parse latest updates items. Current MangaNato/Nato template wraps each
+    // item in div.itemupdate (older themes used content-genres-item /
+    // list-truyen-item-wrap — kept as fallbacks).
+    let items = html_select(html, "div.itemupdate");
+    if items.len() == 0 {
+        items = html_select(html, "div.content-genres-item");
+    }
     if items.len() == 0 {
         items = html_select(html, "div.list-truyen-item-wrap");
     }
 
     for item in items {
-        let link = element_select_first(item, "a.genres-item-img");
+        // Cover anchor (a.cover) carries the /manga/{slug} href; fall back to
+        // the older a.genres-item-img then any anchor.
+        let link = element_select_first(item, "a.cover");
+        if link == "" {
+            link = element_select_first(item, "a.genres-item-img");
+        }
         if link == "" {
             link = element_select_first(item, "a");
         }
@@ -835,12 +897,21 @@ fn get_latest_updates(page, auth) {
         }
         seen[slug] = true;
 
-        let title = element_attr(link, "title");
+        // Title: prefer the cover img alt, then the h3 anchor text, then the
+        // anchor's own title attr.
+        let title = ();
+        let img_el = element_select_first(item, "img");
+        if img_el != "" {
+            title = element_attr(img_el, "alt");
+        }
         if title == () || title == "" {
             let title_el = element_select_first(item, "h3 a");
             if title_el != "" {
                 title = element_text(title_el);
             }
+        }
+        if title == () || title == "" {
+            title = element_attr(link, "title");
         }
         if title == () {
             title = "";
