@@ -1,5 +1,57 @@
 # Extension Status Report
 
+> **Current status below (2026-06-07).** Generated from the in-app health harness
+> (`POST /connectors/{id}/test`, which chains browse → search → get_chapters →
+> get_chapter_pages). Everything under "Historical" further down predates this and
+> is kept for reference only.
+
+## Current status — 2026-06-07 (harness-verified)
+
+**33 content connectors passing · 6 partial/flaky · 6 infra-blocked/dead · 1 needs-auth · 2 not-in-repo.**
+
+### Working (pass all harness steps)
+Scrapers: asurascans, comick, dynastyscans, flamecomics, guya, hivetoons, mangadex,
+mangageko, mangakatana, manganato-gg, mangaowl, mangapill, mangatown, manhuaplus,
+mangabuddy, omegascans, philiascans, ravenscans, roliascan, mangaread, toonclash*,
+toonily, vymanga, violetscans, webtoon, weebcentral, nhentai-scraper.
+Galleries (artwork — browse is the health signal, no chapters): danbooru, hypnohub,
+konachan, realbooru, safebooru, xbooru.
+
+\* toonclash works but is **slow** (FlareSolverr Cloudflare solves: ~65s discover,
+~100s pages) — fine for background downloads, sluggish interactively.
+
+### Partial / flaky
+| Extension | What works | Limitation |
+|-----------|-----------|------------|
+| comix-rhai | browse, search, chapters | page images behind a JS anti-bot token (not Rhai-doable) |
+| heancms-rhai | free chapters | paywalled chapters return 0 (need account) |
+| nhentai-rhai | discover, chapters | pages flaky — per-page FlareSolverr solve times out intermittently (use **nhentai-scraper**, which is reliable) |
+| manhuafast | discover | chapters via FlareSolverr series-render (~73s) can exceed the harness budget; works given time |
+
+### Infra-blocked / dead (not fixable in-plugin)
+| Extension | Reason |
+|-----------|--------|
+| batcave-rhai | PoW guard + datacenter-IP ban; needs the **browser** container on a clean IP (only FlareSolverr is VPN-routed today) |
+| mangafire-rhai | `vrf` token + canvas image-descramble requires a JS runtime |
+| manhwaclan | origin returning Cloudflare 521 (site down) |
+| mangasee-rhai | MangaSee/Manga4Life permanently shut down (`shutdown.jpeg`) |
+| readm | origin 522 (dead) |
+| kagane-rhai | Widevine DRM (separate browser flow) |
+
+### Other
+- **rule34-rhai** — needs an API key (`needs_auth`).
+- **batoto-rhai, fmreader-rhai** — present in the DB/marketplace but not in this
+  source repo, so not fixable here.
+
+> Run `./build_addon.ps1 -Validate` before committing any extension — it enforces
+> the scraper's manifest rules (the `capabilities.level` enum, `id` matching the DB
+> `extension_id`, the `features` block, icon, nsfw). An invalid `level` or a missing
+> `features` block makes the scraper **silently skip the extension**.
+
+---
+
+## Historical (pre-2026-06, kept for reference)
+
 Last tested: 2026-01-24 (Comprehensive update - tested all framework and browser extensions)
 
 ## Summary
