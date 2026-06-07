@@ -1,6 +1,6 @@
 {
   "manifest_version": 1,
-  "id": "mangabuddy",
+  "id": "mangabuddy-rhai",
   "name": "MangaBuddy",
   "version": "1.0.3",
   "description": "MangaBuddy / MangaK - Popular manga, manhwa, and manhua aggregator",

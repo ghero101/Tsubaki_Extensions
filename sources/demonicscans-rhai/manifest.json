@@ -18,7 +18,7 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "browser_required",
+    "level": "browser_automation",
     "allowed_domains": [
       "demonicscans.com",
       "demonicscans.org"

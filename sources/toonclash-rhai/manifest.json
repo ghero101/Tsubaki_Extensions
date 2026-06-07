@@ -18,7 +18,7 @@
     "file": "plugin.rhai"
   },
   "capabilities": {
-    "level": "flaresolverr",
+    "level": "browser_automation",
     "allowed_domains": [
       "mangaclash.com",
       "toonclash.com"

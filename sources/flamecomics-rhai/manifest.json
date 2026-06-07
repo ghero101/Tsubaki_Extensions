@@ -3,6 +3,7 @@
   "id": "flamecomics-rhai",
   "name": "Flame Comics",
   "version": "1.2.2",
+  "nsfw": false,
   "description": "Flame Comics - Free scanlation group for manhwa and manga",
   "author": {
     "name": "Tsubaki Team",

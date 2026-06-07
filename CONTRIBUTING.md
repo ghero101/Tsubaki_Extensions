@@ -58,21 +58,41 @@ Minimal example:
   "capabilities": {
     "level": "http_only",
     "allowed_domains": ["mysource.com"]
-  }
+  },
+  "nsfw": false
 }
 ```
+
+> ⚠️ **`capabilities.level` is a strict enum.** The Rust scraper only accepts
+> **`http_only`** or **`browser_automation`**. Any other value (e.g.
+> `flaresolverr`, `browser_required`) makes the manifest fail to parse, and the
+> scraper **silently skips the entire extension** — it just won't appear. Use
+> `browser_automation` for anything that needs a headless browser or
+> FlareSolverr. Always run the validator (below) before committing.
+>
+> The manifest **`id` must equal the connector's `extension_id`** in Tsubaki's
+> DB (usually the source folder name). A mismatch makes the health harness and
+> `detailed_test` report `ADDON_NOT_FOUND` even though the plugin loads.
+>
+> Declare **`nsfw`** (`true` for adult/booru/hentai sources, else `false`).
 
 ### Step 4: Implement the Plugin
 
 See [docs/EXTENSION_API.md](docs/EXTENSION_API.md) for complete API reference.
 
-### Step 5: Test Your Extension
+### Step 5: Validate, then build your extension
+
+```powershell
+# Windows (PowerShell): validate every manifest, then package one source.
+./build_addon.ps1 -Validate                 # catches bad level enums, id/icon/nsfw gaps
+./build_addon.ps1 -Source mysource-rhai -Bump
+
+# The zip lands in dist/mysource-rhai/ (mysource-rhai_<ver>.zip + _latest.zip)
+```
 
 ```bash
-# Build your extension
+# Linux/macOS equivalent (legacy):
 ./build.sh --single mysource-rhai
-
-# The zip will be in dist/mysource-rhai/
 ```
 
 To test in Tsubaki:
