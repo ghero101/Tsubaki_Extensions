@@ -66,8 +66,9 @@ fn extract_series_from_html(html, query, seen) {
 
     let doc = html_parse(html);
 
-    // Series cards are anchor tags with href containing "series/"
-    let items = html_select(doc, "a[href*='series/']");
+    // Series cards are anchor tags with href containing "comics/" (Asura moved
+    // from /series/{slug} to /comics/{slug}-{hash} in 2026).
+    let items = html_select(doc, "a[href*='comics/']");
 
     for item in items {
         let href = element_attr(item, "href");
@@ -75,14 +76,19 @@ fn extract_series_from_html(html, query, seen) {
             continue;
         }
 
-        // Extract slug from href (format: "series/slug-id" or full URL)
+        // Skip chapter links — we only want series cards here.
+        if href.contains("/chapter/") {
+            continue;
+        }
+
+        // Extract slug from href (format: "comics/slug-hash" or full URL)
         let slug = "";
-        if href.contains("/series/") {
-            let parts = href.split("/series/");
+        if href.contains("/comics/") {
+            let parts = href.split("/comics/");
             if parts.len() > 1 {
                 slug = parts[1].split("/")[0].split("?")[0];
             }
-        } else if href.starts_with("series/") {
+        } else if href.starts_with("comics/") {
             slug = href.sub_string(7, href.len()).split("/")[0].split("?")[0];
         }
 
@@ -159,7 +165,7 @@ fn extract_series_from_html(html, query, seen) {
         series.push(#{
             id: slug,
             title: title,
-            url: `${BASE_URL}/series/${slug}`,
+            url: `${BASE_URL}/comics/${slug}`,
             cover_url: cover_url,
             alternate_titles: [],
             authors: [],
@@ -176,19 +182,20 @@ fn extract_series_from_html(html, query, seen) {
 
 /// Search for series matching query (HTTP with browser fallback)
 fn search_series(query, page, auth) {
-    // Build search URL — Asura supports ?name= for server-side filtering.
-    // Always url_encode the user-supplied query; previously raw spaces /
-    // `&` / `#` in the search string broke the URL and returned 0 results.
+    // Asura's /browse listing ignores ?name= (search is client-side in the SPA),
+    // so we fetch the browse page and filter titles client-side. Empty query =
+    // latest/all on that page. The `&name=` is still sent in case a future build
+    // honors it server-side — harmless if ignored.
     let url = if query != "" {
-        `${BASE_URL}/series?name=${url_encode(query)}&page=${page}`
+        `${BASE_URL}/browse?page=${page}&name=${url_encode(query)}`
     } else {
-        `${BASE_URL}/series?page=${page}`
+        `${BASE_URL}/browse?page=${page}`
     };
 
-    // Try HTTP first (faster, server handles filtering)
+    // Try HTTP first
     let html = fetch_html(url);
     let seen = #{};
-    let series = extract_series_from_html(html, "", seen);  // No client-side filter needed
+    let series = extract_series_from_html(html, query, seen);  // client-side title filter
     if series.len() > 0 {
         let has_more = series.len() >= 15;
         return #{ series: series, has_more: has_more, total: () };
@@ -200,12 +207,12 @@ fn search_series(query, page, auth) {
         try {
             session_id = browser_launch_stealth();
             browser_goto(session_id, url);
-            try { browser_wait_for_selector(session_id, "a[href*='series/']", 15000); } catch {}
+            try { browser_wait_for_selector(session_id, "a[href*='comics/']", 15000); } catch {}
             let html = browser_get_html(session_id);
             try { browser_close(session_id); } catch {}
 
             let seen = #{};
-            let series = extract_series_from_html(html, "", seen);
+            let series = extract_series_from_html(html, query, seen);
             if series.len() > 0 {
                 let has_more = series.len() >= 15;
                 return #{ series: series, has_more: has_more, total: () };
@@ -224,10 +231,10 @@ fn get_series(id_or_url, auth) {
     let slug = id_or_url;
 
     if !id_or_url.starts_with("http") {
-        url = `${BASE_URL}/series/${id_or_url}`;
+        url = `${BASE_URL}/comics/${id_or_url}`;
     } else {
         // Extract slug from URL
-        let parts = id_or_url.split("/series/");
+        let parts = id_or_url.split("/comics/");
         if parts.len() > 1 {
             slug = parts[1].split("/")[0].split("?")[0];
         }
@@ -237,35 +244,37 @@ fn get_series(id_or_url, auth) {
 
     let doc = html_parse(html);
 
-    // Extract title — try CSS selectors then regex fallbacks
+    // Extract title — the <title> tag is the most reliable source now
+    // ("Name | Asura Scans"); the old span.text-xl.font-bold selector matches
+    // the rating ("9.7") on the current layout, so use it only as a fallback.
     let title = "";
-    let title_els = html_select(doc, "span.text-xl.font-bold");
-    if title_els.len() > 0 {
-        title = element_text(title_els[0]).trim();
-    }
-    if title == "" {
-        // Regex fallback: <span class="text-xl font-bold">TITLE</span>
-        // regex_find returns the full match, not the capture group. Previous
-        // version split on ">" and took parts[len-1], which is always the
-        // empty string after the closing </span> — so this fallback never
-        // produced a title. Pull the inner text with a second regex pass.
-        let span_match = regex_find("<span[^>]*text-xl[^>]*font-bold[^>]*>([^<]+)</span>", html);
-        if span_match != "" {
-            let inner = regex_find(">([^<]+)<", span_match);
-            // Strip the leading > and trailing <
-            inner = inner.replace(">", "").replace("<", "").trim();
-            if inner != "" { title = inner; }
-        }
-    }
-    if title == "" {
-        // Fallback: <title> tag
+    {
         let title_match = regex_find("<title>([^<]+)</title>", html);
         if title_match != "" {
             title = title_match.replace("<title>", "").replace("</title>", "").trim();
-            if title.contains(" - Asura") {
+            // Current title format is "Name | Asura Scans"; older was "Name - Asura".
+            if title.contains(" | Asura") {
+                title = title.split(" | Asura")[0].trim();
+            } else if title.contains(" - Asura") {
                 title = title.split(" - Asura")[0].trim();
             }
         }
+    }
+    // Last resort: derive a readable title from the slug (minus the trailing hash).
+    if title == "" {
+        let parts = slug.split("-");
+        let words = [];
+        for i in 0..parts.len() {
+            let w = parts[i];
+            // drop the trailing build hash (e.g. "46f09241")
+            if i == parts.len() - 1 && w.len() >= 6 && regex_match("^[0-9a-f]+$", w) { continue; }
+            if w.len() > 0 {
+                let first = w.sub_string(0, 1).to_upper();
+                let rest = if w.len() > 1 { w.sub_string(1, w.len()) } else { "" };
+                words.push(first + rest);
+            }
+        }
+        if words.len() > 0 { title = words.reduce(|a, b| a + " " + b); }
     }
 
     // Extract cover from poster image
@@ -288,8 +297,12 @@ fn get_series(id_or_url, auth) {
         }
     }
     if cover_url == () || cover_url == "" {
-        // Second fallback: first optimized.webp image (series cover)
-        let img_match = regex_find("https://gg\\.asura(?:comic\\.net|scans\\.com)/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
+        // Current cover host: cdn.asurascans.com/asura-images/covers/{slug}.{hash}.webp
+        let img_match = regex_find("https://[a-z0-9.]+/asura-images/covers/[^\"\\s]+\\.(?:webp|jpg|jpeg|png)", html);
+        if img_match == "" {
+            // Legacy fallback: gg.asura* storage conversions
+            img_match = regex_find("https://gg\\.asura(?:comic\\.net|scans\\.com)/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
+        }
         if img_match != "" {
             cover_url = img_match;
         }
@@ -456,10 +469,10 @@ fn get_chapters(series_id, auth) {
     let slug = series_id;
 
     if !series_id.starts_with("http") {
-        url = `${BASE_URL}/series/${series_id}`;
+        url = `${BASE_URL}/comics/${series_id}`;
     } else {
         // Extract slug from URL
-        let parts = series_id.split("/series/");
+        let parts = series_id.split("/comics/");
         if parts.len() > 1 {
             slug = parts[1].split("/")[0].split("?")[0];
         }
@@ -512,7 +525,7 @@ fn get_chapters(series_id, auth) {
             if href.starts_with("/") {
                 chapter_url = `${BASE_URL}${href}`;
             } else if href.contains("chapter/") {
-                chapter_url = `${BASE_URL}/series/${href}`;
+                chapter_url = `${BASE_URL}/comics/${href}`;
             } else {
                 chapter_url = `${BASE_URL}/${href}`;
             }
@@ -548,7 +561,7 @@ fn get_chapter_pages(chapter_id, auth) {
     let url = chapter_id;
 
     if !chapter_id.starts_with("http") {
-        url = `${BASE_URL}/series/${chapter_id}`;
+        url = `${BASE_URL}/comics/${chapter_id}`;
     }
 
     let html = fetch_html(url);
@@ -557,12 +570,19 @@ fn get_chapter_pages(chapter_id, auth) {
     let idx = 0;
     let seen = #{};
 
-    // Images are embedded in escaped JSON in Next.js page data
-    // Extract URLs using regex - pattern matches page images from any asura CDN subdomain
-    // Format: https://{cdn}.asuracomic.net/storage/media/XXXXX/conversions/FILENAME-optimized.webp
-    let matches = regex_find_all("https://[a-z]+\\.asura(?:comic\\.net|scans\\.com)/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
+    // Current page images live at
+    //   https://cdn.asurascans.com/asura-images/chapters/{slug}/{ch}/NNN.webp
+    // (plain <img> in the chapter HTML — no JS render needed). Only match the
+    // /chapters/ path so we don't pick up /covers/ or logos.
+    let matches = regex_find_all("https://[a-z0-9.]+/asura-images/chapters/[^\"\\s]+\\.(?:webp|jpg|jpeg|png)", html);
 
-    // Fallback: try broader pattern if CDN domain changes
+    // Fallback 1: protocol-relative form (//cdn.../asura-images/chapters/...)
+    if matches.len() == 0 {
+        let rel = regex_find_all("//[a-z0-9.]+/asura-images/chapters/[^\"\\s]+\\.(?:webp|jpg|jpeg|png)", html);
+        for m in rel { matches.push(`https:${m}`); }
+    }
+
+    // Fallback 2: legacy Next.js storage/conversions pattern
     if matches.len() == 0 {
         matches = regex_find_all("https://[^\"\\s]+/storage/media/\\d+/conversions/[A-Za-z0-9]+-optimized\\.webp", html);
     }
