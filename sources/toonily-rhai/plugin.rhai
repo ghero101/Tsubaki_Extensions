@@ -5,12 +5,12 @@
 // The site is behind Cloudflare, so we use http_get_with_headers() with Chrome TLS
 // impersonation and fall back to http_get_plain() if that fails.
 //
-// URL Patterns:
+// URL Patterns (updated 2026-06: site migrated /webtoon/ -> /serie/):
 //   Search: /?s={query}&post_type=wp-manga
-//   Browse: /manga/?m_orderby=latest&page={page}
-//   Series: /webtoon/{slug}/
-//   Chapter: /webtoon/{slug}/{chapter-slug}/
-//   Chapter list AJAX: POST /wp-admin/admin-ajax.php (action=manga_get_chapters&manga={post_id})
+//   Browse: / (homepage) and /webtoons/ listing
+//   Series: /serie/{slug}/   (legacy: /webtoon/{slug}/)
+//   Chapter: /serie/{slug}/chapter-{n}/
+//   Chapter list: present inline in the series page as li.wp-manga-chapter > a
 //
 // Available Rhai APIs:
 //   HTTP: http_get_with_headers(url, headers), http_get_plain(url, headers),
@@ -109,9 +109,20 @@ fn get_source_info() {
 }
 
 /// Extract manga slug from a Toonily URL
-/// URL patterns: /webtoon/{slug}/, /manga/{slug}/, or full URL
+/// URL patterns: /serie/{slug}/ (current), /webtoon/{slug}/ (legacy), /manga/{slug}/
 fn extract_slug(url) {
-    // Try /webtoon/{slug}/ first (Toonily's primary pattern)
+    // Try /serie/{slug}/ first (Toonily's current primary pattern as of 2026-06)
+    if url.contains("/serie/") {
+        let parts = url.split("/serie/");
+        if parts.len() > 1 {
+            let slug = parts[1].split("/")[0].split("?")[0];
+            if slug != "" {
+                return slug;
+            }
+        }
+    }
+
+    // Legacy: /webtoon/{slug}/
     if url.contains("/webtoon/") {
         let parts = url.split("/webtoon/");
         if parts.len() > 1 {
@@ -576,15 +587,19 @@ fn get_series(id_or_url, auth) {
     let slug = id_or_url;
 
     if !id_or_url.starts_with("http") {
-        // Toonily uses /webtoon/ path; try that first, fallback to /manga/
-        url = `${BASE_URL}/webtoon/${id_or_url}/`;
+        // Toonily migrated to /serie/ (2026-06); try that first, then legacy paths
+        url = `${BASE_URL}/serie/${id_or_url}/`;
     } else {
         slug = extract_slug(id_or_url);
     }
 
     let html = fetch_html(url);
 
-    // If /webtoon/ path failed, try /manga/ path
+    // If /serie/ path failed, try legacy /webtoon/ then /manga/ paths
+    if html == "" && !id_or_url.starts_with("http") {
+        url = `${BASE_URL}/webtoon/${id_or_url}/`;
+        html = fetch_html(url);
+    }
     if html == "" && !id_or_url.starts_with("http") {
         url = `${BASE_URL}/manga/${id_or_url}/`;
         html = fetch_html(url);
@@ -811,14 +826,19 @@ fn get_chapters(series_id, auth) {
     let slug = series_id;
 
     if !series_id.starts_with("http") {
-        url = `${BASE_URL}/webtoon/${series_id}/`;
+        // Toonily migrated to /serie/ (2026-06); try that first, then legacy paths
+        url = `${BASE_URL}/serie/${series_id}/`;
     } else {
         slug = extract_slug(series_id);
     }
 
     let html = fetch_html(url);
 
-    // If /webtoon/ path failed, try /manga/
+    // If /serie/ path failed, try legacy /webtoon/ then /manga/
+    if html == "" && !series_id.starts_with("http") {
+        url = `${BASE_URL}/webtoon/${series_id}/`;
+        html = fetch_html(url);
+    }
     if html == "" && !series_id.starts_with("http") {
         url = `${BASE_URL}/manga/${series_id}/`;
         html = fetch_html(url);

@@ -1,16 +1,25 @@
 // Philia Scans Scraper Add-on (Rhai)
-// WordPress Madara theme scraper for philiascans.org (Cloudflare protected)
+// Custom Next.js / HeanCMS-style scraper for philiascans.org (Cloudflare protected)
 //
-// Philia Scans is a manga/manhua scanlation site built on the WordPress Madara theme.
-// The site is behind Cloudflare, so we use http_get_with_headers() with Chrome TLS
-// impersonation and fall back to http_get_plain() if that fails.
+// Philia Scans is a manga/manhua scanlation site built on a custom Next.js
+// frontend (NOT WordPress Madara). The site is behind Cloudflare, so we use
+// http_get_with_headers() with Chrome TLS impersonation and fall back to
+// http_get_plain() / FlareSolverr if that fails.
 //
-// URL Patterns (non-standard Madara - uses /series/ instead of /manga/):
-//   Search: /?s={query}&post_type=wp-manga
-//   Browse: /all-mangas/ (paginated: /all-mangas/page/{page}/)
-//   Series: /series/{slug}/
-//   Chapter: /series/{slug}/{chapter-slug}/
-//   Chapter list AJAX: POST /wp-admin/admin-ajax.php (action=manga_get_chapters&manga={post_id})
+// URL Patterns:
+//   Browse:  /all-mangas (paginated: /all-mangas?page={n})
+//   Series:  /series/{slug}
+//   Chapter: /series/{slug}/chapter-{num}   <- canonical reader URL (serves page images)
+//
+// Chapter list (the part that broke): server-rendered as `div.chapter-row`
+// containers with the number in `div.chapter-num` ("Ch.11"). The visible anchor
+// points at an obfuscated `/read/{token}` URL that returns a JS shell with no
+// images, so we ignore it and rebuild `/series/{slug}/chapter-{num}` instead.
+// Page images are hosted on media.philiascans.org and embedded in the Next.js
+// payload (no <img> tags), extracted by get_chapter_pages' regex fallback.
+//
+// Legacy Madara selectors (li.wp-manga-chapter, admin-ajax) are retained only as
+// fallbacks in case the site ever migrates themes.
 //
 // Available Rhai APIs:
 //   HTTP: http_get_with_headers(url, headers), http_get_plain(url, headers),
@@ -930,13 +939,99 @@ fn get_chapters(series_id, auth) {
 }
 
 /// Parse chapter list from HTML (used for both AJAX response and direct page parsing)
+///
+/// Philia Scans is a custom Next.js/HeanCMS-style site (NOT Madara). The chapter
+/// list is server-rendered as `div.chapter-row` containers, each holding an
+/// `a.chapter-row-link` whose visible label lives in `div.chapter-num` (e.g.
+/// "Ch.11"). The anchor href points at an obfuscated `/read/{token}` reader URL
+/// that returns a JS shell with no images, so we do NOT use it. Instead we build
+/// the canonical `/series/{slug}/chapter-{num}` URL, which serves the full reader
+/// page (with media.philiascans.org page images) that get_chapter_pages consumes.
+///
+/// Madara selectors are kept as a fallback in case the site ever changes themes.
 fn parse_chapter_list(html, series_id, seen) {
     let chapters = [];
 
-    // Madara theme chapter list: li.wp-manga-chapter (includes both .free-chap and .premium-block)
-    let chapter_items = html_select(html, "li.wp-manga-chapter");
+    // Resolve the series slug so we can build canonical chapter URLs.
+    let slug = series_id;
+    if series_id.starts_with("http") {
+        slug = extract_slug(series_id);
+    }
 
-    // Fallback selectors
+    // ---- Primary: custom Philia Scans theme (div.chapter-row) ----
+    let rows = html_select(html, "div.chapter-row");
+    for row in rows {
+        // Chapter number lives in div.chapter-num ("Ch.11", "Ch.10.5")
+        let num_els = html_select(row, ".chapter-num");
+        let chapter_num = "";
+        if num_els.len() > 0 {
+            let num_text = element_text(num_els[0]).trim();
+            chapter_num = extract_number(num_text);
+        }
+        // Fallback: derive from the visible row text
+        if chapter_num == "" {
+            chapter_num = extract_chapter_number(element_text(row).trim());
+        }
+        if chapter_num == "" || chapter_num == "0" {
+            continue;
+        }
+
+        // Dedup (rows are rendered twice for responsive layouts)
+        if seen.contains(chapter_num) {
+            continue;
+        }
+        seen[chapter_num] = true;
+
+        // Canonical reader URL that serves real page images.
+        let chapter_url = `${BASE_URL}/series/${slug}/chapter-${chapter_num}`;
+
+        // Premium / paywalled?
+        let row_class = element_attr(row, "class");
+        let is_premium = false;
+        if row_class != () && row_class.contains("premium") {
+            is_premium = true;
+        }
+
+        // Release date from <time class="chapter-meta">
+        let published_at = ();
+        let date_els = html_select(row, "time.chapter-meta, time");
+        if date_els.len() > 0 {
+            let dt = element_attr(date_els[0], "datetime");
+            if dt != () && dt != "" {
+                published_at = dt;
+            } else {
+                let date_text = element_text(date_els[0]).trim();
+                if date_text != "" {
+                    published_at = date_text;
+                }
+            }
+        }
+
+        chapters.push(#{
+            id: chapter_url,
+            series_id: series_id,
+            number: chapter_num,
+            title: (),
+            volume: (),
+            language: "en",
+            scanlator: "Philia Scans",
+            url: chapter_url,
+            published_at: published_at,
+            page_count: (),
+            extra: #{
+                premium: is_premium
+            }
+        });
+    }
+
+    if chapters.len() > 0 {
+        // Listed newest-first, so reverse to ascending order.
+        chapters.reverse();
+        return chapters;
+    }
+
+    // ---- Fallback: legacy Madara theme chapter list ----
+    let chapter_items = html_select(html, "li.wp-manga-chapter");
     if chapter_items.len() == 0 {
         chapter_items = html_select(html, ".listing-chapters_wrap li");
     }
