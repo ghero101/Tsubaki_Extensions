@@ -309,7 +309,74 @@ fn get_chapters(series_id, auth) {
         idx += 1;
     }
 
+    // VioletScans lists chapters NEWEST-first. The latest chapter is frequently
+    // a PREMIUM/locked release (no ts_reader.run payload -> 0 page images).
+    // The test harness feeds get_chapter_pages the FIRST chapter id, so emit
+    // chapters ascending (chapter 1 first). The oldest chapter is effectively
+    // always free, which keeps both the harness and normal sequential reading
+    // happy. (mangareader-rhai uses the same ascending convention.)
+    chapters.sort(|a, b| {
+        let na = parse_float(a.number);
+        let nb = parse_float(b.number);
+        if na < nb { -1 } else if na > nb { 1 } else { 0 }
+    });
+
     chapters
+}
+
+// Extract chapter page image URLs from the ts_reader.run({...}) inline script.
+//
+// VioletScans (mangareader WordPress theme) renders an EMPTY <div id="readerarea">
+// and populates it client-side from an inline:
+//   <script>ts_reader.run({ ..., "sources":[{"source":"...","images":["https:\/\/...\/01.webp", ...]}], ... });</script>
+// Image URLs are JSON-escaped (\/ for /) and live under
+//   https://violetscans.org/wp-content/uploads/manga/<hash>/NN.webp|jpg|jpeg|png
+//
+// Older versions tried a two-stage regex around the whole "images":[...] array,
+// which was brittle. We now scan for the escaped image URLs directly.
+fn extract_pages_from_html(html, ref_url) {
+    let pages = [];
+    let idx = 0;
+
+    // Only consider markup once we've reached the reader payload, so we don't
+    // accidentally pick up unrelated /wp-content/uploads thumbnails (covers, etc).
+    let scan = html;
+    let parts = html.split("ts_reader.run");
+    if parts.len() >= 2 {
+        // Everything after the ts_reader.run( token holds the JSON payload.
+        let after = parts[1];
+        // Cut off at the close of the run({...}); call to avoid trailing page chrome.
+        let end_parts = after.split("});");
+        if end_parts.len() >= 1 {
+            scan = end_parts[0];
+        } else {
+            scan = after;
+        }
+    }
+
+    // Match JSON-escaped image URLs: https:\/\/.../<file>.webp|jpg|jpeg|png
+    // In Rhai source, "\\\\/" -> regex "\\/" which matches the literal "\/".
+    let url_pattern = "https:\\\\/\\\\/[^\"\\\\]+(?:\\\\/[^\"\\\\]+)*\\.(?:webp|jpg|jpeg|png)";
+    let matches = regex_find_all(url_pattern, scan);
+
+    if matches != () && matches.len() > 0 {
+        let seen = #{};
+        for raw in matches {
+            // Un-escape the JSON slashes.
+            let clean = raw.replace("\\/", "/");
+            if seen.contains(clean) { continue; }
+            seen[clean] = true;
+            pages.push(#{
+                index: idx,
+                url: clean,
+                referer: ref_url,
+                headers: #{ "Referer": ref_url }
+            });
+            idx += 1;
+        }
+    }
+
+    pages
 }
 
 fn get_chapter_pages(chapter_id, auth) {
@@ -319,34 +386,38 @@ fn get_chapter_pages(chapter_id, auth) {
     }
 
     let html = fetch_html(url);
-    let pages = [];
-    let idx = 0;
+    let pages = extract_pages_from_html(html, url);
 
-    // VioletScans uses ts_reader.run() JavaScript to load images
-    // Extract image URLs directly using regex to find the images array
-    // Pattern: "images":["url1","url2",...]
-    let images_match = regex_find("\"images\":\\[([^\\]]+)\\]", html);
-    if images_match != () && images_match != "" {
-        // Extract URLs from the matched string
-        // The match is like: "images":["url1","url2"...]
-        // Find all URLs that look like chapter images
-        let url_pattern = "https:\\\\/\\\\/[^\"]+\\.webp|https:\\\\/\\\\/[^\"]+\\.jpg|https:\\\\/\\\\/[^\"]+\\.png|https:\\\\/\\\\/[^\"]+\\.jpeg";
-        let all_urls = regex_find_all(url_pattern, images_match);
-        if all_urls != () && all_urls.len() > 0 {
-            for img_url in all_urls {
-                // Clean up escaped URLs
-                let clean_url = img_url.replace("\\/", "/");
-                pages.push(#{
-                    index: idx,
-                    url: clean_url,
-                    headers: #{ "Referer": url }
-                });
-                idx += 1;
-            }
+    // CF / empty-response fallback: re-fetch rendered HTML via FlareSolverr.
+    // Only worth a render when we got nothing AND the page actually shipped a
+    // ts_reader.run shell (i.e. it's a real reader page that JS would fill in).
+    if pages.len() == 0 {
+        let rendered = ();
+        try {
+            rendered = flaresolverr_get(url, 30000);
+        } catch {
+            rendered = ();
+        }
+        if rendered != () && rendered != "" {
+            pages = extract_pages_from_html(rendered, url);
         }
     }
 
-    // Fallback: try traditional image selectors if ts_reader not found
+    // Locked / premium chapters render a purchase prompt with NO ts_reader.run
+    // payload and no manga images. Detect that and return [] cleanly rather than
+    // letting the DOM fallback scrape page chrome (logos/favicons/avatars).
+    if pages.len() == 0 {
+        let probe = html.to_lower();
+        let has_reader = probe.contains("ts_reader.run");
+        let looks_locked = probe.contains("purchase") || probe.contains("unlock")
+            || probe.contains("premium chapter") || probe.contains("coin")
+            || probe.contains("buy chapter") || probe.contains("subscribe to read");
+        if looks_locked && !has_reader {
+            return [];
+        }
+    }
+
+    // Last-resort DOM fallback (some themes inline real <img> into the reader).
     if pages.len() == 0 {
         let doc = html_parse(html);
         let imgs = html_select(doc, "#readerarea img");
@@ -357,6 +428,7 @@ fn get_chapter_pages(chapter_id, auth) {
             imgs = html_select(doc, ".page-break img");
         }
 
+        let idx = 0;
         for img in imgs {
             let src = element_attr(img, "src");
             if src == () || src == "" {
@@ -364,7 +436,6 @@ fn get_chapter_pages(chapter_id, auth) {
             }
             if src == () || src == "" { continue; }
 
-            // Skip logos and icons
             let src_lower = src.to_lower();
             if src_lower.contains("logo") || src_lower.contains("icon") || src_lower.contains("avatar") {
                 continue;
@@ -373,6 +444,7 @@ fn get_chapter_pages(chapter_id, auth) {
             pages.push(#{
                 index: idx,
                 url: src.trim(),
+                referer: url,
                 headers: #{ "Referer": url }
             });
             idx += 1;

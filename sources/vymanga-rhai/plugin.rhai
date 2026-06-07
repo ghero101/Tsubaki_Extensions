@@ -87,6 +87,59 @@ fn fetch_html(url) {
     ""
 }
 
+/// Fetch HTML for Cloudflare-protected detail pages (series + chapter list).
+///
+/// The series page at /manga/{slug} is behind a Cloudflare interstitial
+/// ("Just a moment...") even though the /search listing is NOT. Plain HTTP
+/// therefore always returns the challenge body for these pages, so we must go
+/// straight to FlareSolverr. The CF JS challenge on vymanga.net regularly takes
+/// 80-100s to solve, so the previous 30000ms budget timed out and the chapter
+/// list came back empty (get_chapters -> 0). We give FlareSolverr a 110s budget
+/// (the host's IMPERSONATE_CLIENT caps the call at 120s) and only fall back to
+/// HTTP/browser if FlareSolverr is unavailable.
+fn fetch_html_cf(url) {
+    // Tier 1: try plain HTTP — cheap, and covers the case where CF is briefly
+    // disengaged or clearance is cached. Reject challenge bodies.
+    try {
+        let html = http_get_with_headers(url, get_headers());
+        if html.len() > 1000 && !is_cloudflare_challenge(html) {
+            return html;
+        }
+    } catch {
+        // Fall through
+    }
+
+    // Tier 2: FlareSolverr with a generous budget for the slow CF solve.
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 110000);
+            if html.len() > 1000 && !is_cloudflare_challenge(html) {
+                return html;
+            }
+        } catch {
+            // Fall through
+        }
+    }
+
+    // Tier 3: browser automation - last resort.
+    if browser_is_available() {
+        let browser_id = ();
+        try {
+            browser_id = browser_launch();
+            browser_goto(browser_id, url);
+            browser_wait_for_cloudflare(browser_id, 30000);
+            browser_wait_for_selector(browser_id, "a.list-chapter, a[id^='chapter-'], h1", 15000);
+            let html = browser_get_html(browser_id);
+            try { browser_close(browser_id); } catch {}
+            return html;
+        } catch {
+            if browser_id != () { try { browser_close(browser_id); } catch {} }
+        }
+    }
+
+    ""
+}
+
 /// Fetch HTML for reader pages (need images to be loaded).
 /// Uses FlareSolverr for CF bypass, browser for JS-rendered content.
 fn fetch_html_browser(url) {
@@ -157,6 +210,74 @@ fn extract_manga_slug(url) {
     }
 
     ""
+}
+
+/// Extract the numeric VyManga manga id from a string (cover URL, html, or a
+/// composite series id of the form "slug|46730").
+///
+/// VyManga's chapter list is rendered server-side on the Cloudflare-protected
+/// /manga/{slug} page (an ~70-90s FlareSolverr solve — far longer than the
+/// 30s harness/Django step budget). The SAME chapter list is also available
+/// from the lightweight, UN-protected endpoint /api/manga-detail/{numericId}
+/// over plain HTTP (HTTP 200, no CF challenge, instant). That endpoint keys on
+/// the NUMERIC manga id (not the slug), so we thread the numeric id through the
+/// series id and recover it here.
+///
+/// The numeric id appears in several plain-HTTP-reachable places:
+///   - cover URL:        https://cdnxyz.xyz/web/cover/46730/thumbnail.png
+///   - composite id:     solo-leveling-78ay|46730
+///   - search markup:    manga_id="46730", btn-bookmark-46730, previewManga(...,'46730')
+fn extract_numeric_id(s) {
+    if s == () || s == "" {
+        return "";
+    }
+
+    // Composite id form: "slug|numericId"
+    if s.contains("|") {
+        let parts = s.split("|");
+        let tail = parts[parts.len() - 1];
+        if is_all_digits(tail) {
+            return tail;
+        }
+    }
+
+    // Whole string is already numeric.
+    if is_all_digits(s) {
+        return s;
+    }
+
+    // Cover URL form: /web/cover/{id}/
+    if s.contains("/web/cover/") {
+        let after = s.split("/web/cover/")[1];
+        let num = after.split("/")[0];
+        if is_all_digits(num) {
+            return num;
+        }
+    }
+
+    // manga_id="{id}" form (search markup).
+    if s.contains("manga_id=\"") {
+        let after = s.split("manga_id=\"")[1];
+        let num = after.split("\"")[0];
+        if is_all_digits(num) {
+            return num;
+        }
+    }
+
+    ""
+}
+
+/// True if `s` is non-empty and every character is a digit.
+fn is_all_digits(s) {
+    if s == () || s == "" {
+        return false;
+    }
+    for c in s.chars() {
+        if c < '0' || c > '9' {
+            return false;
+        }
+    }
+    true
 }
 
 /// Extract chapter slug from URL
@@ -451,8 +572,18 @@ fn search_series(query, page, auth) {
         // Make cover URL absolute
         cover_url = make_full_url(cover_url);
 
+        // Recover the numeric manga id (needed by get_chapters' fast path) from
+        // the cover URL (/web/cover/{id}/...). Encode it into the series id as
+        // "slug|numericId" so get_chapters can hit /api/manga-detail/{id}
+        // directly over plain HTTP instead of doing a ~70s Cloudflare solve.
+        let numeric_id = extract_numeric_id(cover_url);
+        let series_id_out = slug;
+        if numeric_id != "" {
+            series_id_out = `${slug}|${numeric_id}`;
+        }
+
         series.push(#{
-            id: slug,
+            id: series_id_out,
             title: title,
             url: make_full_url(href),
             cover_url: cover_url,
@@ -487,16 +618,32 @@ fn search_series(query, page, auth) {
 
 /// Get detailed series information
 fn get_series(id_or_url, auth) {
+    // The id may arrive as a bare slug, a composite "slug|numericId", or a full
+    // URL. Recover the numeric id (if present) so we can re-emit it on the way
+    // out, and strip the "|numericId" suffix before building the /manga/{slug}
+    // URL (the site doesn't understand the suffix).
+    let numeric_id = extract_numeric_id(id_or_url);
+
     let url = id_or_url;
     let slug = id_or_url;
 
     if !id_or_url.starts_with("http") {
-        url = `${BASE_URL}/manga/${id_or_url}`;
+        // Drop any "|numericId" suffix for the slug + URL.
+        if slug.contains("|") {
+            slug = slug.split("|")[0];
+        }
+        url = `${BASE_URL}/manga/${slug}`;
     } else {
         slug = extract_manga_slug(id_or_url);
     }
 
     let html = fetch_html(url);
+
+    // If we didn't already have a numeric id, recover it from the page (cover
+    // URLs / markup contain it) so get_chapters' fast path stays available.
+    if numeric_id == "" {
+        numeric_id = extract_numeric_id(html);
+    }
 
     // Extract title - usually in h1
     let title = "";
@@ -626,8 +773,20 @@ fn get_series(id_or_url, auth) {
         year = year_match;
     }
 
+    // If the page didn't yield a numeric id but the cover URL did, use that.
+    if numeric_id == "" {
+        numeric_id = extract_numeric_id(cover_url);
+    }
+
+    // Emit "slug|numericId" when known so get_chapters can use the fast,
+    // Cloudflare-free /api/manga-detail/{id} endpoint.
+    let series_id_out = slug;
+    if numeric_id != "" {
+        series_id_out = `${slug}|${numeric_id}`;
+    }
+
     #{
-        id: slug,
+        id: series_id_out,
         title: title,
         alternate_titles: alt_titles,
         description: description,
@@ -644,27 +803,63 @@ fn get_series(id_or_url, auth) {
     }
 }
 
-/// Get all chapters for a series
+/// Get all chapters for a series.
+///
+/// Fast path (preferred): if we know the numeric manga id, fetch
+/// /api/manga-detail/{numericId} over plain HTTP. That endpoint is NOT behind
+/// Cloudflare and returns the full chapter list instantly — avoiding the
+/// ~70-90s FlareSolverr solve of the protected /manga/{slug} page, which blows
+/// past the 30s harness/Django step timeout (the real cause of the prior
+/// "get_chapters -> 0" failures).
+///
+/// Slow path (fallback): if no numeric id is available, fetch the protected
+/// series page via FlareSolverr (long budget) and parse the same list.
 fn get_chapters(series_id, auth) {
-    let url = series_id;
+    let numeric_id = extract_numeric_id(series_id);
 
-    if !series_id.starts_with("http") {
-        url = `${BASE_URL}/manga/${series_id}`;
+    let html = "";
+
+    // Fast path: lightweight, Cloudflare-free chapter-list fragment.
+    if numeric_id != "" {
+        let api_url = `${BASE_URL}/api/manga-detail/${numeric_id}?userid=`;
+        try {
+            let h = http_get_with_headers(api_url, get_headers());
+            // The fragment carries dt-chapter-* anchors; reject CF challenge bodies.
+            if h.len() > 500 && !is_cloudflare_challenge(h) && h.contains("dt-chapter-") {
+                html = h;
+            }
+        } catch {
+            // Fall through to slow path.
+        }
     }
 
-    let html = fetch_html(url);
+    // Slow path: Cloudflare-protected series page via FlareSolverr.
+    if html == "" {
+        let url = series_id;
+        if series_id.starts_with("http") {
+            url = series_id;
+        } else {
+            // Strip any "|numericId" suffix before building the /manga/{slug} URL.
+            let slug = series_id;
+            if slug.contains("|") {
+                slug = slug.split("|")[0];
+            }
+            url = `${BASE_URL}/manga/${slug}`;
+        }
+        html = fetch_html_cf(url);
+    }
 
     let chapters = [];
     let seen = #{};
 
-    // VyManga uses list-group-item links with external redirect URLs.
-    // Structure: <a class="list-chapter" href="https://aovheroes.com/rds/..." id="chapter-200">
-    //              <span>Chapter 200 : Side Story 21 - The End</span>
-    //              <p class="text-right font-italic small">Jun 26, 2025</p>
-    //            </a>
-    let chapter_links = html_select(html, "a.list-chapter");
-
-    // Fallback: try id-based selector if class-based finds nothing
+    // Two markup variants share the same external aovheroes redirect href:
+    //   /api/manga-detail/{id}  -> <a class="list-group-item list-group-item-action" id="dt-chapter-200" ...>
+    //   /manga/{slug} (CF page) -> <a class="list-chapter ..." id="chapter-200" ...>
+    // Prefer dt-chapter (fast path), then fall back to the series-page selectors.
+    let chapter_links = html_select(html, "a[id^='dt-chapter-']");
+    if chapter_links.len() == 0 {
+        chapter_links = html_select(html, "a.list-chapter");
+    }
     if chapter_links.len() == 0 {
         chapter_links = html_select(html, "a[id^='chapter-']");
     }
@@ -675,7 +870,7 @@ fn get_chapters(series_id, auth) {
             continue;
         }
 
-        // Get chapter ID from the id attribute (e.g., "chapter-200")
+        // Get chapter ID from the id attribute (e.g. "dt-chapter-200" / "chapter-200")
         let ch_id = element_attr(link, "id");
         if ch_id == () || ch_id == "" {
             continue;
@@ -687,16 +882,20 @@ fn get_chapters(series_id, auth) {
         }
         seen[ch_id] = true;
 
-        // Extract chapter number from id attribute
+        // Extract chapter number from id attribute. Handle both the "dt-chapter-"
+        // (api-detail) and "chapter-" (series page) prefixes; "dt-chapter-"
+        // contains "chapter-" so split on "chapter-" works for both.
         let ch_num = "0";
         if ch_id.contains("chapter-") {
             let parts = ch_id.split("chapter-");
             if parts.len() > 1 {
-                ch_num = parts[1];
+                ch_num = parts[parts.len() - 1];
             }
         }
 
-        // Get chapter text from span element
+        // Get chapter text. The series page wraps it in <span>; the api-detail
+        // fragment puts it as direct anchor text (followed by a <p> date), so
+        // element_text(link) includes the date — strip the date paragraph.
         let chapter_text = "";
         let spans = html_select(link, "span");
         if spans.len() > 0 {
@@ -704,6 +903,14 @@ fn get_chapters(series_id, auth) {
         }
         if chapter_text == "" {
             chapter_text = element_text(link).trim();
+            // Drop a trailing date paragraph if present (api-detail markup).
+            let p_for_date = html_select(link, "p");
+            if p_for_date.len() > 0 {
+                let dtxt = element_text(p_for_date[0]).trim();
+                if dtxt != "" && chapter_text.contains(dtxt) {
+                    chapter_text = chapter_text.replace(dtxt, "").trim();
+                }
+            }
         }
 
         // Extract title from chapter text (e.g., "Chapter 200 : Side Story 21 - The End")
@@ -956,8 +1163,16 @@ fn get_latest_updates(page, auth) {
         }
         cover_url = make_full_url(cover_url);
 
+        // Thread the numeric manga id through the series id (see search_series)
+        // so get_chapters can use the fast /api/manga-detail/{id} path.
+        let numeric_id = extract_numeric_id(cover_url);
+        let series_id_out = slug;
+        if numeric_id != "" {
+            series_id_out = `${slug}|${numeric_id}`;
+        }
+
         series.push(#{
-            id: slug,
+            id: series_id_out,
             title: title,
             url: make_full_url(href),
             cover_url: cover_url,
@@ -1066,8 +1281,16 @@ fn get_popular(page, auth) {
         }
         cover_url = make_full_url(cover_url);
 
+        // Thread the numeric manga id through the series id (see search_series)
+        // so get_chapters can use the fast /api/manga-detail/{id} path.
+        let numeric_id = extract_numeric_id(cover_url);
+        let series_id_out = slug;
+        if numeric_id != "" {
+            series_id_out = `${slug}|${numeric_id}`;
+        }
+
         series.push(#{
-            id: slug,
+            id: series_id_out,
             title: title,
             url: make_full_url(href),
             cover_url: cover_url
