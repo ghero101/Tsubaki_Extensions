@@ -63,6 +63,10 @@ function Test-Manifest {
     # icon hygiene
     if (-not $m.icon_path -and -not $m.icon_url) { $errs += "[$name] no icon_path or icon_url declared" }
     if ($null -eq $m.nsfw) { $errs += "[$name] WARN: nsfw flag not declared (set true for adult/booru/hentai sources, else false)" }
+    # The scraper derives implemented features from this manifest block (NOT from
+    # which script functions exist). Missing it => every feature reports
+    # "not implemented" and the connector silently fails the health harness.
+    if (-not $m.features) { $errs += "[$name] missing top-level 'features' block -> scraper reports all features unimplemented" }
     return $errs
 }
 

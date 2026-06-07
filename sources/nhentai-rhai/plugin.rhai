@@ -1,225 +1,175 @@
-// nhentai Scraper Add-on (Rhai)
-// Provides access to nhentai doujinshi/manga
-//
+// nhentai Scraper Add-on (Rhai) — HTML-scraping via FlareSolverr
+// =============================================================================
 // WARNING: This addon provides access to EXPLICIT adult content.
 // Users MUST be 18+ years old to use this addon.
-// By using this addon, you confirm you are of legal age in your jurisdiction.
 //
-// API Reference:
-//   Search: https://nhentai.net/api/galleries/search?query=TAG&page=1
-//   Gallery: https://nhentai.net/api/gallery/{id}
-//   Images: https://i.nhentai.net/galleries/{media_id}/{page}.{ext}
-//   Thumbnails: https://t.nhentai.net/galleries/{media_id}/thumb.jpg
+// Why HTML, not the JSON API:
+//   nhentai's JSON API (nhentai.net/api/*) is Cloudflare/IP-blocked for
+//   datacenter and CGNAT egress IPs — it returns a CF challenge even through
+//   FlareSolverr (verified 2026-06: "Cloudflare has blocked this request").
+//   The rendered web pages, however, load cleanly through FlareSolverr (which
+//   egresses through the VPN), and the image CDNs (i./t.nhentai.net) serve
+//   directly. So this connector scrapes the rendered HTML.
+//
+// Page structure (Svelte SSR, as of 2026-06):
+//   Listing (/, /search/?q=): <div class="gallery lang-*"><a href="/g/{id}/"
+//       class="cover"><img class="lazyload"
+//       src="https://t{n}.nhentai.net/galleries/{media_id}/thumb.webp">
+//       <div class="caption">{title}</div></a></div>
+//   Gallery  (/g/{id}/): <h1 class="title">…</h1>, #cover img, tag chips
+//       <a class="tagchip"><span class="name">…</span></a>, and one
+//       <a class="gallerythumb"><img src=".../{media_id}/{page}t.{ext}"></a>
+//       per page.
+//   Full page image: https://i.nhentai.net/galleries/{media_id}/{page}.{ext}
+//       (extension derived per-page from each thumbnail's src).
 //
 // Available Rhai APIs:
-//   http_get(url) -> string
-//   http_get_with_headers(url, headers) -> string
-//   json_parse(text) -> Dynamic
-//   url_encode(text) -> string
+//   flaresolverr_get(url, timeout_ms) -> string   (VPN egress; USE THIS)
+//   http_get_with_headers(url, headers) -> string (optional fast path)
+//   html_parse / html_select / html_select_first / element_attr / element_text
+//   regex_find / json_parse / url_encode / parse_int
+// =============================================================================
 
 const BASE_URL = "https://nhentai.net";
-const API_URL = "https://nhentai.net/api";
-const IMAGE_URL = "https://i.nhentai.net/galleries";
-const THUMB_URL = "https://t.nhentai.net/galleries";
+const IMAGE_HOST = "https://i.nhentai.net";
+const THUMB_HOST = "https://t.nhentai.net";
 
-// --- Helper Functions ---
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-/// Join array elements with a separator
+/// Fetch a page's rendered HTML through FlareSolverr (VPN egress). Returns ""
+/// on failure. nhentai is a normal HTML site, so the gallery cards are present
+/// in the rendered response.
+fn fetch_html(url) {
+    let html = "";
+    try {
+        // 60s literal (Rhai won't inline a bare numeric const into a call arg).
+        html = flaresolverr_get(url, 60000);
+    } catch {
+        return "";
+    }
+    if html == () { return ""; }
+    return html;
+}
+
+/// Pull the numeric gallery id out of an id, a "/g/{id}/" path, or a full URL.
+fn extract_id(x) {
+    let s = `${x}`;
+    if s.contains("/g/") {
+        let m = regex_find("/g/[0-9]+", s);
+        return m.replace("/g/", "");
+    }
+    return regex_find("[0-9]+", s);
+}
+
+/// Best-effort image-source read (lazyload pages put the real URL in `src`,
+/// but fall back to data-src just in case).
+fn img_src(img_html) {
+    let s = element_attr(img_html, "data-src");
+    if s == "" { s = element_attr(img_html, "src"); }
+    return s;
+}
+
+/// Map a single-letter image type to a file extension.
+fn ext_from_type(c) {
+    if c == "j" { return "jpg"; }
+    if c == "p" { return "png"; }
+    if c == "g" { return "gif"; }
+    if c == "w" { return "webp"; }
+    return "jpg";
+}
+
+/// Parse gallery cards from any listing page (home / search / tag).
+fn parse_cards(html) {
+    let series = [];
+    let cards = html_select(html, "div.gallery");
+    for card in cards {
+        let a = html_select_first(card, "a.cover");
+        let href = if a != "" { element_attr(a, "href") } else { "" };
+        if href == "" { href = regex_find("/g/[0-9]+/", card); }
+        let id = href.replace("/g/", "").replace("/", "");
+        if id == "" { continue; }
+
+        let cover = "";
+        let img = html_select_first(card, "img");
+        if img != "" { cover = img_src(img); }
+
+        let title = "";
+        let cap = html_select_first(card, "div.caption");
+        if cap != "" { title = element_text(cap).trim(); }
+        if title == "" && img != "" { title = element_attr(img, "alt"); }
+
+        series.push(#{
+            id: id,
+            title: title,
+            cover_url: cover,
+            url: `${BASE_URL}/g/${id}/`,
+            content_rating: "nsfw"
+        });
+    }
+    return series;
+}
+
+/// Parse per-page { media_id, page, ext } from the gallery thumbnails. The full
+/// image keeps each page's own extension (galleries mix jpg/png/webp).
+fn parse_pages(html) {
+    let result = [];
+    let thumbs = html_select(html, "a.gallerythumb img");
+    for img in thumbs {
+        let src = img_src(img);
+        if src == "" { continue; }
+        let mid_part = regex_find("galleries/[0-9]+/", src);   // "galleries/3975966/"
+        if mid_part == "" { continue; }
+        let media_id = mid_part.replace("galleries/", "").replace("/", "");
+        let file_part = regex_find("[0-9]+t\\.[a-z0-9]+", src); // "1t.webp"
+        if file_part == "" { continue; }
+        let page = regex_find("[0-9]+", file_part);             // "1"
+        let ext = regex_find("\\.[a-z0-9]+", file_part).replace(".", ""); // "webp"
+        if page == "" || ext == "" { continue; }
+        result.push(#{ media_id: media_id, page: page, ext: ext });
+    }
+    return result;
+}
+
+/// Collect tag names from the gallery's tag chips.
+fn parse_tags(html) {
+    let tags = [];
+    // Tag chips are <a class="tagchip ..."><span class="name">…</span>…</a>
+    let names = html_select(html, ".tagchip .name");
+    for n in names {
+        let t = element_text(n).trim();
+        if t != "" { tags.push(t); }
+    }
+    return tags;
+}
+
+/// Collect tag names whose chip links match a /{kind}/ href (e.g. "artist").
+fn parse_tags_of_kind(html, kind) {
+    let result = [];
+    let chips = html_select(html, "a.tagchip");
+    let needle = `/${kind}/`;
+    for chip in chips {
+        let href = element_attr(chip, "href");
+        if href.contains(needle) {
+            let name_el = html_select_first(chip, ".name");
+            let t = if name_el != "" { element_text(name_el).trim() } else { "" };
+            if t != "" { result.push(t); }
+        }
+    }
+    return result;
+}
+
 fn join_array(arr, sep) {
     if arr.len() == 0 { return ""; }
     let result = "";
     let first = true;
     for item in arr {
-        if first { result = item.to_string(); first = false; }
-        else { result = result + sep + item.to_string(); }
+        if first { result = `${item}`; first = false; }
+        else { result = result + sep + `${item}`; }
     }
     result
 }
 
-/// Get file extension from image type
-fn get_extension(type_char) {
-    if type_char == "j" {
-        return "jpg";
-    } else if type_char == "p" {
-        return "png";
-    } else if type_char == "g" {
-        return "gif";
-    } else if type_char == "w" {
-        return "webp";
-    }
-    return "jpg";
-}
-
-/// Extract tags of a specific type from gallery data
-fn extract_tags_by_type(tags, tag_type) {
-    let result = [];
-    if tags == () {
-        return result;
-    }
-    for tag in tags {
-        if tag["type"] == tag_type {
-            let name = tag["name"];
-            if name != () {
-                result.push(name);
-            }
-        }
-    }
-    return result;
-}
-
-/// Get all tag names from gallery
-fn extract_all_tags(tags) {
-    let result = [];
-    if tags == () {
-        return result;
-    }
-    for tag in tags {
-        if tag["type"] == "tag" {
-            let name = tag["name"];
-            if name != () {
-                result.push(name);
-            }
-        }
-    }
-    return result;
-}
-
-/// Build title from gallery data
-fn build_title(gallery) {
-    let title = gallery["title"];
-    if title == () {
-        return "Unknown";
-    }
-    // Prefer English title, fall back to Japanese, then pretty
-    if title["english"] != () && title["english"] != "" {
-        return title["english"];
-    }
-    if title["japanese"] != () && title["japanese"] != "" {
-        return title["japanese"];
-    }
-    if title["pretty"] != () && title["pretty"] != "" {
-        return title["pretty"];
-    }
-    return "Unknown";
-}
-
-/// Build alternate titles from gallery data
-fn build_alternate_titles(gallery) {
-    let alt_titles = [];
-    let title = gallery["title"];
-    if title == () {
-        return alt_titles;
-    }
-    let main_title = build_title(gallery);
-
-    if title["english"] != () && title["english"] != "" && title["english"] != main_title {
-        alt_titles.push(title["english"]);
-    }
-    if title["japanese"] != () && title["japanese"] != "" && title["japanese"] != main_title {
-        alt_titles.push(title["japanese"]);
-    }
-    if title["pretty"] != () && title["pretty"] != "" && title["pretty"] != main_title {
-        alt_titles.push(title["pretty"]);
-    }
-    return alt_titles;
-}
-
-/// Build cover URL from gallery data
-/// Uses the correct extension based on cover type from API response
-fn build_cover_url(gallery) {
-    let media_id = gallery["media_id"];
-    if media_id == () {
-        return "";
-    }
-
-    // Get cover type from images.cover.t
-    let images = gallery["images"];
-    let cover_type = "j"; // Default to jpg
-    if images != () {
-        let cover = images["cover"];
-        if cover != () && cover["t"] != () {
-            cover_type = cover["t"];
-        }
-    }
-
-    let ext = get_extension(cover_type);
-    return `${THUMB_URL}/${media_id}/thumb.${ext}`;
-}
-
-/// Build a series result from nhentai gallery data
-fn build_series_result(gallery) {
-    let id = gallery["id"];
-    if id == () {
-        return ();
-    }
-    let id_str = id.to_string();
-    let media_id = gallery["media_id"];
-    let tags = gallery["tags"];
-
-    // Extract different tag types
-    let artists = extract_tags_by_type(tags, "artist");
-    let parodies = extract_tags_by_type(tags, "parody");
-    let characters = extract_tags_by_type(tags, "character");
-    let groups = extract_tags_by_type(tags, "group");
-    let languages = extract_tags_by_type(tags, "language");
-    let categories = extract_tags_by_type(tags, "category");
-    let content_tags = extract_all_tags(tags);
-
-    // Build description from parodies and characters
-    let desc_parts = [];
-    if parodies.len() > 0 {
-        desc_parts.push("Parody: " + join_array(parodies, ", "));
-    }
-    if characters.len() > 0 {
-        desc_parts.push("Characters: " + join_array(characters, ", "));
-    }
-    if groups.len() > 0 {
-        desc_parts.push("Group: " + join_array(groups, ", "));
-    }
-    if languages.len() > 0 {
-        desc_parts.push("Language: " + join_array(languages, ", "));
-    }
-    let description = join_array(desc_parts, "\n");
-
-    // Get page count
-    let num_pages = gallery["num_pages"];
-    if num_pages == () {
-        num_pages = 0;
-    }
-
-    // Get upload date
-    let upload_date = gallery["upload_date"];
-
-    #{
-        id: id_str,
-        title: build_title(gallery),
-        alternate_titles: build_alternate_titles(gallery),
-        description: description,
-        cover_url: build_cover_url(gallery),
-        authors: artists,
-        artists: artists,
-        status: "Completed",
-        genres: categories,
-        tags: content_tags,
-        year: (),
-        content_rating: "nsfw",
-        url: `${BASE_URL}/g/${id_str}/`,
-        extra: #{
-            media_id: media_id,
-            num_pages: num_pages,
-            parodies: parodies,
-            characters: characters,
-            groups: groups,
-            languages: languages,
-            upload_date: upload_date,
-            source_site: "nhentai",
-            auto_match_metadata: true,
-            source_name: "nhentai"
-        }
-    }
-}
-
-// --- Addon Interface Functions ---
+// ── Plugin interface ────────────────────────────────────────────────────────
 
 /// Returns metadata about this source
 fn get_source_info() {
@@ -227,336 +177,156 @@ fn get_source_info() {
         id: "nhentai-rhai",
         name: "nhentai",
         base_url: BASE_URL,
+        version: "2.0.0",
         language: "en",
         supported_languages: ["en", "ja", "zh"],
         requires_authentication: false,
-        capability_level: "http_only",
+        capability_level: "browser_automation",
         nsfw: true,
+        content_rating: "nsfw",
         content_types: ["doujinshi", "manga", "hentai"]
     }
 }
 
-/// Search for galleries matching a query
-/// API: https://nhentai.net/api/galleries/search?query=TAG&page=1
+/// Search for galleries matching a query (HTML search page).
 fn search_series(query, page, auth) {
-    let search_query = url_encode(query);
-    let url = `${API_URL}/galleries/search?query=${search_query}&page=${page}`;
-
-    // Add language filter if set in settings (settings is a scope variable)
-    let lang = settings["preferred_language"];
-    if lang != () && lang != "" {
-        url = `${API_URL}/galleries/search?query=${search_query}+language:${lang}&page=${page}`;
-    }
-
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Referer": BASE_URL
-    };
-
-    let response_text = "";
-    // Try with headers first, fall back to simple get
-    try {
-        response_text = http_get_with_headers(url, headers);
-    } catch {
-        response_text = http_get(url);
-    }
-
-    if response_text == "" || response_text == "null" {
-        return #{ series: [], has_more: false, total: 0 };
-    }
-
-    let data = json_parse(response_text);
-
-    if data == () {
-        return #{ series: [], has_more: false, total: 0 };
-    }
-
-    let result_array = data["result"];
-    if result_array == () {
-        return #{ series: [], has_more: false, total: 0 };
-    }
-
-    let series = [];
-    for gallery in result_array {
-        let item = build_series_result(gallery);
-        if item != () {
-            series.push(item);
-        }
-    }
-
-    let total = data["num_pages"];
-    if total == () {
-        total = 0;
-    }
-    let per_page = data["per_page"];
-    if per_page == () {
-        per_page = 25;
-    }
-
-    let has_more = page < total;
-    let total_results = total * per_page;
-
-    #{ series: series, has_more: has_more, total: total_results }
+    let p = if page < 1 { 1 } else { page };
+    let url = `${BASE_URL}/search/?q=${url_encode(query)}&page=${p}`;
+    let html = fetch_html(url);
+    if html == "" { return #{ series: [], has_more: false, total: 0 }; }
+    let series = parse_cards(html);
+    let has_more = html.contains("class=\"next\"") || series.len() >= 25;
+    #{ series: series, has_more: has_more, total: series.len() }
 }
 
-/// Get detailed gallery information by ID
-/// API: https://nhentai.net/api/gallery/{id}
+/// Get latest galleries (home page).
+fn get_latest_updates(page, auth) {
+    let p = if page < 1 { 1 } else { page };
+    let url = `${BASE_URL}/?page=${p}`;
+    let html = fetch_html(url);
+    if html == "" { return #{ series: [], has_more: false }; }
+    let series = parse_cards(html);
+    let has_more = html.contains("class=\"next\"") || series.len() >= 25;
+    #{ series: series, has_more: has_more }
+}
+
+fn browse(page, filters, auth) {
+    get_latest_updates(page, auth)
+}
+
+/// Get detailed gallery information by ID or URL.
 fn get_series(id_or_url, auth) {
-    let id = id_or_url;
+    let id = extract_id(id_or_url);
+    if id == "" { throw `Invalid gallery id: ${id_or_url}`; }
+    let url = `${BASE_URL}/g/${id}/`;
+    let html = fetch_html(url);
+    if html == "" { throw `Failed to fetch gallery ${id}`; }
 
-    // Extract ID from URL if provided
-    // URLs can be: https://nhentai.net/g/123456/ or just 123456
-    if id_or_url.contains("nhentai.net/g/") {
-        let parts = id_or_url.split("/g/");
-        if parts.len() > 1 {
-            let id_part = parts[1];
-            // Remove trailing slash if present
-            id = id_part.split("/")[0];
+    let title = element_text(html_select_first(html, "h1.title")).trim();
+    if title == "" { title = element_text(html_select_first(html, "h1")).trim(); }
+
+    let pages = parse_pages(html);
+    let num_pages = pages.len();
+    let media_id = if num_pages > 0 { pages[0].media_id } else { "" };
+
+    let cover = "";
+    let cimg = html_select_first(html, "#cover img");
+    if cimg != "" { cover = img_src(cimg); }
+    if cover == "" && media_id != "" { cover = `${THUMB_HOST}/galleries/${media_id}/cover.webp`; }
+
+    let artists = parse_tags_of_kind(html, "artist");
+    let groups = parse_tags_of_kind(html, "group");
+    let parodies = parse_tags_of_kind(html, "parody");
+    let characters = parse_tags_of_kind(html, "character");
+    let languages = parse_tags_of_kind(html, "language");
+    let categories = parse_tags_of_kind(html, "category");
+
+    let desc_parts = [];
+    if parodies.len() > 0 { desc_parts.push("Parody: " + join_array(parodies, ", ")); }
+    if characters.len() > 0 { desc_parts.push("Characters: " + join_array(characters, ", ")); }
+    if groups.len() > 0 { desc_parts.push("Group: " + join_array(groups, ", ")); }
+    if languages.len() > 0 { desc_parts.push("Language: " + join_array(languages, ", ")); }
+    let description = join_array(desc_parts, "\n");
+
+    #{
+        id: id,
+        title: title,
+        alternate_titles: [],
+        description: description,
+        cover_url: cover,
+        authors: artists,
+        artists: artists,
+        status: "Completed",
+        genres: categories,
+        tags: parse_tags(html),
+        year: (),
+        content_rating: "nsfw",
+        url: url,
+        extra: #{
+            media_id: media_id,
+            num_pages: num_pages,
+            parodies: parodies,
+            characters: characters,
+            groups: groups,
+            languages: languages,
+            source_site: "nhentai",
+            source_name: "nhentai",
+            auto_match_metadata: true
         }
     }
-
-    let url = `${API_URL}/gallery/${id}`;
-
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Referer": BASE_URL
-    };
-
-    let response_text = "";
-    try {
-        response_text = http_get_with_headers(url, headers);
-    } catch {
-        response_text = http_get(url);
-    }
-
-    if response_text == "" || response_text == "null" {
-        throw `Failed to fetch gallery with ID: ${id}`;
-    }
-
-    let gallery = json_parse(response_text);
-
-    if gallery == () {
-        throw `Failed to parse gallery data for ID: ${id}`;
-    }
-
-    // Check for error response
-    if gallery["error"] != () {
-        throw `API error: ${gallery["error"]}`;
-    }
-
-    build_series_result(gallery)
 }
 
-/// Get chapters for a gallery
-/// For nhentai, each gallery IS the chapter (single chapter per gallery)
+/// Get chapters for a gallery. nhentai galleries are single-chapter works.
 fn get_chapters(series_id, auth) {
-    // First get the gallery details to get page count
-    let url = `${API_URL}/gallery/${series_id}`;
+    let id = extract_id(series_id);
+    let url = `${BASE_URL}/g/${id}/`;
+    let html = fetch_html(url);
+    let title = if html != "" { element_text(html_select_first(html, "h1.title")).trim() } else { "" };
+    let num_pages = if html != "" { parse_pages(html).len() } else { 0 };
 
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Referer": BASE_URL
-    };
-
-    let response_text = "";
-    try {
-        response_text = http_get_with_headers(url, headers);
-    } catch {
-        response_text = http_get(url);
-    }
-
-    if response_text == "" || response_text == "null" {
-        return [];
-    }
-
-    let gallery = json_parse(response_text);
-
-    if gallery == () || gallery["error"] != () {
-        return [];
-    }
-
-    let title = build_title(gallery);
-    let num_pages = gallery["num_pages"];
-    if num_pages == () {
-        num_pages = 0;
-    }
-
-    let upload_date = gallery["upload_date"];
-
-    // nhentai galleries are single-chapter works
-    // The chapter ID is the same as the gallery ID
     [
         #{
-            id: series_id,
-            series_id: series_id,
+            id: id,
+            series_id: id,
             number: "1",
             title: title,
             volume: (),
             language: "en",
             scanlator: "",
-            url: `${BASE_URL}/g/${series_id}/`,
-            published_at: upload_date,
+            url: url,
+            published_at: (),
             page_count: num_pages,
-            extra: #{
-                is_oneshot: true
-            }
+            extra: #{ is_oneshot: true }
         }
     ]
 }
 
-/// Get page URLs for a chapter (gallery)
-/// API: https://nhentai.net/api/gallery/{id}
-/// Images: https://i.nhentai.net/galleries/{media_id}/{page}.{ext}
+/// Get page image URLs for a chapter (gallery).
 fn get_chapter_pages(chapter_id, auth) {
-    let url = `${API_URL}/gallery/${chapter_id}`;
+    let id = extract_id(chapter_id);
+    let url = `${BASE_URL}/g/${id}/`;
+    let html = fetch_html(url);
+    if html == "" { return []; }
 
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Referer": BASE_URL
-    };
-
-    let response_text = "";
-    try {
-        response_text = http_get_with_headers(url, headers);
-    } catch {
-        response_text = http_get(url);
-    }
-
-    if response_text == "" || response_text == "null" {
-        return [];
-    }
-
-    let gallery = json_parse(response_text);
-
-    if gallery == () || gallery["error"] != () {
-        return [];
-    }
-
-    let media_id = gallery["media_id"];
-    if media_id == () {
-        return [];
-    }
-
-    let images = gallery["images"];
-    if images == () {
-        return [];
-    }
-
-    let pages_data = images["pages"];
-    if pages_data == () {
-        return [];
-    }
-
+    let referer = `${BASE_URL}/g/${id}/`;
     let pages = [];
     let i = 0;
-    for page_info in pages_data {
-        let ext = get_extension(page_info["t"]);
-        let page_num = i + 1;
-        let image_url = `${IMAGE_URL}/${media_id}/${page_num}.${ext}`;
-
+    for pi in parse_pages(html) {
         pages.push(#{
             index: i,
-            url: image_url,
-            headers: #{
-                "Referer": `${BASE_URL}/g/${chapter_id}/`
-            },
-            referer: `${BASE_URL}/g/${chapter_id}/`,
-            width: page_info["w"],
-            height: page_info["h"]
+            url: `${IMAGE_HOST}/galleries/${pi.media_id}/${pi.page}.${pi.ext}`,
+            headers: #{ "Referer": referer },
+            referer: referer
         });
-
         i += 1;
     }
-
-    pages
+    return pages;
 }
 
-/// Get latest/popular galleries
-fn get_latest_updates(page, auth) {
-    // Use the all galleries endpoint sorted by recent
-    let url = `${API_URL}/galleries/all?page=${page}`;
-
-    let headers = #{
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Referer": BASE_URL
-    };
-
-    let response_text = "";
-    try {
-        response_text = http_get_with_headers(url, headers);
-    } catch {
-        response_text = http_get(url);
-    }
-
-    if response_text == "" || response_text == "null" {
-        return #{ series: [], has_more: false };
-    }
-
-    let data = json_parse(response_text);
-
-    if data == () {
-        return #{ series: [], has_more: false };
-    }
-
-    let result_array = data["result"];
-    if result_array == () {
-        return #{ series: [], has_more: false };
-    }
-
-    let series = [];
-    for gallery in result_array {
-        let item = build_series_result(gallery);
-        if item != () {
-            series.push(item);
-        }
-    }
-
-    let total_pages = data["num_pages"];
-    if total_pages == () {
-        total_pages = 0;
-    }
-
-    let has_more = page < total_pages;
-
-    #{ series: series, has_more: has_more }
-}
-
-/// Get popular tags for browsing
+/// Get popular tags for browsing.
 fn get_popular_tags() {
-    // Common search tags on nhentai
     [
-        "english",
-        "japanese",
-        "chinese",
-        "translated",
-        "full color",
-        "sole female",
-        "sole male",
-        "manga",
-        "doujinshi"
+        "english", "japanese", "chinese", "translated",
+        "full color", "sole female", "sole male", "manga", "doujinshi"
     ]
-}
-
-/// Search by tag (convenience function)
-fn search_by_tag(tag, page, auth) {
-    // Tags can be searched using the tag: prefix
-    let query = `tag:"${tag}"`;
-    search_series(query, page, auth)
-}
-
-/// Search by artist (convenience function)
-fn search_by_artist(artist, page, auth) {
-    let query = `artist:"${artist}"`;
-    search_series(query, page, auth)
-}
-
-/// Search by parody (convenience function)
-fn search_by_parody(parody, page, auth) {
-    let query = `parody:"${parody}"`;
-    search_series(query, page, auth)
 }
