@@ -712,10 +712,48 @@ fn get_chapter_pages(chapter_id, auth) {
 
     let headers = get_headers();
     let chapter_url = "";
+    let manga_url = "";
+
+    // Method 0 (primary, reliable): resolve the manga page directly by id.
+    // `/manga/{manga_id}` 301-redirects to the slug URL and lists EVERY chapter
+    // with its full /chapters/{id}/{slug} href — so this works for old chapters
+    // too. The recent-/chapters and /mangas/new crawls below only surface
+    // recently-updated series, which is why old/popular chapters (e.g. One Piece
+    // ch.1) used to return 0 pages. NOTE: http_get_with_headers does NOT follow
+    // redirects — the id-only URL returns a tiny "Moved Permanently" stub
+    // (`<a href="/manga/2/one-piece">…</a>`), so we extract the canonical href
+    // and refetch it.
+    {
+        let direct_html = "";
+        try {
+            direct_html = http_get_with_headers(`${BASE_URL}/manga/${manga_id}`, headers);
+        } catch {
+            direct_html = http_get(`${BASE_URL}/manga/${manga_id}`);
+        }
+        // Follow the 301 to the slug URL manually if we got the redirect stub.
+        if direct_html.contains("Moved Permanently") || direct_html.len() < 256 {
+            let loc = regex_find("/manga/" + manga_id + "/[^\"]+", direct_html);
+            if loc != "" {
+                manga_url = `${BASE_URL}${loc}`;
+                try {
+                    direct_html = http_get_with_headers(manga_url, headers);
+                } catch {
+                    direct_html = http_get(manga_url);
+                }
+            }
+        }
+        if direct_html != "" {
+            let chapter_pattern = "href=\"(/chapters/" + full_ch_id + "/[^\"]+)\"";
+            let chapter_result = regex_find(chapter_pattern, direct_html);
+            if chapter_result != "" {
+                let href = regex_find("/chapters/[^\"]+", chapter_result);
+                chapter_url = `${BASE_URL}${href}`;
+            }
+        }
+    }
 
     // Primary Method: Get the manga page and find the chapter URL from there
     // This is the most reliable method since all chapters are listed on the manga page
-    let manga_url = "";
 
     // First, find the manga page URL (need slug)
     // Method A: Check recent chapters for manga URL
