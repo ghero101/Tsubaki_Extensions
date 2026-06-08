@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "nhentai-scraper",
   "name": "nhentai (Scraper)",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "nhentai doujinshi/manga source — HTML-scraping variant via FlareSolverr. Use this when the JSON API (nhentai.net/api) is Cloudflare/IP-blocked; it parses the rendered web pages instead. Contains EXPLICIT adult content - 18+ only.",
   "author": {
     "name": "Tsubaki Community",
@@ -27,6 +27,7 @@
     "requires_cookies": true,
     "requires_javascript": true,
     "cloudflare_protected": true,
+    "requires_proxy": true,
     "notes": "Fetches nhentai web pages through FlareSolverr (Cloudflare-protected) and parses the rendered HTML. The single 'nhentai.net' allowed domain covers t./i. image CDNs via subdomain match."
   },
   "features": {

@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "id": "nhentai-rhai",
   "name": "nhentai",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "nhentai doujinshi/manga source. Contains EXPLICIT adult content - 18+ only. By using this addon, you confirm you are of legal age.",
   "author": {
     "name": "Tsubaki Community",
@@ -27,6 +27,7 @@
     "requires_cookies": true,
     "requires_javascript": true,
     "cloudflare_protected": true,
+    "requires_proxy": true,
     "notes": "Fetches nhentai web pages through FlareSolverr (which egresses through the VPN) and parses the rendered HTML. The JSON API (nhentai.net/api) is Cloudflare/IP-blocked even via FlareSolverr, so this scrapes the rendered pages instead. The single 'nhentai.net' allowed domain covers the t./i. image CDNs via subdomain match."
   },
   "features": {
