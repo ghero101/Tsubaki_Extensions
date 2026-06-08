@@ -778,6 +778,31 @@ fn get_chapters(series_id, auth) {
 
     let seen = #{};
 
+    // --- Tier 0: headless browser with wait-for-selector (most reliable) -----
+    // The Madara chapter list is injected by post-load AJAX, which FlareSolverr's
+    // one-shot snapshot misses. The browser awaits the <li> (and clears the
+    // Cloudflare challenge). manhuafast is CF-challenged but NOT IP-banned, so the
+    // datacenter egress is fine here.
+    if browser_is_available() {
+        let session_id = ();
+        try {
+            session_id = browser_launch_stealth();
+            browser_goto(session_id, series_url);
+            try { browser_wait_for_selector(session_id, "li.wp-manga-chapter a", 20000); } catch {}
+            let b_html = browser_get_html(session_id);
+            try { browser_close(session_id); } catch {}
+            if b_html != () && b_html != "" && b_html.len() > 500 {
+                let b_chapters = parse_chapter_list(b_html, series_id, seen);
+                if b_chapters.len() > 0 {
+                    return b_chapters;
+                }
+            }
+        } catch {
+            if session_id != () { try { browser_close(session_id); } catch {} }
+        }
+    }
+    seen = #{};
+
     // --- Tier 1: FlareSolverr render of the SERIES PAGE (primary) ------------
     // The rendered series page contains the complete <li.wp-manga-chapter> list.
     // 110s timeout to outlast the ~70-75s cold CF challenge solve.

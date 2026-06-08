@@ -26,7 +26,13 @@ konachan, realbooru, safebooru, xbooru.
 | comix-rhai | browse, search, chapters | page images behind a JS anti-bot token (not Rhai-doable) |
 | heancms-rhai | free chapters | paywalled chapters return 0 (need account) |
 | nhentai-rhai | discover, chapters | pages flaky — per-page FlareSolverr solve times out intermittently (use **nhentai-scraper**, which is reliable) |
-| manhuafast | discover | chapters fail — Madara loads the chapter list via post-load AJAX; the `flaresolverr_get` host fn captures the page BEFORE that AJAX runs (a direct FS probe with render-wait DOES return 24 chapters), and there's no FS-POST / wait-for-selector host primitive to get them reliably. Host-limited, not a plugin bug. Added a defensive regex fallback (no-op until the HTML contains the hrefs). |
+| manhuafast | discover | chapters fail because the **global FlareSolverr VPN proxy breaks its Cloudflare solve**: FS *without* proxy returns 24 chapters; FS *with* `http://tsubaki-gluetun:8888` returns 0 + "Error solving the challenge. Timeout after 90s". The VPN proxy is needed for IP-banned sites (nhentai) but degrades CF sites that work from the datacenter IP. Real fix = per-connector proxy selection (Rust enhancement), not a plugin change. Plugin has defensive browser + regex fallbacks. |
+
+> ⚠️ **Systemic tradeoff:** `server_serversettings.flaresolverr_proxy_url` is applied to
+> EVERY FlareSolverr request globally. It's required for datacenter-IP-banned sources
+> (nhentai), but it makes some Cloudflare challenges unsolvable (manhuafast). The durable
+> fix is per-connector proxy selection in the scraper (use the VPN only for connectors
+> flagged IP-banned). Until then it's one-or-the-other.
 
 ### Infra-blocked / dead (not fixable in-plugin)
 | Extension | Reason |
