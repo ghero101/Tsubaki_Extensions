@@ -46,6 +46,47 @@ fn fetch_html(url) {
     html
 }
 
+/// Guard against accepting a rating ("9.7", "10", "4.5") as a series title.
+/// The current Asura card layout renders the rating in a `span.block.font-bold`
+/// — the exact selector that used to hold the title — so every title candidate
+/// must be screened through this before being accepted.
+fn looks_like_rating(s) {
+    if s == () || s == "" {
+        return false;
+    }
+    let t = s.trim();
+    if t == "" {
+        return false;
+    }
+    // Pure number, optionally with a single decimal part (e.g. "9", "9.7", "10.0").
+    if regex_match("^[0-9]+(\\.[0-9]+)?$", t) {
+        return true;
+    }
+    false
+}
+
+/// Convert an Asura slug (minus its trailing build hash) into a readable title.
+fn slug_to_title(slug) {
+    let parts = slug.split("-");
+    let words = [];
+    for i in 0..parts.len() {
+        let w = parts[i];
+        // Drop a trailing hex build hash (e.g. "46f09241").
+        if i == parts.len() - 1 && w.len() >= 6 && regex_match("^[0-9a-f]+$", w) {
+            continue;
+        }
+        if w.len() > 0 {
+            let first = w.sub_string(0, 1).to_upper();
+            let rest = if w.len() > 1 { w.sub_string(1, w.len()) } else { "" };
+            words.push(first + rest);
+        }
+    }
+    if words.len() > 0 {
+        return words.reduce(|a, b| a + " " + b);
+    }
+    slug.replace("-", " ")
+}
+
 /// Returns metadata about this source
 fn get_source_info() {
     #{
@@ -103,58 +144,74 @@ fn extract_series_from_html(html, query, seen) {
         }
         seen[slug] = true;
 
-        // Get title from nested span with font-bold and block classes
-        let title = "";
-
-        // Try to find the title span (has "block" class)
-        let title_spans = html_select(item, "span.block.font-bold");
-        if title_spans.len() > 0 {
-            title = element_text(title_spans[0]).trim();
-        }
-
-        // Fallback: look for div with font-weight style
-        if title == "" || title == "MANHWA" || title == "MANGA" {
-            let div_els = html_select(item, "div");
-            for div_el in div_els {
-                let div_text = element_text(div_el).trim();
-                if div_text != "" && div_text.len() < 80 && div_text != "MANHWA" && div_text != "MANGA" {
-                    if !div_text.starts_with("Chapter") && !div_text.contains("<!--") {
-                        title = div_text;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Last fallback: convert slug to title (remove trailing ID)
-        if title == "" || title == "MANHWA" || title == "MANGA" {
-            let parts = slug.split("-");
-            if parts.len() > 1 {
-                let title_parts = [];
-                for i in 0..(parts.len() - 1) {
-                    title_parts.push(parts[i]);
-                }
-                title = title_parts.reduce(|a, b| a + " " + b);
-                let words = title.split(" ");
-                let capitalized = [];
-                for word in words {
-                    if word.len() > 0 {
-                        let first = word.sub_string(0, 1).to_upper();
-                        let rest = if word.len() > 1 { word.sub_string(1, word.len()) } else { "" };
-                        capitalized.push(first + rest);
-                    }
-                }
-                title = capitalized.reduce(|a, b| a + " " + b);
-            } else {
-                title = slug.replace("-", " ");
-            }
-        }
-
-        // Get cover image
+        // Get cover image up front — its `alt` is the most reliable title source
+        // on the current layout (the old span.block.font-bold holds the RATING).
         let cover_url = ();
+        let img_alt = "";
         let imgs = html_select(item, "img");
         if imgs.len() > 0 {
             cover_url = element_attr(imgs[0], "src");
+            let alt = element_attr(imgs[0], "alt");
+            if alt != () { img_alt = alt.trim(); }
+        }
+
+        // Title resolution, in order of preference. Every candidate is screened
+        // through looks_like_rating() so a "9.7" rating is never accepted.
+        let title = "";
+
+        // 1. The card link's `title` attribute (most explicit when present).
+        let link_title = element_attr(item, "title");
+        if link_title != () {
+            let lt = link_title.trim();
+            if lt != "" && lt != "MANHWA" && lt != "MANGA" && !looks_like_rating(lt) {
+                title = lt;
+            }
+        }
+
+        // 2. The cover img `alt` text.
+        if title == "" && img_alt != "" && img_alt != "MANHWA" && img_alt != "MANGA"
+            && !looks_like_rating(img_alt) {
+            title = img_alt;
+        }
+
+        // 3. A derived, readable name from the href slug.
+        if title == "" {
+            let derived = slug_to_title(slug);
+            if derived != "" && !looks_like_rating(derived) {
+                title = derived;
+            }
+        }
+
+        // 4. Last-resort text-span scan — REJECT numeric/rating candidates so a
+        //    "9.7" can never slip through. (This was the original bug.)
+        if title == "" {
+            let span_els = html_select(item, "span");
+            for span_el in span_els {
+                let span_text = element_text(span_el).trim();
+                if span_text != "" && span_text.len() < 80 && span_text != "MANHWA" && span_text != "MANGA"
+                    && !span_text.starts_with("Chapter") && !span_text.contains("<!--")
+                    && !looks_like_rating(span_text) {
+                    title = span_text;
+                    break;
+                }
+            }
+        }
+        if title == "" {
+            let div_els = html_select(item, "div");
+            for div_el in div_els {
+                let div_text = element_text(div_el).trim();
+                if div_text != "" && div_text.len() < 80 && div_text != "MANHWA" && div_text != "MANGA"
+                    && !div_text.starts_with("Chapter") && !div_text.contains("<!--")
+                    && !looks_like_rating(div_text) {
+                    title = div_text;
+                    break;
+                }
+            }
+        }
+
+        // Absolute fallback: slug with hyphens replaced (never empty).
+        if title == "" {
+            title = slug_to_title(slug);
         }
 
         // Filter by query if provided

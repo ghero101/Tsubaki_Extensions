@@ -325,6 +325,102 @@ fn strip_html(text) {
     cleaned
 }
 
+/// Guard against accepting a rating ("9.7", "10", "4.5") as a title.
+fn looks_like_rating(s) {
+    if s == () || s == "" {
+        return false;
+    }
+    let t = s.trim();
+    if t == "" {
+        return false;
+    }
+    if regex_match("^[0-9]+(\\.[0-9]+)?$", t) {
+        return true;
+    }
+    false
+}
+
+/// Clean a title that was scraped from raw concatenated link text.
+///
+/// On the Philia card the <a> wraps a status badge + rating + the real title,
+/// so element_text(link) returns e.g. "Ongoing 9.7 The Great Hero". This strips
+/// leading numeric/rating tokens and known status words until the real title is
+/// reached. Returns "" if nothing usable remains.
+fn clean_card_title(raw) {
+    if raw == () || raw == "" {
+        return "";
+    }
+    let words = raw.trim().split(" ");
+    let kept = [];
+    let started = false;
+    for w in words {
+        let tok = w.trim();
+        if tok == "" {
+            continue;
+        }
+        if !started {
+            // Drop leading metadata noise: pure numbers/ratings and status words.
+            if looks_like_rating(tok) {
+                continue;
+            }
+            let lower = tok.to_lower();
+            if lower == "ongoing" || lower == "completed" || lower == "hiatus"
+                || lower == "cancelled" || lower == "canceled" || lower == "dropped" {
+                continue;
+            }
+            started = true;
+        }
+        kept.push(tok);
+    }
+    if kept.len() == 0 {
+        return "";
+    }
+    kept.reduce(|a, b| a + " " + b)
+}
+
+/// Resolve a series title from a card: prefer the cover img `alt`, then the
+/// link `title` attribute, then a heading element, then cleaned raw link text.
+/// Numeric/rating-only candidates are always rejected.
+fn resolve_card_title(item, link) {
+    // 1. Cover img alt text.
+    let imgs = html_select(item, "img");
+    if imgs.len() > 0 {
+        let alt = element_attr(imgs[0], "alt");
+        if alt != () {
+            let a = alt.trim();
+            if a != "" && !looks_like_rating(a) {
+                return a;
+            }
+        }
+    }
+
+    // 2. Link `title` attribute.
+    let link_title = element_attr(link, "title");
+    if link_title != () {
+        let lt = link_title.trim();
+        if lt != "" && !looks_like_rating(lt) {
+            return lt;
+        }
+    }
+
+    // 3. A specific heading element inside the card.
+    let heading_els = html_select(item, "h3, h4, .post-title, .tt, .series-title");
+    if heading_els.len() > 0 {
+        let h = element_text(heading_els[0]).trim();
+        if h != "" && !looks_like_rating(h) {
+            return h;
+        }
+    }
+
+    // 4. Cleaned raw link text (strips leading status/rating tokens).
+    let cleaned = clean_card_title(element_text(link).trim());
+    if cleaned != "" && !looks_like_rating(cleaned) {
+        return cleaned;
+    }
+
+    ""
+}
+
 // ============================================================================
 // Required Interface Functions
 // ============================================================================
@@ -397,21 +493,9 @@ fn search_series(query, page, auth) {
         }
         seen[slug] = true;
 
-        // Get title
-        let title = element_text(link).trim();
-        if title == "" {
-            let title_attr = element_attr(link, "title");
-            if title_attr != () {
-                title = title_attr.trim();
-            }
-        }
-        // Try getting title from heading elements within the card
-        if title == "" {
-            let heading_els = html_select(item, "h3, h4, .post-title");
-            if heading_els.len() > 0 {
-                title = element_text(heading_els[0]).trim();
-            }
-        }
+        // Get title — prefer img alt / link title / heading over raw link text,
+        // which concatenates the status badge + rating before the real title.
+        let title = resolve_card_title(item, link);
         if title == "" {
             continue;
         }
@@ -544,23 +628,11 @@ fn browse(page, category, auth) {
         }
         seen[slug] = true;
 
-        // Get title from link text, title attribute, or nested elements
-        let title = element_text(link).trim();
-        if title == "" {
-            let title_attr = element_attr(link, "title");
-            if title_attr != () { title = title_attr.trim(); }
-        }
-        // Skip links that are just images or empty
-        if title == "" {
-            // Try to get alt text from nested img
-            let nested_imgs = html_select(link, "img");
-            if nested_imgs.len() > 0 {
-                let alt = element_attr(nested_imgs[0], "alt");
-                if alt != () && alt != "" {
-                    title = alt.trim();
-                }
-            }
-        }
+        // Get title — the <a> wraps a status badge + rating + the real title,
+        // so raw element_text(link) yields "Ongoing 9.7 Title". Prefer img alt /
+        // link title / heading, then cleaned raw text (drops leading metadata).
+        // The card container here IS the link, so pass it as both args.
+        let title = resolve_card_title(link, link);
         if title == "" {
             continue;
         }
@@ -575,9 +647,16 @@ fn browse(page, category, auth) {
             continue;
         }
 
-        // Get cover image from nested img
+        // Get cover image — use the same selector cascade as search_series so we
+        // grab the real thumbnail (data-src lazy first) and not a badge/logo.
         let cover_url = ();
-        let imgs = html_select(link, "img");
+        let imgs = html_select(link, "img[data-src]");
+        if imgs.len() == 0 {
+            imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        }
+        if imgs.len() == 0 {
+            imgs = html_select(link, "img");
+        }
         if imgs.len() > 0 {
             cover_url = get_image_url(imgs[0]);
             // If get_image_url returned nothing, try alt text or just src
@@ -1285,20 +1364,9 @@ fn get_latest_updates(page, auth) {
         }
         seen[slug] = true;
 
-        let title = element_text(link).trim();
-        if title == "" {
-            let title_attr = element_attr(link, "title");
-            if title_attr != () { title = title_attr.trim(); }
-        }
-        if title == "" {
-            let nested_imgs = html_select(link, "img");
-            if nested_imgs.len() > 0 {
-                let alt = element_attr(nested_imgs[0], "alt");
-                if alt != () && alt != "" {
-                    title = alt.trim();
-                }
-            }
-        }
+        // Prefer img alt / link title / heading over raw link text (which
+        // concatenates status badge + rating before the real title).
+        let title = resolve_card_title(link, link);
         if title == "" {
             continue;
         }
@@ -1309,8 +1377,15 @@ fn get_latest_updates(page, auth) {
             continue;
         }
 
+        // Same cover selector cascade as search_series (real thumb, not a badge).
         let cover_url = ();
-        let imgs = html_select(link, "img");
+        let imgs = html_select(link, "img[data-src]");
+        if imgs.len() == 0 {
+            imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        }
+        if imgs.len() == 0 {
+            imgs = html_select(link, "img");
+        }
         if imgs.len() > 0 {
             cover_url = get_image_url(imgs[0]);
             if cover_url == () || cover_url == "" {
