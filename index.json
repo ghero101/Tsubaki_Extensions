@@ -1,6 +1,6 @@
 ﻿{
   "version": 87,
-  "updated_at": "2026-06-15T12:00:00Z",
+  "updated_at": "2026-06-15T16:30:00Z",
   "addons": [
     {
       "id": "anilist",
@@ -1571,16 +1571,16 @@
     {
       "id": "philiascans",
       "name": "Philia Scans",
-      "version": "1.2.3",
+      "version": "1.2.4",
       "description": "Philia Scans - Manga and manhua translations",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-3.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-4.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/manifest.json",
-      "latest_version": "1.2.3",
+      "latest_version": "1.2.4",
       "versions": {
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_latest.zip",
@@ -1606,6 +1606,11 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-3.zip",
           "changelog": "Fix titles showing status/rating before the name; restore missing cover images",
           "released_at": "2026-06-15T12:00:00Z"
+        },
+        "1.2.4": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-4.zip",
+          "changelog": "Fix missing cover images: match covers by img alt (parser hoists <img> out of the card anchor)",
+          "released_at": "2026-06-15T16:30:00Z"
         }
       }
     },

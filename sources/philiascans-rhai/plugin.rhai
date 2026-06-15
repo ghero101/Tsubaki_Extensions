@@ -265,6 +265,33 @@ fn get_image_url(img) {
     url
 }
 
+/// Build an `alt`-text → cover-URL map from every <img> on the page.
+///
+/// Philia's cards nest the cover <img> behind an inline <svg> skeleton inside
+/// the <a class="manga-card">. The HTML5 parser hoists that <img> out of the
+/// anchor subtree, so a nested `html_select(link, "img")` finds nothing and the
+/// cover comes back empty. Each cover img carries `alt="<series title>"`, so a
+/// page-level lookup keyed by the resolved title recovers the cover regardless
+/// of how the parser nested things.
+fn build_cover_map(html) {
+    let map = #{};
+    let imgs = html_select(html, "img");
+    for img in imgs {
+        let alt = element_attr(img, "alt");
+        if alt == () { continue; }
+        let a = alt.trim();
+        if a == "" || looks_like_rating(a) { continue; }
+        let src = get_image_url(img);
+        if src == () || src == "" {
+            src = element_attr(img, "src");
+        }
+        if src != () && src != "" {
+            map[a] = make_absolute_url(src);
+        }
+    }
+    map
+}
+
 /// Check if a URL looks like a valid page image (not a logo, icon, etc.)
 fn is_valid_page_image(url) {
     if url == () || url == "" {
@@ -457,6 +484,8 @@ fn search_series(query, page, auth) {
         items = html_select(html, "div.row.c-tabs-item");
     }
 
+    let cover_map = build_cover_map(html);
+
     for item in items {
         // Get title and URL from links - first try /series/ links
         let title_links = html_select(item, "a[href*='/series/']");
@@ -500,19 +529,25 @@ fn search_series(query, page, auth) {
             continue;
         }
 
-        // Get cover image - check for data-src (lazy loaded) first
+        // Cover: prefer the page-level alt→src map (robust to the parser hoisting
+        // the <img> out of the card). Fall back to the nested selector cascade.
         let cover_url = ();
-        let imgs = html_select(item, "img[data-src]");
-        if imgs.len() == 0 {
-            imgs = html_select(item, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        if cover_map.contains(title) {
+            cover_url = cover_map[title];
         }
-        if imgs.len() == 0 {
-            imgs = html_select(item, "img");
+        if cover_url == () || cover_url == "" {
+            let imgs = html_select(item, "img[data-src]");
+            if imgs.len() == 0 {
+                imgs = html_select(item, ".tab-thumb img, .item-thumb img, img.img-responsive");
+            }
+            if imgs.len() == 0 {
+                imgs = html_select(item, "img");
+            }
+            if imgs.len() > 0 {
+                cover_url = get_image_url(imgs[0]);
+            }
+            cover_url = make_absolute_url(cover_url);
         }
-        if imgs.len() > 0 {
-            cover_url = get_image_url(imgs[0]);
-        }
-        cover_url = make_absolute_url(cover_url);
 
         // Get genres if visible in search results
         let genres = [];
@@ -604,6 +639,7 @@ fn browse(page, category, auth) {
     // PhiliaScans uses WordPress block template - manga entries are simple <a> tags
     // linking to /series/{slug}/ with images and text inside. No .page-item-detail divs.
     // Strategy: find all anchor tags with /series/ in href
+    let cover_map = build_cover_map(html);
     let all_links = html_select(html, "a[href*='/series/']");
 
     for link in all_links {
@@ -647,24 +683,28 @@ fn browse(page, category, auth) {
             continue;
         }
 
-        // Get cover image — use the same selector cascade as search_series so we
-        // grab the real thumbnail (data-src lazy first) and not a badge/logo.
+        // Cover: prefer the page-level alt→src map (robust to the parser hoisting
+        // the <img> out of the anchor). Fall back to the nested selector cascade.
         let cover_url = ();
-        let imgs = html_select(link, "img[data-src]");
-        if imgs.len() == 0 {
-            imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        if cover_map.contains(title) {
+            cover_url = cover_map[title];
         }
-        if imgs.len() == 0 {
-            imgs = html_select(link, "img");
-        }
-        if imgs.len() > 0 {
-            cover_url = get_image_url(imgs[0]);
-            // If get_image_url returned nothing, try alt text or just src
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "src");
+        if cover_url == () || cover_url == "" {
+            let imgs = html_select(link, "img[data-src]");
+            if imgs.len() == 0 {
+                imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
             }
+            if imgs.len() == 0 {
+                imgs = html_select(link, "img");
+            }
+            if imgs.len() > 0 {
+                cover_url = get_image_url(imgs[0]);
+                if cover_url == () || cover_url == "" {
+                    cover_url = element_attr(imgs[0], "src");
+                }
+            }
+            cover_url = make_absolute_url(cover_url);
         }
-        cover_url = make_absolute_url(cover_url);
 
         series.push(#{
             id: slug,
@@ -1342,6 +1382,7 @@ fn get_latest_updates(page, auth) {
 
     // PhiliaScans uses WordPress block template - manga entries are <a> tags
     // linking to /series/{slug}/ with images and text inside
+    let cover_map = build_cover_map(html);
     let all_links = html_select(html, "a[href*='/series/']");
 
     for link in all_links {
@@ -1377,22 +1418,28 @@ fn get_latest_updates(page, auth) {
             continue;
         }
 
-        // Same cover selector cascade as search_series (real thumb, not a badge).
+        // Cover: prefer the page-level alt→src map (robust to the parser hoisting
+        // the <img> out of the anchor). Fall back to the nested selector cascade.
         let cover_url = ();
-        let imgs = html_select(link, "img[data-src]");
-        if imgs.len() == 0 {
-            imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
+        if cover_map.contains(title) {
+            cover_url = cover_map[title];
         }
-        if imgs.len() == 0 {
-            imgs = html_select(link, "img");
-        }
-        if imgs.len() > 0 {
-            cover_url = get_image_url(imgs[0]);
-            if cover_url == () || cover_url == "" {
-                cover_url = element_attr(imgs[0], "src");
+        if cover_url == () || cover_url == "" {
+            let imgs = html_select(link, "img[data-src]");
+            if imgs.len() == 0 {
+                imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
             }
+            if imgs.len() == 0 {
+                imgs = html_select(link, "img");
+            }
+            if imgs.len() > 0 {
+                cover_url = get_image_url(imgs[0]);
+                if cover_url == () || cover_url == "" {
+                    cover_url = element_attr(imgs[0], "src");
+                }
+            }
+            cover_url = make_absolute_url(cover_url);
         }
-        cover_url = make_absolute_url(cover_url);
 
         series.push(#{
             id: slug,
