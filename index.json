@@ -100,7 +100,7 @@
       }
     },
     {
-      "id": "batcave-rhai",
+      "id": "batcave",
       "name": "BatCave",
       "version": "1.0.7",
       "description": "Scraper for BatCave (batcave.biz) - Read western comics online including Marvel, DC, Image, Dark Horse, and more.",
@@ -108,35 +108,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/batcave-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave-rhai/batcave-rhai_1-0-7.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/batcave-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/batcave/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave/batcave_1-0-7.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/batcave/manifest.json",
       "latest_version": "1.0.7",
       "versions": {
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave-rhai/batcave-rhai_1-0-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave/batcave_1-0-4.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave-rhai/batcave-rhai_1-0-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave/batcave_1-0-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave-rhai/batcave-rhai_1-0-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave/batcave_1-0-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T00:21:24Z"
         },
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave-rhai/batcave-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/batcave/batcave_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "batcave-rhai"
+      ]
     },
     {
-      "id": "danbooru-rhai",
+      "id": "danbooru",
       "name": "Danbooru",
       "version": "1.0.11",
       "description": "Search and browse Danbooru for high-quality anime artwork. May contain adult content. Note: Due to Cloudflare protection, API credentials may be required - configure in addon settings.",
@@ -144,40 +147,43 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-11.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru/danbooru_1-0-11.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/danbooru/manifest.json",
       "latest_version": "1.0.11",
       "versions": {
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru/danbooru_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru/danbooru_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru/danbooru_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-10.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru/danbooru_1-0-10.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:20:27Z"
         },
         "1.0.11": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru-rhai/danbooru-rhai_1-0-11.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/danbooru/danbooru_1-0-11.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "danbooru-rhai"
+      ]
     },
     {
-      "id": "demonicscans-rhai",
+      "id": "demonicscans",
       "name": "DemonicScans",
       "version": "1.0.7",
       "description": "Scraper for DemonicScans manga scanlation site.",
@@ -185,40 +191,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-7.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-7.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans/manifest.json",
       "latest_version": "1.0.7",
       "versions": {
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-3.zip",
           "changelog": "Initial release",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-4.zip",
           "changelog": "Fix browser_get() runtime error â€” use proper browser automation API",
           "released_at": "2026-03-02T22:00:00Z"
         },
         "1.0.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T00:49:29Z"
         },
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "demonicscans-rhai"
+      ]
     },
     {
-      "id": "dynastyscans-rhai",
+      "id": "dynastyscans",
       "name": "Dynasty Scans",
       "version": "1.0.11",
       "description": "Scraper for Dynasty Scans (dynasty-scans.com), a yuri/shoujo-ai manga reader featuring doujins, anthologies, and original series.",
@@ -226,35 +235,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/dynastyscans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-11.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/dynastyscans-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/dynastyscans/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans/dynastyscans_1-0-11.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/dynastyscans/manifest.json",
       "latest_version": "1.0.11",
       "versions": {
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans/dynastyscans_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans/dynastyscans_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-10.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans/dynastyscans_1-0-10.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:40:11Z"
         },
         "1.0.11": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans-rhai/dynastyscans-rhai_1-0-11.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/dynastyscans/dynastyscans_1-0-11.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "dynastyscans-rhai"
+      ]
     },
     {
-      "id": "flamecomics-rhai",
+      "id": "flamecomics",
       "name": "Flame Comics",
       "version": "1.2.2",
       "description": "Flame Comics - Free scanlation group for manhwa and manga",
@@ -262,40 +274,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-2-2.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-2.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics/manifest.json",
       "latest_version": "1.2.2",
       "versions": {
         "1.1.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-1-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-1-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-1-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-1-8.zip",
           "changelog": "Updated",
           "released_at": "2026-02-16T00:00:00Z"
         },
         "1.2.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-2-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-0.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T23:18:57Z"
         },
         "1.2.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-2-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T23:50:40Z"
         },
         "1.2.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics-rhai/flamecomics-rhai_1-2-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "flamecomics-rhai"
+      ]
     },
     {
-      "id": "guya-rhai",
+      "id": "guya",
       "name": "Guya",
       "version": "1.0.5",
       "description": "Scraper for Guya (guya.cubari.moe), a manga reader platform featuring high-quality scanlations of popular series like Kaguya-sama and Oshi no Ko.",
@@ -303,30 +318,33 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/guya-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya-rhai/guya-rhai_1-0-5.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/guya-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/guya/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya/guya_1-0-5.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/guya/manifest.json",
       "latest_version": "1.0.5",
       "versions": {
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya-rhai/guya-rhai_1-0-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya/guya_1-0-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya-rhai/guya-rhai_1-0-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya/guya_1-0-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya-rhai/guya-rhai_1-0-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/guya/guya_1-0-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "guya-rhai"
+      ]
     },
     {
-      "id": "heancms-rhai",
+      "id": "heancms",
       "name": "HeanCMS",
       "version": "1.1.4",
       "description": "Framework parser for HeanCMS-based manga sites (OmegaScans, ReaperScans, QuantumScans, etc.). Configure the base URL in settings to use with your preferred HeanCMS site.",
@@ -334,40 +352,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/heancms-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms-rhai/heancms-rhai_1-1-4.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/heancms-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/heancms/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms/heancms_1-1-4.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/heancms/manifest.json",
       "latest_version": "1.1.4",
       "versions": {
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms-rhai/heancms-rhai_1-0-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms/heancms_1-0-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms-rhai/heancms-rhai_1-0-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms/heancms_1-0-6.zip",
           "changelog": "Updated",
           "released_at": "2026-02-05T12:00:00Z"
         },
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms-rhai/heancms-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms/heancms_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-02-16T00:00:00Z"
         },
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms-rhai/heancms-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms/heancms_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms-rhai/heancms-rhai_1-1-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/heancms/heancms_1-1-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "heancms-rhai"
+      ]
     },
     {
-      "id": "hypnohub-rhai",
+      "id": "hypnohub",
       "name": "HypnoHub",
       "version": "1.0.12",
       "description": "Search and browse HypnoHub for hypnosis-themed artwork. Contains adult content - 18+ only.",
@@ -375,40 +396,43 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hypnohub-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-12.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hypnohub-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hypnohub/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub/hypnohub_1-0-12.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hypnohub/manifest.json",
       "latest_version": "1.0.12",
       "versions": {
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub/hypnohub_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub/hypnohub_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-10.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub/hypnohub_1-0-10.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.0.11": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-11.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub/hypnohub_1-0-11.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:20:27Z"
         },
         "1.0.12": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub-rhai/hypnohub-rhai_1-0-12.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hypnohub/hypnohub_1-0-12.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "hypnohub-rhai"
+      ]
     },
     {
-      "id": "kitsu-rhai",
+      "id": "kitsu",
       "name": "Kitsu",
       "version": "1.1.8",
       "description": "Metadata provider for Kitsu - anime and manga tracking database with social features, ratings, and recommendations. Supports OAuth for 18+ content and tracking.",
@@ -416,40 +440,43 @@
       "technology": "rhai",
       "addon_type": "metadata",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kitsu-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu-rhai/kitsu-rhai_1-1-8.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kitsu-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kitsu/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu/kitsu_1-1-8.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kitsu/manifest.json",
       "latest_version": "1.1.8",
       "versions": {
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu-rhai/kitsu-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu/kitsu_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu-rhai/kitsu-rhai_1-1-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu/kitsu_1-1-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu-rhai/kitsu-rhai_1-1-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu/kitsu_1-1-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T11:41:55Z"
         },
         "1.1.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu-rhai/kitsu-rhai_1-1-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu/kitsu_1-1-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:25:53Z"
         },
         "1.1.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu-rhai/kitsu-rhai_1-1-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kitsu/kitsu_1-1-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "kitsu-rhai"
+      ]
     },
     {
-      "id": "konachan-rhai",
+      "id": "konachan",
       "name": "Konachan",
       "version": "1.0.12",
       "description": "Search and browse Konachan for high-quality anime wallpapers and artwork. Contains adult content - 18+ only.",
@@ -457,40 +484,43 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-12.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan/konachan_1-0-12.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/konachan/manifest.json",
       "latest_version": "1.0.12",
       "versions": {
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan/konachan_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan/konachan_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-10.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan/konachan_1-0-10.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.0.11": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-11.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan/konachan_1-0-11.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:20:27Z"
         },
         "1.0.12": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan-rhai/konachan-rhai_1-0-12.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/konachan/konachan_1-0-12.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "konachan-rhai"
+      ]
     },
     {
-      "id": "mangadex-rhai",
+      "id": "mangadex",
       "name": "MangaDex",
       "version": "1.8.5",
       "description": "MangaDex manga source - the largest free manga library with multi-language support. Converted to Rhai with setting support.",
@@ -498,40 +528,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangadex-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-5.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangadex-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangadex/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex/mangadex_1-8-5.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangadex/manifest.json",
       "latest_version": "1.8.5",
       "versions": {
         "1.6.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-6-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex/mangadex_1-6-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.8.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex/mangadex_1-8-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.8.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex/mangadex_1-8-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T11:30:45Z"
         },
         "1.8.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex/mangadex_1-8-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         },
         "1.8.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex-rhai/mangadex-rhai_1-8-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangadex/mangadex_1-8-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:31:15Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangadex-rhai"
+      ]
     },
     {
-      "id": "mangageko-rhai",
+      "id": "mangageko",
       "name": "MangaGeko",
       "version": "1.1.2",
       "description": "Scraper for MangaGeko (mgeko.cc), a popular manga aggregator site with manga, manhwa, and manhua in English.",
@@ -539,35 +572,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangageko-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_1-1-2.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangageko-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangageko/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko/mangageko_1-1-2.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangageko/manifest.json",
       "latest_version": "1.1.2",
       "versions": {
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_1-0-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko/mangageko_1-0-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_latest.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko/mangageko_latest.zip",
           "changelog": "Updated",
           "released_at": "2026-02-16T00:00:00Z"
         },
         "1.1.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_1-1-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko/mangageko_1-1-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko-rhai/mangageko-rhai_1-1-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangageko/mangageko_1-1-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangageko-rhai"
+      ]
     },
     {
-      "id": "mangaowl-rhai",
+      "id": "mangaowl",
       "name": "MangaOwl",
       "version": "1.3.2",
       "description": "Scraper for MangaOwl (mangaowl.io), a popular manga aggregator site using WordPress Madara theme.",
@@ -575,35 +611,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaowl-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl-rhai/mangaowl-rhai_1-3-2.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaowl-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaowl/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl/mangaowl_1-3-2.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaowl/manifest.json",
       "latest_version": "1.3.2",
       "versions": {
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl-rhai/mangaowl-rhai_latest.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl/mangaowl_latest.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.3.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl-rhai/mangaowl-rhai_1-3-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl/mangaowl_1-3-0.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.3.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl-rhai/mangaowl-rhai_1-3-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl/mangaowl_1-3-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T01:45:23Z"
         },
         "1.3.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl-rhai/mangaowl-rhai_1-3-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaowl/mangaowl_1-3-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangaowl-rhai"
+      ]
     },
     {
-      "id": "mangapill-rhai",
+      "id": "mangapill",
       "name": "MangaPill",
       "version": "1.0.10",
       "description": "Scraper for MangaPill (mangapill.com), a popular manga aggregator site with a large collection of manga titles.",
@@ -611,35 +650,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapill-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-10.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapill-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapill/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill/mangapill_1-0-10.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangapill/manifest.json",
       "latest_version": "1.0.10",
       "versions": {
         "1.0.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill/mangapill_1-0-6.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill/mangapill_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill/mangapill_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:37:31Z"
         },
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill-rhai/mangapill-rhai_1-0-10.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangapill/mangapill_1-0-10.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangapill-rhai"
+      ]
     },
     {
-      "id": "mangasee-rhai",
+      "id": "mangasee",
       "name": "MangaSee",
       "version": "1.1.1",
       "description": "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
@@ -647,40 +689,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-1-1.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-1-1.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee/manifest.json",
       "latest_version": "1.1.1",
       "versions": {
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-0-4.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:40:10Z"
         },
         "1.1.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-1-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-1-0.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T11:36:15Z"
         },
         "1.1.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee-rhai/mangasee-rhai_1-1-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-1-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangasee-rhai"
+      ]
     },
     {
-      "id": "mangatown-rhai",
+      "id": "mangatown",
       "name": "MangaTown",
       "version": "1.2.2",
       "description": "Scraper for MangaTown (mangatown.com), a long-running manga aggregator with a large library of manga, manhwa, and manhua titles.",
@@ -688,40 +733,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangatown-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown-rhai/mangatown-rhai_1-2-2.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangatown-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangatown/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-2.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangatown/manifest.json",
       "latest_version": "1.2.2",
       "versions": {
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown-rhai/mangatown-rhai_1-0-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-0-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown-rhai/mangatown-rhai_latest.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_latest.zip",
           "changelog": "Updated",
           "released_at": "2026-02-16T00:00:00Z"
         },
         "1.2.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown-rhai/mangatown-rhai_1-2-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-0.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.2.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown-rhai/mangatown-rhai_1-2-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T06:35:49Z"
         },
         "1.2.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown-rhai/mangatown-rhai_1-2-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangatown-rhai"
+      ]
     },
     {
-      "id": "mangaupdates-rhai",
+      "id": "mangaupdates",
       "name": "MangaUpdates",
       "version": "1.1.7",
       "description": "Metadata provider for MangaUpdates - comprehensive manga database with release tracking, reviews, and detailed series information.",
@@ -729,37 +777,40 @@
       "technology": "rhai",
       "addon_type": "metadata",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaupdates-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates-rhai/mangaupdates-rhai_1-1-7.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaupdates-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaupdates/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates/mangaupdates_1-1-7.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangaupdates/manifest.json",
       "latest_version": "1.1.7",
       "versions": {
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates-rhai/mangaupdates-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates/mangaupdates_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates-rhai/mangaupdates-rhai_1-1-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates/mangaupdates_1-1-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates-rhai/mangaupdates-rhai_1-1-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates/mangaupdates_1-1-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T06:35:49Z"
         },
         "1.1.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates-rhai/mangaupdates-rhai_1-1-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates/mangaupdates_1-1-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T11:45:21Z"
         },
         "1.1.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates-rhai/mangaupdates-rhai_1-1-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangaupdates/mangaupdates_1-1-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangaupdates-rhai"
+      ]
     },
     {
       "id": "myanimelist",
@@ -793,7 +844,7 @@
       }
     },
     {
-      "id": "nhentai-rhai",
+      "id": "nhentai",
       "name": "nhentai",
       "version": "1.1.7",
       "description": "nhentai doujinshi/manga source. Contains EXPLICIT adult content - 18+ only. By using this addon, you confirm you are of legal age.",
@@ -801,32 +852,35 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/nhentai-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai-rhai/nhentai-rhai_1-1-7.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/nhentai-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/nhentai/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-7.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/nhentai/manifest.json",
       "latest_version": "1.1.7",
       "versions": {
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai-rhai/nhentai-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai-rhai/nhentai-rhai_1-1-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai-rhai/nhentai-rhai_1-1-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:25:53Z"
         },
         "1.1.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai-rhai/nhentai-rhai_1-1-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "nhentai-rhai"
+      ]
     },
     {
       "id": "nhentai-scraper",
@@ -876,7 +930,7 @@
       }
     },
     {
-      "id": "realbooru-rhai",
+      "id": "realbooru",
       "name": "RealBooru",
       "version": "1.1.6",
       "description": "Search and browse RealBooru for real-life photography content. Contains adult content - 18+ only. Uses HTML scraping since the JSON API is offline.",
@@ -884,45 +938,48 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-6.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-6.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/realbooru/manifest.json",
       "latest_version": "1.1.6",
       "versions": {
         "1.1.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-1.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.1.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:20:27Z"
         },
         "1.1.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:25:53Z"
         },
         "1.1.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru-rhai/realbooru-rhai_1-1-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/realbooru/realbooru_1-1-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "realbooru-rhai"
+      ]
     },
     {
-      "id": "roliascan-rhai",
+      "id": "roliascan",
       "name": "RoliaScan",
       "version": "1.1.3",
       "description": "Scraper for RoliaScan manga scanlation site.",
@@ -930,35 +987,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-1-3.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan/roliascan_1-1-3.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/roliascan/manifest.json",
       "latest_version": "1.1.3",
       "versions": {
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_latest.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan/roliascan_latest.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-1-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan/roliascan_1-1-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-1-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan/roliascan_1-1-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T06:35:49Z"
         },
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan-rhai/roliascan-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/roliascan/roliascan_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "roliascan-rhai"
+      ]
     },
     {
-      "id": "rule34-rhai",
+      "id": "rule34",
       "name": "Rule34",
       "version": "1.1.4",
       "description": "Search and browse Rule34 booru for fan art and images. Contains explicit adult content - 18+ only. API credentials (User ID + API Key) are REQUIRED.",
@@ -966,40 +1026,43 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/rule34-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-4.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/rule34-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/rule34/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34/rule34_1-1-4.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/rule34/manifest.json",
       "latest_version": "1.1.4",
       "versions": {
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34/rule34_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.1.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34/rule34_1-1-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34/rule34_1-1-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34/rule34_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:20:27Z"
         },
         "1.1.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34-rhai/rule34-rhai_1-1-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/rule34/rule34_1-1-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "rule34-rhai"
+      ]
     },
     {
-      "id": "safebooru-rhai",
+      "id": "safebooru",
       "name": "Safebooru",
       "version": "1.0.9",
       "description": "Browse and search Safebooru for anime artwork. Safe-for-work image board with anime, manga, and game art.",
@@ -1007,35 +1070,38 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/safebooru-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru-rhai/safebooru-rhai_1-0-9.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/safebooru-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/safebooru/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru/safebooru_1-0-9.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/safebooru/manifest.json",
       "latest_version": "1.0.9",
       "versions": {
         "1.0.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru-rhai/safebooru-rhai_1-0-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru/safebooru_1-0-5.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru-rhai/safebooru-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru/safebooru_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru-rhai/safebooru-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru/safebooru_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru-rhai/safebooru-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/safebooru/safebooru_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "safebooru-rhai"
+      ]
     },
     {
-      "id": "violetscans-rhai",
+      "id": "violetscans",
       "name": "VioletScans",
       "version": "1.2.3",
       "description": "Scraper for VioletScans manga scanlation site.",
@@ -1043,35 +1109,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-2-3.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans/violetscans_1-2-3.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/violetscans/manifest.json",
       "latest_version": "1.2.3",
       "versions": {
         "1.1.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_latest.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans/violetscans_latest.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.2.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-2-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans/violetscans_1-2-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.2.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-2-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans/violetscans_1-2-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T06:35:49Z"
         },
         "1.2.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans-rhai/violetscans-rhai_1-2-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/violetscans/violetscans_1-2-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "violetscans-rhai"
+      ]
     },
     {
-      "id": "vymanga-rhai",
+      "id": "vymanga",
       "name": "VyManga",
       "version": "1.0.9",
       "description": "Scraper for VyManga (vymanga.net), a free manga reader with an extensive library of manga, manhwa, and manhua titles.",
@@ -1079,35 +1148,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-9.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-9.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga/manifest.json",
       "latest_version": "1.0.9",
       "versions": {
         "1.0.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-4.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T05:33:26Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga-rhai/vymanga-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "vymanga-rhai"
+      ]
     },
     {
-      "id": "webtoon-rhai",
+      "id": "webtoon",
       "name": "Webtoon",
       "version": "1.4.6",
       "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
@@ -1115,40 +1187,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-6.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-6.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon/manifest.json",
       "latest_version": "1.4.6",
       "versions": {
         "1.4.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-1.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.4.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-2.zip",
           "changelog": "Updated",
           "released_at": "2026-02-05T12:00:00Z"
         },
         "1.4.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.4.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:42:27Z"
         },
         "1.4.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon-rhai/webtoon-rhai_1-4-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "webtoon-rhai"
+      ]
     },
     {
-      "id": "weebcentral-rhai",
+      "id": "weebcentral",
       "name": "WeebCentral",
       "version": "1.2.3",
       "description": "Scraper for WeebCentral (weebcentral.com), the successor to MangaSee and MangaLife featuring high-quality manga scans.",
@@ -1156,40 +1231,43 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/weebcentral-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-2-3.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/weebcentral-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/weebcentral/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral/weebcentral_1-2-3.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/weebcentral/manifest.json",
       "latest_version": "1.2.3",
       "versions": {
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral/weebcentral_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral/weebcentral_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-02-16T00:00:00Z"
         },
         "1.2.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-2-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral/weebcentral_1-2-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.2.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-2-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral/weebcentral_1-2-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T06:35:49Z"
         },
         "1.2.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral-rhai/weebcentral-rhai_1-2-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/weebcentral/weebcentral_1-2-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "weebcentral-rhai"
+      ]
     },
     {
-      "id": "xbooru-rhai",
+      "id": "xbooru",
       "name": "XBooru",
       "version": "1.0.11",
       "description": "Search and browse XBooru for anime-style artwork. Contains adult content - 18+ only.",
@@ -1197,40 +1275,43 @@
       "technology": "rhai",
       "addon_type": "artwork",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/xbooru-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-11.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/xbooru-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/xbooru/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru/xbooru_1-0-11.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/xbooru/manifest.json",
       "latest_version": "1.0.11",
       "versions": {
         "1.0.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru/xbooru_1-0-7.zip",
           "changelog": "Updated",
           "released_at": "2026-01-19T06:33:25Z"
         },
         "1.0.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru/xbooru_1-0-8.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.9": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-9.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru/xbooru_1-0-9.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T07:10:56Z"
         },
         "1.0.10": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-10.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru/xbooru_1-0-10.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:20:27Z"
         },
         "1.0.11": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru-rhai/xbooru-rhai_1-0-11.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/xbooru/xbooru_1-0-11.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "xbooru-rhai"
+      ]
     },
     {
-      "id": "comix-rhai",
+      "id": "comix",
       "name": "Comix",
       "version": "1.0.3",
       "description": "Scraper for Comix (comix.to), a modern manga/manhwa/manhua reader with a large library and multiple scanlation groups.",
@@ -1238,35 +1319,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comix-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix-rhai/comix-rhai_1-0-3.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comix-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comix/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-3.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comix/manifest.json",
       "latest_version": "1.0.3",
       "versions": {
         "1.0.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix-rhai/comix-rhai_1-0-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-0.zip",
           "changelog": "Updated",
           "released_at": "2026-02-02T23:29:24Z"
         },
         "1.0.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix-rhai/comix-rhai_1-0-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-1.zip",
           "changelog": "Updated",
           "released_at": "2026-02-05T12:00:00Z"
         },
         "1.0.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix-rhai/comix-rhai_1-0-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.0.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix-rhai/comix-rhai_1-0-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "comix-rhai"
+      ]
     },
     {
-      "id": "mangafire-rhai",
+      "id": "mangafire",
       "name": "MangaFire",
       "version": "1.1.3",
       "description": "Scraper for MangaFire (mangafire.to), a popular manga aggregator with multi-language support and a large catalog.",
@@ -1274,35 +1358,38 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-3.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-1-3.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire/manifest.json",
       "latest_version": "1.1.3",
       "versions": {
         "1.0.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-0-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-0-0.zip",
           "changelog": "Updated",
           "released_at": "2026-02-02T23:29:26Z"
         },
         "1.1.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-1-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.1.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-1-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-14T05:35:36Z"
         },
         "1.1.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire-rhai/mangafire-rhai_1-1-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-1-3.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "mangafire-rhai"
+      ]
     },
     {
-      "id": "kagane-rhai",
+      "id": "kagane",
       "name": "Kagane",
       "version": "1.12.8",
       "description": "Scraper for Kagane (kagane.to), a manga reading site with a large collection including exclusive content.",
@@ -1310,70 +1397,73 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": true,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-8.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-8.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/kagane/manifest.json",
       "latest_version": "1.12.8",
       "versions": {
         "1.3.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-3-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-3-1.zip",
           "changelog": "Updated",
           "released_at": "2026-02-05T12:00:00Z"
         },
         "1.5.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-5-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-5-0.zip",
           "changelog": "DRM page extraction via extract_server",
           "released_at": "2026-02-16T22:00:00Z"
         },
         "1.12.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-0.zip",
           "changelog": "Improved error handling, timeout/retry fixes, FlareSolverr fallback for Cloudflare",
           "released_at": "2026-03-02T20:00:00Z"
         },
         "1.12.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-1.zip",
           "changelog": "Better error messages for invalid chapter IDs, throw instead of silently returning empty",
           "released_at": "2026-03-02T20:45:00Z"
         },
         "1.12.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-2.zip",
           "changelog": "Fix chapter download 500 error â€” use pipe separator instead of slash in compound chapter IDs",
           "released_at": "2026-03-03T14:00:00Z"
         },
         "1.12.3": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-3.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-3.zip",
           "changelog": "Handle legacy / separator in chapter IDs for backwards compatibility with existing DB entries",
           "released_at": "2026-03-03T20:00:00Z"
         },
         "1.12.4": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-4.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.12.5": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-5.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-5.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:22:40Z"
         },
         "1.12.6": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-6.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-6.zip",
           "changelog": "Updated",
           "released_at": "2026-05-19T17:33:28Z"
         },
         "1.12.7": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-7.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         },
         "1.12.8": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane-rhai/kagane-rhai_1-12-8.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/kagane/kagane_1-12-8.zip",
           "changelog": "Migrate to kagane.to (kagane.org API now IP-blocks datacenter IPs)",
           "released_at": "2026-06-04T21:30:00Z"
         }
-      }
+      },
+      "previous_ids": [
+        "kagane-rhai"
+      ]
     },
     {
-      "id": "manganato-gg-rhai",
+      "id": "manganato-gg",
       "name": "MangaNato (Unified)",
       "version": "1.2.2",
       "description": "Unified scraper for MangaNato sites including manganato.gg, mangakakalot.gg, nelomanga.net, natomanga.com, and manganato.com. Distributes requests across all mirrors for maximum reliability.",
@@ -1381,37 +1471,40 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
-      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-2-2.zip",
-      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg-rhai/manifest.json",
+      "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg/icon.png",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-2.zip",
+      "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg/manifest.json",
       "latest_version": "1.2.2",
       "versions": {
         "1.0.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-0-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-0-0.zip",
           "changelog": "Updated",
           "released_at": "2026-02-02T23:29:33Z"
         },
         "1.0.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-0-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-0-2.zip",
           "changelog": "Updated",
           "released_at": "2026-02-05T12:00:00Z"
         },
         "1.2.0": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-2-0.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-0.zip",
           "changelog": "Updated",
           "released_at": "2026-02-16T00:00:00Z"
         },
         "1.2.1": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-2-1.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-1.zip",
           "changelog": "Updated",
           "released_at": "2026-05-13T22:15:58Z"
         },
         "1.2.2": {
-          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg-rhai/manganato-gg-rhai_1-2-2.zip",
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-2.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
         }
-      }
+      },
+      "previous_ids": [
+        "manganato-gg-rhai"
+      ]
     },
     {
       "id": "comick",
