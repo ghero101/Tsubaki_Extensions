@@ -365,11 +365,21 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract description — try multiple selectors then regex
+    // Extract description. og:description carries the full synopsis on the
+    // current layout; the old span.font-medium.text-sm selector matched a meta
+    // row (genres/rating), yielding a ~10-char fragment.
     let description = ();
-    let desc_els = html_select(doc, "span.font-medium.text-sm");
-    if desc_els.len() > 0 {
-        description = element_text(desc_els[0]).trim();
+    let og_desc = html_select(doc, "meta[property=\"og:description\"]");
+    if og_desc.len() > 0 {
+        let c = element_attr(og_desc[0], "content");
+        if c != () && c != "" { description = c.trim(); }
+    }
+    if description == () || description == "" {
+        let desc_els = html_select(doc, "span.font-medium.text-sm");
+        if desc_els.len() > 0 {
+            let d = element_text(desc_els[0]).trim();
+            if d.len() > 20 { description = d; }
+        }
     }
     if description == () || description == "" {
         // Regex: text after "Synopsis" heading
