@@ -185,17 +185,22 @@
     {
       "id": "demonicscans",
       "name": "DemonicScans",
-      "version": "1.0.7",
+      "version": "1.0.8",
       "description": "Scraper for DemonicScans manga scanlation site.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-7.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-8.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/demonicscans/manifest.json",
-      "latest_version": "1.0.7",
+      "latest_version": "1.0.8",
       "versions": {
+        "1.0.8": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-8.zip",
+          "changelog": "Full rewrite for the current custom site (advanced.php browse, search.php, /manga detail, chaptered.php pages); adds genres/description/status/cover metadata",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.3": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_1-0-3.zip",
           "changelog": "Initial release",
@@ -1313,17 +1318,22 @@
     {
       "id": "comix",
       "name": "Comix",
-      "version": "1.0.3",
+      "version": "1.0.5",
       "description": "Scraper for Comix (comix.to), a modern manga/manhwa/manhua reader with a large library and multiple scanlation groups.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comix/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-3.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-5.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comix/manifest.json",
-      "latest_version": "1.0.3",
+      "latest_version": "1.0.5",
       "versions": {
+        "1.0.5": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-5.zip",
+          "changelog": "API fully token-gated now; rewrite to FlareSolverr-render the SPA DOM for browse/search/detail/chapters (.lrow cards, /browse?keyword); adds genres/authors/status/year/description metadata",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comix/comix_1-0-0.zip",
           "changelog": "Updated",

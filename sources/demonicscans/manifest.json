@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "demonicscans",
   "name": "DemonicScans",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Scraper for DemonicScans manga scanlation site.",
   "author": {
     "name": "Tsubaki Community",
@@ -53,7 +53,7 @@
     "burst_limit": 5
   },
   "update": {
-    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans-rhai/demonicscans-rhai_latest.zip"
+    "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/demonicscans/demonicscans_latest.zip"
   },
   "previous_ids": [
     "demonicscans-rhai"
