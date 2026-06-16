@@ -1147,17 +1147,22 @@
     {
       "id": "vymanga",
       "name": "VyManga",
-      "version": "1.0.9",
+      "version": "1.0.12",
       "description": "Scraper for VyManga (vymanga.net), a free manga reader with an extensive library of manga, manhwa, and manhua titles.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-9.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-12.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/vymanga/manifest.json",
-      "latest_version": "1.0.9",
+      "latest_version": "1.0.12",
       "versions": {
+        "1.0.12": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-12.zip",
+          "changelog": "get_series now uses the CF-free /api/manga-detail fragment -> full title/cover/authors/genres/status/description metadata (was blank)",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.4": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/vymanga/vymanga_1-0-4.zip",
           "changelog": "Updated",
@@ -1519,17 +1524,22 @@
     {
       "id": "comick",
       "name": "ComicK",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "ComicK - Massive manga, manhwa, and manhua library with multi-language support",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comick-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_1-0-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_1-0-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/comick-rhai/manifest.json",
-      "latest_version": "1.0.2",
+      "latest_version": "1.0.3",
       "versions": {
+        "1.0.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_1-0-3.zip",
+          "changelog": "Detail API endpoint removed by site (404); get_series now parses the embedded comic-data JSON from the series page -> restores full metadata (was throwing)",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/comick-rhai/comick-rhai_latest.zip",
           "changelog": "Initial release - API-based scraper with massive multi-language catalog",
@@ -1674,17 +1684,22 @@
     {
       "id": "philiascans",
       "name": "Philia Scans",
-      "version": "1.2.4",
+      "version": "1.2.5",
       "description": "Philia Scans - Manga and manhua translations",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-4.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-5.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/manifest.json",
-      "latest_version": "1.2.4",
+      "latest_version": "1.2.5",
       "versions": {
+        "1.2.5": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-5.zip",
+          "changelog": "get_series metadata updated for the current Next.js site (og:image cover, .synopsis-text, .detail-genre-tag, .stat-box-value--status) -> was title-only",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_latest.zip",
           "changelog": "Initial release",
@@ -1896,17 +1911,22 @@
     {
       "id": "mangakatana",
       "name": "MangaKatana",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "MangaKatana - Large manga aggregator with thousands of titles",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangakatana-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakatana-rhai/mangakatana-rhai_1-0-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakatana-rhai/mangakatana-rhai_1-0-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangakatana-rhai/manifest.json",
-      "latest_version": "1.0.2",
+      "latest_version": "1.0.3",
       "versions": {
+        "1.0.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakatana-rhai/mangakatana-rhai_1-0-3.zip",
+          "changelog": "Site dropped dt/dd metadata layout; get_series now reads the .value.authors/.value.status/.genres div-table -> adds authors/genres/status (was desc+cover only)",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangakatana-rhai/mangakatana-rhai_latest.zip",
           "changelog": "Initial release",

@@ -375,6 +375,35 @@ fn get_series(id_or_url, auth) {
         }
     }
 
+    // The live site dropped dt/dd for a div-table: .d-cell-small.value.authors,
+    // .value.status, and a .genres list inside #single_book. Fill anything the
+    // dt/dd pass missed.
+    if authors.len() == 0 {
+        let acell = html_select(html, ".value.authors a, .author a");
+        for al in acell {
+            let a = element_text(al).trim();
+            if a != "" && !authors.contains(a) { authors.push(a); }
+        }
+        if authors.len() == 0 {
+            let at = html_select_first(html, ".value.authors");
+            if at != "" {
+                let a = element_text(at).trim();
+                if a != "" && a.to_lower() != "updating" { authors.push(a); }
+            }
+        }
+    }
+    if status == "" {
+        let scell = html_select_first(html, ".value.status");
+        if scell != "" { status = normalize_status(element_text(scell).trim()); }
+    }
+    if genres.len() == 0 {
+        let gels = html_select(html, "#single_book .genres a, .meta .genres a");
+        for gl in gels {
+            let g = element_text(gl).trim();
+            if g != "" && !genres.contains(g) { genres.push(g); }
+        }
+    }
+
     // Description from .summary or paragraph tags after metadata
     let summary_el = html_select_first(html, ".summary");
     if summary_el != "" {

@@ -637,17 +637,22 @@ fn get_series(id_or_url, auth) {
         slug = extract_manga_slug(id_or_url);
     }
 
-    let html = fetch_html(url);
-
-    // If we didn't already have a numeric id, recover it from the page (cover
-    // URLs / markup contain it) so get_chapters' fast path stays available.
-    if numeric_id == "" {
-        numeric_id = extract_numeric_id(html);
+    // Prefer the lightweight, Cloudflare-FREE detail fragment at
+    // /api/manga-detail/{numericId}. The /manga/{slug} page is CF-protected and
+    // returns a 403 interstitial (empty content) — which is why every metadata
+    // field came back blank. Fall back to the page only if we lack a numeric id.
+    let html = "";
+    if numeric_id != "" {
+        try { html = http_get_with_headers(`${BASE_URL}/api/manga-detail/${numeric_id}`, get_headers()); } catch { html = ""; }
+    }
+    if html == "" {
+        html = fetch_html(url);
+        if numeric_id == "" { numeric_id = extract_numeric_id(html); }
     }
 
-    // Extract title - usually in h1
+    // Extract title - the detail fragment uses .title.mr-auto; pages use h1.
     let title = "";
-    let title_els = html_select(html, "h1");
+    let title_els = html_select(html, ".title.mr-auto, h1");
     if title_els.len() > 0 {
         title = element_text(title_els[0]).trim();
     }
@@ -671,7 +676,7 @@ fn get_series(id_or_url, auth) {
 
     // Extract cover - look for main image
     let cover_url = ();
-    let cover_els = html_select(html, ".cover img, .thumb img, .manga-cover img, img.cover, img[alt*='cover'], .info img");
+    let cover_els = html_select(html, "img.img-manga, .img-manga, .cover img, .thumb img, .manga-cover img, img.cover, img[alt*='cover'], .info img");
     if cover_els.len() > 0 {
         cover_url = element_attr(cover_els[0], "src");
         if cover_url == () || cover_url.contains("blank.gif") {
@@ -748,7 +753,7 @@ fn get_series(id_or_url, auth) {
 
     // Extract status
     let status = ();
-    let info_els = html_select(html, ".info span, .info div, .status, .detail span");
+    let info_els = html_select(html, "span[class*='text-'], .info span, .info div, .status, .detail span");
     for el in info_els {
         let text = element_text(el).to_lower();
         if text.contains("ongoing") || text.contains("releasing") {

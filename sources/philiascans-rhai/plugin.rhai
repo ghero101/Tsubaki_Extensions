@@ -794,25 +794,35 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract cover image - Madara uses .summary_image img, also check for lazy loading
+    // Cover: the current Next.js site exposes it via og:image
+    // (/api/media/covers/...); fall back to legacy Madara selectors.
     let cover_url = ();
-    let cover_els = html_select(html, ".summary_image img");
-    if cover_els.len() == 0 {
-        cover_els = html_select(html, ".tab-summary img");
+    let ogimg = html_select(html, "meta[property=\"og:image\"]");
+    if ogimg.len() > 0 {
+        let c = element_attr(ogimg[0], "content");
+        if c != () && c != "" { cover_url = c.trim(); }
     }
-    if cover_els.len() == 0 {
-        cover_els = html_select(html, ".manga-page img");
-    }
-    if cover_els.len() > 0 {
-        cover_url = get_image_url(cover_els[0]);
+    if cover_url == () {
+        let cover_els = html_select(html, ".detail-cover img, .series-cover img, .summary_image img, .tab-summary img, .manga-page img");
+        if cover_els.len() > 0 {
+            cover_url = get_image_url(cover_els[0]);
+        }
     }
     cover_url = make_absolute_url(cover_url);
 
-    // Extract description - try #synopsis anchor area, then standard Madara selectors
+    // Description - current site uses .synopsis-text; legacy Madara fallbacks.
     let description = ();
-    let desc_els = html_select(html, "#synopsis ~ p, #synopsis ~ div p");
-    if desc_els.len() == 0 {
-        desc_els = html_select(html, ".summary__content p, .description-summary p, .manga-excerpt p");
+    let synth = html_select(html, ".synopsis-text");
+    if synth.len() > 0 {
+        let raw = element_text(synth[0]).trim();
+        if raw != "" && raw.len() > 10 { description = raw; }
+    }
+    let desc_els = [];
+    if description == () {
+        desc_els = html_select(html, "#synopsis ~ p, #synopsis ~ div p");
+        if desc_els.len() == 0 {
+            desc_els = html_select(html, ".summary__content p, .description-summary p, .manga-excerpt p");
+        }
     }
     if desc_els.len() > 0 {
         let desc_parts = [];
@@ -868,9 +878,9 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract genres - Madara uses .genres-content a
+    // Genres - current site uses .detail-genre-tag; legacy .genres-content a.
     let genres = [];
-    let genre_els = html_select(html, ".genres-content a");
+    let genre_els = html_select(html, ".detail-genre-tag, .detail-genres a, .genres-content a");
     for el in genre_els {
         let genre = element_text(el).trim().replace(",", "");
         if genre != "" && genre.len() < 50 && !genres.contains(genre) {
@@ -878,10 +888,19 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract status - Madara uses .post-status with .summary-content
-    // Philia Scans shows "Releasing" instead of "Ongoing"
+    // Status - current site: .stat-box-value--status / .detail-badge[badge-status-*]
+    // ("On Going"); legacy Madara fallback below.
     let status = ();
-    let status_els = html_select(html, ".post-status .post-content_item");
+    let new_status = html_select(html, ".stat-box-value--status, .detail-badge[class*=\"badge-status\"]");
+    for el in new_status {
+        let t = element_text(el).to_lower();
+        if t.contains("ongoing") || t.contains("on going") || t.contains("releasing") || t.contains("publishing") { status = "Ongoing"; }
+        else if t.contains("completed") || t.contains("finished") { status = "Completed"; }
+        else if t.contains("hiatus") { status = "Hiatus"; }
+        else if t.contains("cancelled") || t.contains("canceled") || t.contains("dropped") { status = "Cancelled"; }
+        if status != () { break; }
+    }
+    let status_els = if status == () { html_select(html, ".post-status .post-content_item") } else { [] };
     for el in status_els {
         let text = element_text(el).to_lower();
         if text.contains("status") {

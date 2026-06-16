@@ -481,55 +481,111 @@ fn enrich_from_detail(base_result, hid) {
 }
 
 /// Get detailed series information by slug or URL.
-/// Uses the search API to find the series, then enriches with detail endpoint.
+///
+/// comick.art removed the JSON detail endpoint (/api/comics/{slug|hid} now 404)
+/// AND the search API no longer matches a full hyphenated slug query, so the old
+/// search-by-slug + enrich path returned nothing. Instead we parse the comic-data
+/// JSON the series HTML page embeds:
+///   <script type="application/json" id="comic-data">{ ...full comic... }</script>
+/// which carries title, md_titles, desc, status, year, content_rating, genres
+/// (md_comic_md_genres[].md_genres.name), authors[], artists[], default_thumbnail.
 fn get_series(id_or_url, auth) {
     let slug = extract_slug(id_or_url);
     if slug == "" {
         throw `Invalid series ID or URL: ${id_or_url}`;
     }
 
-    // Search for the series by slug
-    let encoded = url_encode(slug);
-    let url = `${BASE_URL}/api/search?q=${encoded}&type=comic&showAll=false`;
-
-    let data = ();
+    let html = "";
     try {
-        data = api_get_json(url);
+        html = http_get_with_headers(`${BASE_URL}/comic/${slug}`, get_headers());
     } catch(err) {
-        throw `Failed to fetch series: ${slug} - ${err}`;
+        throw `Failed to fetch series page: ${slug} - ${err}`;
+    }
+    if html == "" { throw `Empty series page: ${slug}`; }
+
+    let marker = `<script type="application/json" id="comic-data">`;
+    let start = html.index_of(marker);
+    let comic = ();
+    if start >= 0 {
+        let rest = html.sub_string(start + marker.len());
+        let end = rest.index_of("</script>");
+        if end > 0 {
+            let json_str = rest.sub_string(0, end);
+            try { comic = json_parse(json_str); } catch { comic = (); }
+        }
+    }
+    if comic == () || type_of(comic) != "map" {
+        throw `Could not parse comic data for: ${slug}`;
     }
 
-    let items = [];
-    if type_of(data) == "array" {
-        items = data;
-    } else if data["data"] != () && type_of(data["data"]) == "array" {
-        items = data["data"];
-    }
+    let title = if comic["title"] != () && comic["title"] != "" { comic["title"] } else { slug };
 
-    // Find exact match by slug
-    let matched = ();
-    for item in items {
-        let item_slug = item["slug"];
-        if item_slug == slug {
-            matched = item;
-            break;
+    let alt = [];
+    let mdt = comic["md_titles"];
+    if mdt != () && type_of(mdt) == "array" {
+        for t in mdt {
+            if type_of(t) == "map" {
+                let tt = t["title"];
+                if tt != () && tt != "" { alt.push(tt); }
+            }
         }
     }
 
-    // Fallback: use first result if no exact slug match
-    if matched == () && items.len() > 0 {
-        matched = items[0];
+    let genres = [];
+    let mg = comic["md_comic_md_genres"];
+    if mg != () && type_of(mg) == "array" {
+        for g in mg {
+            if type_of(g) == "map" {
+                let inner = g["md_genres"];
+                if inner != () && type_of(inner) == "map" {
+                    let n = inner["name"];
+                    if n != () && n != "" { genres.push(n); }
+                }
+            }
+        }
     }
 
-    if matched == () {
-        throw `Series not found: ${slug}`;
+    let authors = [];
+    let al = comic["authors"];
+    if al != () && type_of(al) == "array" {
+        for a in al { if type_of(a) == "map" { let n = a["name"]; if n != () && n != "" { authors.push(n); } } }
+    }
+    let artists = [];
+    let arl = comic["artists"];
+    if arl != () && type_of(arl) == "array" {
+        for a in arl { if type_of(a) == "map" { let n = a["name"]; if n != () && n != "" { artists.push(n); } } }
     }
 
-    let base_result = build_series_from_search(matched);
+    let description = ();
+    let raw_desc = comic["desc"];
+    if raw_desc != () && raw_desc != "" { description = strip_html(raw_desc); }
 
-    // Enrich with full authors/artists/genres from the detail endpoint
-    let hid = matched["hid"];
-    enrich_from_detail(base_result, hid)
+    let cover = build_cover_url(comic["default_thumbnail"]);
+    let status = map_status(comic["status"]);
+    let year = comic["year"];
+
+    let content_rating = ();
+    let cr = comic["content_rating"];
+    if cr != () && `${cr}` != "" { content_rating = `${cr}`; }
+
+    let hid = if comic["hid"] != () { comic["hid"] } else { "" };
+
+    return #{
+        id: slug,
+        title: title,
+        alternate_titles: alt,
+        description: description,
+        cover_url: cover,
+        authors: authors,
+        artists: artists,
+        status: status,
+        genres: genres,
+        tags: [],
+        year: year,
+        content_rating: content_rating,
+        url: `${BASE_URL}/comic/${slug}`,
+        extra: #{ hid: hid }
+    };
 }
 
 /// Get all chapters for a series.
