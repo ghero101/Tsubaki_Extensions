@@ -356,10 +356,16 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract cover image
+    // Extract cover image - og:image is the reliable source
+    // (https://www.mgeko.cc/media/manga_covers/{slug}.jpg).
     let cover_url = ();
+    let ogimg = html_select(html, "meta[property=\"og:image\"]");
+    if ogimg.len() > 0 {
+        let c = element_attr(ogimg[0], "content");
+        if c != () && c != "" { cover_url = c.trim(); }
+    }
     // Look for cover image (usually in novel-cover or similar container)
-    let cover_imgs = html_select(html, ".novel-cover img");
+    let cover_imgs = if cover_url == () { html_select(html, ".novel-cover img") } else { [] };
     if cover_imgs.len() > 0 {
         cover_url = element_attr(cover_imgs[0], "data-src");
         if cover_url == () || cover_url == "" {
@@ -475,6 +481,13 @@ fn get_series(id_or_url, auth) {
         for link in author_links {
             let name = element_text(link).trim();
             if name != "" && name != "N/A" && !authors.contains(name) { authors.push(name); }
+        }
+    }
+    // Current layout: <div class="author"><span>Author:</span><a ...>Name</a></div>
+    if authors.len() == 0 {
+        for link in html_select(html, ".author a") {
+            let name = element_text(link).trim();
+            if name != "" && name != "N/A" && name.to_lower() != "updating" && !authors.contains(name) { authors.push(name); }
         }
     }
 

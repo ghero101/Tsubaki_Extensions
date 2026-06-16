@@ -383,14 +383,18 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract status
+    // Extract status. Current layout renders it as a bold, capitalized span
+    // (e.g. <span class="... capitalize"> ongoing </span>) next to the "Status"
+    // label; the old span.status selector no longer exists.
     let status = ();
-    let status_els = html_select(doc, "span.status");
+    let status_els = html_select(doc, "span.status, span.capitalize");
     for el in status_els {
         let text = element_text(el).trim().to_lower();
         if text == "ongoing" { status = "Ongoing"; break; }
         if text == "completed" { status = "Completed"; break; }
         if text == "hiatus" { status = "Hiatus"; break; }
+        if text == "dropped" || text == "cancelled" { status = "Cancelled"; break; }
+        if text == "season end" || text == "coming soon" { status = "Hiatus"; break; }
     }
     if status == () {
         // Regex fallback: <span class="status ...">Ongoing</span>
@@ -428,9 +432,19 @@ fn get_series(id_or_url, auth) {
     let authors = [];
     let artists = [];
 
-    // Asura uses key-value pairs in the sidebar: <h3>Author</h3> followed by <h3>value</h3>
-    // or spans with labels. Try regex patterns for the detail section.
-    let author_match = regex_find("(?i)Author\\s*</h3>\\s*<h3[^>]*>([^<]+)<", html);
+    // Current layout links author/artist to filtered browse pages:
+    // <a href="/browse?author=...">Name</a> / <a href="/browse?artist=...">Name</a>.
+    for a in html_select(doc, "a[href*='author=']") {
+        let n = element_text(a).replace(",", "").trim();
+        if n != "" && n != "-" && n != "_" && n.to_lower() != "updating" && !authors.contains(n) { authors.push(n); }
+    }
+    for a in html_select(doc, "a[href*='artist=']") {
+        let n = element_text(a).replace(",", "").trim();
+        if n != "" && n != "-" && n != "_" && n.to_lower() != "updating" && !artists.contains(n) { artists.push(n); }
+    }
+
+    // Legacy fallback: <h3>Author</h3><h3>value</h3> key-value pairs.
+    let author_match = if authors.len() == 0 { regex_find("(?i)Author\\s*</h3>\\s*<h3[^>]*>([^<]+)<", html) } else { "" };
     if author_match != "" {
         let author_text = author_match.split(">");
         if author_text.len() > 1 {
@@ -454,7 +468,7 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    let artist_match = regex_find("(?i)Artist\\s*</h3>\\s*<h3[^>]*>([^<]+)<", html);
+    let artist_match = if artists.len() == 0 { regex_find("(?i)Artist\\s*</h3>\\s*<h3[^>]*>([^<]+)<", html) } else { "" };
     if artist_match != "" {
         let artist_text = artist_match.split(">");
         if artist_text.len() > 1 {

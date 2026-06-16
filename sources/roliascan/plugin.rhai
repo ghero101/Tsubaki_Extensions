@@ -189,6 +189,31 @@ fn get_series(id_or_url, auth) {
         else if s.contains("hiatus") { status = "Hiatus"; }
     }
 
+    // The detail page lists metadata in a <th>label</th><td>value</td> table
+    // (no /author/ or /status/ links). Pair th[i] with td[i] globally — nested
+    // per-row selection proved unreliable on this host.
+    if status == () || authors.len() == 0 || artists.len() == 0 {
+        let th_els = html_select(doc, "th");
+        let td_els = html_select(doc, "td");
+        let n = if th_els.len() < td_els.len() { th_els.len() } else { td_els.len() };
+        for i in 0..n {
+            let label = element_text(th_els[i]).trim().to_lower();
+            let value = element_text(td_els[i]).trim();
+            if value == "" || value == "-" || value.to_lower() == "updating" { continue; }
+            if label.contains("status") && status == () {
+                let s = value.to_lower();
+                if s.contains("ongoing") { status = "Ongoing"; }
+                else if s.contains("completed") { status = "Completed"; }
+                else if s.contains("hiatus") { status = "Hiatus"; }
+                else if s.contains("cancel") || s.contains("dropped") { status = "Cancelled"; }
+            } else if label.contains("author") && authors.len() == 0 {
+                authors.push(value);
+            } else if label.contains("artist") && artists.len() == 0 {
+                artists.push(value);
+            }
+        }
+    }
+
     #{
         id: url,
         title: title,

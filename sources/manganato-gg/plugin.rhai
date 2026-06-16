@@ -479,9 +479,9 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Extract description
+    // Extract description (current site uses .description; legacy fallbacks kept)
     let description = ();
-    let desc_els = html_select(html, "div.panel-story-info-description, div#noidungm");
+    let desc_els = html_select(html, "div.description, .description, div.panel-story-info-description, div#noidungm");
     if desc_els.len() > 0 {
         description = element_text(desc_els[0]).trim();
         if description.starts_with("Description :") {
@@ -553,8 +553,10 @@ fn get_series(id_or_url, auth) {
         }
     }
 
-    // Fallback: try list-based info layout
-    if authors.len() == 0 && genres.len() == 0 {
+    // Fallback: list-based info layout (current site). Run whenever authors are
+    // still missing — genres/status often come from here too, so don't gate on
+    // genres being empty.
+    if authors.len() == 0 {
         let info_items = html_select(html, "ul.manga-info-text li");
         for item in info_items {
             let text = element_text(item).to_lower();
@@ -564,6 +566,15 @@ fn get_series(id_or_url, auth) {
                     let author = element_text(link).trim();
                     if author != "" && author != "Updating" && !authors.contains(author) {
                         authors.push(author);
+                    }
+                }
+                // Author may be plain text ("Author(s) : Name"), not a link.
+                if authors.len() == 0 {
+                    let raw = element_text(item).trim();
+                    let cpos = raw.index_of(":");
+                    if cpos >= 0 {
+                        let name = raw.sub_string(cpos + 1).trim();
+                        if name != "" && name != "Updating" && name.to_lower() != "updating" { authors.push(name); }
                     }
                 }
             } else if text.contains("artist") {
