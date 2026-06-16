@@ -1771,17 +1771,27 @@
     {
       "id": "toonclash",
       "name": "ToonClash",
-      "version": "1.0.1",
+      "version": "1.0.4",
       "description": "ToonClash - Manga, manhwa, and manhua reader",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
+      "deprecated": {
+        "is_deprecated": true,
+        "reason": "Site is dead: mangaclash.com redirects to a parked lander page and toonclash.com is offline. No working mirror found.",
+        "sunset_date": "2026-06-16"
+      },
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/toonclash-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-1.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-4.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/toonclash-rhai/manifest.json",
-      "latest_version": "1.0.1",
+      "latest_version": "1.0.4",
       "versions": {
+        "1.0.4": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-4.zip",
+          "changelog": "Deprecated/archived — site is dead (mangaclash parked, toonclash.com offline).",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/toonclash-rhai/toonclash-rhai_1-0-0.zip",
           "changelog": "Updated",
