@@ -737,17 +737,22 @@
     {
       "id": "mangatown",
       "name": "MangaTown",
-      "version": "1.2.4",
+      "version": "1.2.3",
       "description": "Scraper for MangaTown (mangatown.com), a long-running manga aggregator with a large library of manga, manhwa, and manhua titles.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangatown/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangatown/manifest.json",
-      "latest_version": "1.2.4",
+      "latest_version": "1.2.3",
       "versions": {
+        "1.2.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-2-3.zip",
+          "changelog": "Index reconciled: latest_version pointed at a non-existent 1.2.4 zip while download_url served 1.2.2 — upgrades never converged. Now matches the real 1.2.3 build (canonical id migrates the mangatown-rhai dir via previous_ids).",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.3": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangatown/mangatown_1-0-3.zip",
           "changelog": "Updated",
@@ -1372,7 +1377,7 @@
     {
       "id": "mangafire",
       "name": "MangaFire",
-      "version": "1.1.5",
+      "version": "1.1.3",
       "description": "Scraper for MangaFire (mangafire.to), a popular manga aggregator with multi-language support and a large catalog.",
       "author": "Tsubaki Community",
       "technology": "rhai",
@@ -1381,7 +1386,7 @@
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire/icon.png",
       "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-1-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangafire/manifest.json",
-      "latest_version": "1.1.5",
+      "latest_version": "1.1.3",
       "versions": {
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangafire/mangafire_1-0-0.zip",
