@@ -854,6 +854,12 @@ fn get_series(id_or_url, auth) {
                 }
             }
         }
+
+        // Released year (MangaThemesia "Released <i>2023</i>")
+        if year == () && (text.contains("released") || text.contains("year")) {
+            let y = regex_find("(19|20)\\d{2}", text);
+            if y != "" { year = parse_int(y); }
+        }
     }
 
     // Also check .fmed containers (another Flavor pattern for author/artist)

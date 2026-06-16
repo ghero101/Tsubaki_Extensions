@@ -273,17 +273,22 @@
     {
       "id": "flamecomics",
       "name": "Flame Comics",
-      "version": "1.2.4",
+      "version": "1.2.3",
       "description": "Flame Comics - Free scanlation group for manhwa and manga",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/flamecomics/manifest.json",
-      "latest_version": "1.2.4",
+      "latest_version": "1.2.3",
       "versions": {
+        "1.2.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-2-3.zip",
+          "changelog": "get_series now extracts status + year from __NEXT_DATA__ (were hardcoded empty) -> 6/6 metadata",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.1.7": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/flamecomics/flamecomics_1-1-7.zip",
           "changelog": "Updated",
@@ -2056,17 +2061,22 @@
     {
       "id": "arenascans",
       "name": "Arena Scans",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "Arena Scans - Manhwa and manga scanlation group",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/arenascans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/arenascans-rhai/arenascans-rhai_1-0-1.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/arenascans-rhai/arenascans-rhai_1-0-2.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/arenascans-rhai/manifest.json",
-      "latest_version": "1.0.1",
+      "latest_version": "1.0.2",
       "versions": {
+        "1.0.2": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/arenascans-rhai/arenascans-rhai_1-0-2.zip",
+          "changelog": "get_series now extracts release year from the .imptdt \"Released\" row",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/arenascans-rhai/arenascans-rhai_1-0-0.zip",
           "changelog": "Updated",

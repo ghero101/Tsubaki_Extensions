@@ -174,6 +174,21 @@ fn get_series(id_or_url, auth) {
     let artists = series_data["artist"];
     let tags = series_data["tags"];
 
+    // status + year are present in the __NEXT_DATA__ series object.
+    let status = ();
+    let status_raw = series_data["status"];
+    if status_raw != () && `${status_raw}` != "" {
+        let s = `${status_raw}`.to_lower();
+        if s.contains("ongoing") || s.contains("releasing") { status = "Ongoing"; }
+        else if s.contains("completed") || s.contains("finished") { status = "Completed"; }
+        else if s.contains("hiatus") { status = "Hiatus"; }
+        else if s.contains("cancel") || s.contains("dropped") { status = "Cancelled"; }
+        else { status = status_raw; }
+    }
+    let year = ();
+    let year_raw = series_data["year"];
+    if year_raw != () && `${year_raw}` != "" && `${year_raw}` != "0" { year = year_raw; }
+
     #{
         id: series_id,
         title: if title != () { title } else { "" },
@@ -182,10 +197,10 @@ fn get_series(id_or_url, auth) {
         cover_url: build_cover_url(series_id, cover),
         authors: if authors != () { authors } else { [] },
         artists: if artists != () { artists } else { [] },
-        status: (),
+        status: status,
         genres: if tags != () { tags } else { [] },
         tags: [],
-        year: (),
+        year: year,
         content_rating: "suggestive",
         url: url,
         extra: #{ auto_match_metadata: true, source_name: "Flame Comics" }
