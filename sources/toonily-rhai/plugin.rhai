@@ -488,10 +488,25 @@ fn browse(page, category, auth) {
         order = "alphabet";
     }
 
-    let url = `${BASE_URL}/manga/?m_orderby=${order}&page=${page}`;
+    // Toonily's catalog listing is /webtoons/ (the legacy /manga/?m_orderby=
+    // path is dead → empty). Pagination is Madara-style /webtoons/page/{n}/.
+    // The m_orderby query param breaks this listing (returns 0 cards), so we
+    // page through the default order. (`order` is computed above but unused now.)
+    let url = if page > 1 { `${BASE_URL}/webtoons/page/${page}/` } else { `${BASE_URL}/webtoons/` };
 
-    let html = fetch_html(url);
-
+    // The /webtoons/ listing is Cloudflare-gated AND the cards only appear in
+    // the rendered DOM — the cheap impersonation tier can return a 200 shell
+    // that passes the CF check but has zero cards. Render via FlareSolverr first
+    // (longer timeout than fetch_html's 30s; toonily's solve can exceed it),
+    // and only fall back to fetch_html if rendering is unavailable/empty.
+    let html = "";
+    if flaresolverr_is_available() {
+        try { html = flaresolverr_get(url, 60000); } catch { html = ""; }
+        if html != "" && html_select(html, ".page-item-detail").len() == 0 { html = ""; }
+    }
+    if html == "" {
+        html = fetch_html(url);
+    }
     if html == "" {
         return #{ series: [], has_more: false };
     }
@@ -1119,10 +1134,22 @@ fn extract_page_images(html, referer_url) {
 
 /// Get latest manga updates
 fn get_latest_updates(page, auth) {
-    // Madara latest: /manga/?m_orderby=latest&page={page}
-    let url = `${BASE_URL}/manga/?m_orderby=latest&page=${page}`;
+    // Toonily's catalog listing is /webtoons/ (legacy /manga/?m_orderby= is dead
+    // → 0 cards). Madara-style pagination: /webtoons/page/{n}/.
+    let url = if page > 1 { `${BASE_URL}/webtoons/page/${page}/` } else { `${BASE_URL}/webtoons/` };
 
-    let html = fetch_html(url);
+    // The listing is Cloudflare-gated and cards only appear in the rendered DOM;
+    // the cheap impersonation tier can return a 200 shell that passes the CF
+    // check with zero cards. Render via FlareSolverr first (longer timeout than
+    // fetch_html's 30s), falling back to fetch_html if unavailable/empty.
+    let html = "";
+    if flaresolverr_is_available() {
+        try { html = flaresolverr_get(url, 60000); } catch { html = ""; }
+        if html != "" && html_select(html, ".page-item-detail").len() == 0 { html = ""; }
+    }
+    if html == "" {
+        html = fetch_html(url);
+    }
 
     if html == "" {
         return #{ series: [], has_more: false };
