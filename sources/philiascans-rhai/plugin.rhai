@@ -455,8 +455,15 @@ fn resolve_card_title(item, link) {
 /// Search for series matching a query
 fn search_series(query, page, auth) {
     let encoded_query = url_encode(query);
-    // Madara theme search: /?s=QUERY&post_type=wp-manga&paged=PAGE
-    let url = `${BASE_URL}/?s=${encoded_query}&post_type=wp-manga&paged=${page}`;
+    // Philia Scans is Next.js, NOT WordPress: the old /?s=QUERY&post_type=wp-manga
+    // URL doesn't exist and always returned empty. Search is server-rendered on
+    // the /all-mangas route via the ?s= param (confirmed: ?s=solo returns only the
+    // matching series), so we fetch that and reuse the same anchor-based parsing as
+    // browse() — the .search-result-card / Madara card selectors never matched here.
+    let url = `${BASE_URL}/all-mangas?s=${encoded_query}`;
+    if page > 1 {
+        url = `${BASE_URL}/all-mangas?s=${encoded_query}&paged=${page}`;
+    }
 
     let html = fetch_html(url);
 
@@ -467,52 +474,22 @@ fn search_series(query, page, auth) {
     let series = [];
     let seen = #{};
 
-    // Philia Scans uses .search-result-card containers for search results
-    let items = html_select(html, "div.search-result-card");
-
-    // Fallback selectors if the primary one yields nothing
-    if items.len() == 0 {
-        items = html_select(html, "div.c-tabs-item__content");
-    }
-    if items.len() == 0 {
-        items = html_select(html, "div.page-item-detail");
-    }
-    if items.len() == 0 {
-        items = html_select(html, "div.page-listing-item");
-    }
-    if items.len() == 0 {
-        items = html_select(html, "div.row.c-tabs-item");
-    }
-
+    // The all-mangas listing renders each result as an <a href="/series/{slug}">
+    // wrapping a status badge, rating, cover <img> and the title (no card divs).
     let cover_map = build_cover_map(html);
+    let all_links = html_select(html, "a[href*='/series/']");
 
-    for item in items {
-        // Get title and URL from links - first try /series/ links
-        let title_links = html_select(item, "a[href*='/series/']");
-        if title_links.len() == 0 {
-            title_links = html_select(item, ".post-title a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "h3 a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "h4 a");
-        }
-        if title_links.len() == 0 {
-            title_links = html_select(item, "a");
-        }
-        if title_links.len() == 0 {
-            continue;
-        }
-
-        let link = title_links[0];
+    for link in all_links {
         let href = element_attr(link, "href");
         if href == () || href == "" {
             continue;
         }
+        if !href.contains("/series/") {
+            continue;
+        }
 
         let slug = extract_slug(href);
-        if slug == "" {
+        if slug == "" || slug == "?m_orderby" {
             continue;
         }
 
@@ -522,48 +499,38 @@ fn search_series(query, page, auth) {
         }
         seen[slug] = true;
 
-        // Get title — prefer img alt / link title / heading over raw link text,
-        // which concatenates the status badge + rating before the real title.
-        let title = resolve_card_title(item, link);
-        if title == "" {
+        // Title — the <a> wraps a status badge + rating + the real title, so prefer
+        // img alt / link title / heading; the card container here IS the link.
+        let title = resolve_card_title(link, link);
+        if title == "" || title.len() < 3 {
+            continue;
+        }
+        let title_lower = title.to_lower();
+        if title_lower.starts_with("ch.") || title_lower.starts_with("chapter") {
             continue;
         }
 
         // Cover: prefer the page-level alt→src map (robust to the parser hoisting
-        // the <img> out of the card). Fall back to the nested selector cascade.
+        // the <img> out of the anchor). Fall back to the nested selector cascade.
         let cover_url = ();
         if cover_map.contains(title) {
             cover_url = cover_map[title];
         }
         if cover_url == () || cover_url == "" {
-            let imgs = html_select(item, "img[data-src]");
+            let imgs = html_select(link, "img[data-src]");
             if imgs.len() == 0 {
-                imgs = html_select(item, ".tab-thumb img, .item-thumb img, img.img-responsive");
+                imgs = html_select(link, ".tab-thumb img, .item-thumb img, img.img-responsive");
             }
             if imgs.len() == 0 {
-                imgs = html_select(item, "img");
+                imgs = html_select(link, "img");
             }
             if imgs.len() > 0 {
                 cover_url = get_image_url(imgs[0]);
+                if cover_url == () || cover_url == "" {
+                    cover_url = element_attr(imgs[0], "src");
+                }
             }
             cover_url = make_absolute_url(cover_url);
-        }
-
-        // Get genres if visible in search results
-        let genres = [];
-        let genre_els = html_select(item, ".mg_genres .summary-content a, .genres-content a");
-        for el in genre_els {
-            let genre = element_text(el).trim();
-            if genre != "" && !genres.contains(genre) {
-                genres.push(genre);
-            }
-        }
-
-        // Get latest chapter info if available
-        let latest_chapter = ();
-        let ch_els = html_select(item, ".chapter a, .latest-chap .chapter a");
-        if ch_els.len() > 0 {
-            latest_chapter = element_text(ch_els[0]).trim();
         }
 
         series.push(#{
@@ -575,35 +542,14 @@ fn search_series(query, page, auth) {
             authors: [],
             artists: [],
             status: (),
-            genres: genres,
+            genres: [],
             tags: [],
-            description: (),
-            extra: #{
-                latest_chapter: latest_chapter
-            }
+            description: ()
         });
     }
 
-    // Check for next page using Madara pagination
-    let has_more = false;
-    let next_links = html_select(html, "a.next, a.nextpostslink, .nav-next a, .wp-pagenavi a.next");
-    if next_links.len() > 0 {
-        has_more = true;
-    }
-    // Also check for page number links
-    if !has_more {
-        let next_page = page + 1;
-        let page_links = html_select(html, ".wp-pagenavi a, .pagination a, nav.navigation a");
-        for pl in page_links {
-            let pl_href = element_attr(pl, "href");
-            if pl_href != () && (pl_href.contains(`paged=${next_page}`) || pl_href.contains(`/page/${next_page}`)) {
-                has_more = true;
-                break;
-            }
-        }
-    }
-
-    #{ series: series, has_more: has_more, total: () }
+    // The search view is a single server-rendered page; no reliable "next" marker.
+    #{ series: series, has_more: false, total: () }
 }
 
 /// Browse manga by category/order

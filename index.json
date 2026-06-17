@@ -1704,17 +1704,22 @@
     {
       "id": "philiascans",
       "name": "Philia Scans",
-      "version": "1.2.5",
+      "version": "1.2.6",
       "description": "Philia Scans - Manga and manhua translations",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-5.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-6.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/philiascans-rhai/manifest.json",
-      "latest_version": "1.2.5",
+      "latest_version": "1.2.6",
       "versions": {
+        "1.2.6": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-6.zip",
+          "changelog": "Fixed search: the Next.js site has no WordPress /?s= endpoint (always returned empty). Search now hits /all-mangas?s=QUERY and reuses the working browse parser.",
+          "released_at": "2026-06-17T00:00:00Z"
+        },
         "1.2.5": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/philiascans-rhai/philiascans-rhai_1-2-5.zip",
           "changelog": "get_series metadata updated for the current Next.js site (og:image cover, .synopsis-text, .detail-genre-tag, .stat-box-value--status) -> was title-only",
