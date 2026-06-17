@@ -25,6 +25,23 @@ fn fetch_html(url) {
     }
 }
 
+// Render JS before returning HTML. RoliaScan's /search results are injected
+// client-side by Ajax Search Pro, so the static page has no real matches —
+// FlareSolverr executes the JS so the result anchors exist in the DOM.
+fn fetch_rendered(url) {
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 45000);
+            if html != "" && html.len() > 500 {
+                return html;
+            }
+        } catch {
+            // fall through to static fetch
+        }
+    }
+    return fetch_html(url);
+}
+
 fn get_source_info() {
     #{
         id: "roliascan-rhai",
@@ -38,14 +55,13 @@ fn get_source_info() {
 
 fn search_series(query, page, auth) {
     let encoded = url_encode(query);
-    // Use the filter endpoint which supports keyword search
-    let url = `${BASE_URL}/filter?keyword=${encoded}`;
+    // Search is the WordPress searchForm's GET target /search?keyword=. The
+    // results are rendered client-side by Ajax Search Pro (the old /filter?keyword=
+    // endpoint never filtered — it returned the default grid), so fetch with JS
+    // rendering. It's a single result page; ignore `page`.
+    let url = `${BASE_URL}/search?keyword=${encoded}`;
 
-    if page > 1 {
-        url = `${BASE_URL}/filter?keyword=${encoded}&page=${page}`;
-    }
-
-    let html = fetch_html(url);
+    let html = fetch_rendered(url);
     let doc = html_parse(html);
     let series = [];
 
@@ -107,7 +123,9 @@ fn search_series(query, page, auth) {
         }
     }
 
-    #{ series: series, has_more: series.len() >= 10, total: series.len() }
+    // Ajax Search Pro returns a single result set (no pagination), so don't
+    // signal more pages — `page` is ignored above and page 2 would just repeat.
+    #{ series: series, has_more: false, total: series.len() }
 }
 
 fn get_series(id_or_url, auth) {
