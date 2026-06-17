@@ -1575,16 +1575,16 @@
     {
       "id": "hivetoons",
       "name": "HiveToons",
-      "version": "1.0.2",
+      "version": "1.0.4",
       "description": "HiveToons - Manhwa and webtoon scanlation group (formerly Void Scans)",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hivetoons-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-2.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-4.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/hivetoons-rhai/manifest.json",
-      "latest_version": "1.0.2",
+      "latest_version": "1.0.4",
       "versions": {
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/hivetoons-rhai/hivetoons-rhai_1-0-0.zip",

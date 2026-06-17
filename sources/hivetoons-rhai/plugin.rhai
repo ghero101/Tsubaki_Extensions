@@ -240,6 +240,20 @@ fn get_series(id_or_url, auth) {
         }
     }
 
+    // The /api/query result omits the synopsis (postContent is only on the
+    // detail record, and the /api/series detail endpoint 404s). Backfill from
+    // the series page's og:description, which carries the full synopsis.
+    if description == "" {
+        let page = api_get(`${BASE_URL}/series/${slug_val}`);
+        if page != "" {
+            let m = regex_find("og:description\" content=\"[^\"]+", page);
+            if m != "" {
+                let d = m.replace("og:description\" content=\"", "").trim();
+                if d != "" { description = d; }
+            }
+        }
+    }
+
     #{
         id: slug_val,
         title: title,
