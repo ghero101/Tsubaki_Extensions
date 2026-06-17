@@ -136,6 +136,9 @@ fn search_series(query, page, auth) {
         // Use full URL as ID - this is required for Webtoon since get_series needs the path
         let series_id = if series_url.contains("webtoons.com") { series_url } else { title_no };
 
+        // Bound the result — a very large array overflows the Rhai→Rust
+        // conversion (see parse_webtoon_cards). 100 is plenty for a search page.
+        if series.len() >= 100 { break; }
         series.push(#{
             id: series_id,
             title: title,
@@ -614,18 +617,19 @@ fn get_latest_updates(page, auth) {
     }
 
     if page == 2 {
-        // Second page: Completed originals sorted by MANA (first 500)
+        // Second page: Completed originals sorted by MANA (first 100). Capped at
+        // 100 — large result arrays overflow the Rhai→Rust conversion.
         let url = `${BASE_URL}/en/originals/complete?sortOrder=MANA`;
         let html = safe_get(url);
-        let result = parse_webtoon_genre_cards_limited(html, 0, 500);
+        let result = parse_webtoon_genre_cards_limited(html, 0, 100);
         return #{ series: result.series, has_more: true };
     }
 
     if page == 3 {
-        // Third page: Completed originals (next 500, offset)
+        // Third page: Completed originals (next 100, offset).
         let url = `${BASE_URL}/en/originals/complete?sortOrder=MANA`;
         let html = safe_get(url);
-        let result = parse_webtoon_genre_cards_limited(html, 500, 500);
+        let result = parse_webtoon_genre_cards_limited(html, 100, 100);
         return #{ series: result.series, has_more: true };
     }
 
@@ -641,8 +645,8 @@ fn get_latest_updates(page, auth) {
 
     let html = safe_get(url);
 
-    // Parse genre page cards (different structure from originals)
-    let result = parse_webtoon_genre_cards_limited(html, 0, 500);
+    // Parse genre page cards (capped at 100 — see page-2 note)
+    let result = parse_webtoon_genre_cards_limited(html, 0, 100);
 
     // Has more if there are more genres to iterate
     let has_more = genre_index + 1 < webtoon_genres.len();
@@ -820,6 +824,12 @@ fn parse_webtoon_cards(html) {
         // Webtoon requires the full path with genre/slug to fetch series data
         let series_id = if full_url != "" { full_url } else { title_no };
 
+        // Bound the result. Webtoon's broad title-anchor selector can match
+        // hundreds of unique series on a single page, and a very large result
+        // array overflows the Rhai→Rust conversion (the connector was hard-down
+        // with "Stack overflow" whenever the page was large). Browse paginates,
+        // so a per-page cap costs no coverage.
+        if series.len() >= 100 { break; }
         series.push(#{
             id: series_id,
             title: title,

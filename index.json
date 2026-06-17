@@ -1211,17 +1211,22 @@
     {
       "id": "webtoon",
       "name": "Webtoon",
-      "version": "1.4.6",
+      "version": "1.4.8",
       "description": "Scraper for Webtoon (webtoons.com), the official platform for digital comics and webcomics.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-6.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-8.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/webtoon/manifest.json",
-      "latest_version": "1.4.6",
+      "latest_version": "1.4.8",
       "versions": {
+        "1.4.8": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-8.zip",
+          "changelog": "Fixed connector hard-down with 'Stack overflow' on browse/search: very large result arrays (Webtoon's broad title-anchor selector matches hundreds of series) overflow the Rhai->Rust conversion. Cap each page's results at 100 (browse + search both paginate).",
+          "released_at": "2026-06-17T00:00:00Z"
+        },
         "1.4.1": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/webtoon/webtoon_1-4-1.zip",
           "changelog": "Updated",
