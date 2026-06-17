@@ -2,8 +2,13 @@
   "manifest_version": 1,
   "id": "readm",
   "name": "ReadM",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "ReadM - Large manga library with daily updates (readm.org + readm.today fallback)",
+  "deprecated": {
+    "is_deprecated": true,
+    "reason": "Site origin is down (Cloudflare 522 — connection timed out). Archived; remove the deprecated flag if it comes back online.",
+    "sunset_date": "2026-06-16"
+  },
   "author": {
     "name": "Tsubaki Team",
     "url": "https://github.com/tsubaki"

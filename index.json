@@ -1853,17 +1853,27 @@
     {
       "id": "readm",
       "name": "ReadM",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "ReadM - Large manga library with daily updates (readm.org + readm.today fallback)",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
+      "deprecated": {
+        "is_deprecated": true,
+        "reason": "Site origin is down (Cloudflare 522 — connection timed out). Archived; remove the flag if it returns.",
+        "sunset_date": "2026-06-16"
+      },
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/readm-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/readm-rhai/readm-rhai_1-1-1.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/readm-rhai/readm-rhai_1-1-2.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/readm-rhai/manifest.json",
-      "latest_version": "1.1.1",
+      "latest_version": "1.1.2",
       "versions": {
+        "1.1.2": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/readm-rhai/readm-rhai_1-1-2.zip",
+          "changelog": "Deprecated/archived — site origin down (CF 522).",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/readm-rhai/readm-rhai_latest.zip",
           "changelog": "Initial release - POST-based search, CF-protected",
@@ -1884,17 +1894,27 @@
     {
       "id": "manhwaclan",
       "name": "ManhwaClan",
-      "version": "1.1.1",
+      "version": "1.1.3",
       "description": "ManhwaClan - Manhwa, manga, and manhua reader",
       "author": "Tsubaki Team",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
+      "deprecated": {
+        "is_deprecated": true,
+        "reason": "Site origin is down (Cloudflare 521 — web server unreachable). Archived; remove the flag if it returns.",
+        "sunset_date": "2026-06-16"
+      },
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhwaclan-rhai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhwaclan-rhai/manhwaclan-rhai_1-1-1.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhwaclan-rhai/manhwaclan-rhai_1-1-3.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manhwaclan-rhai/manifest.json",
-      "latest_version": "1.1.1",
+      "latest_version": "1.1.3",
       "versions": {
+        "1.1.3": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhwaclan-rhai/manhwaclan-rhai_1-1-3.zip",
+          "changelog": "Deprecated/archived — site origin down (CF 521).",
+          "released_at": "2026-06-16T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manhwaclan-rhai/manhwaclan-rhai_latest.zip",
           "changelog": "Initial release",
