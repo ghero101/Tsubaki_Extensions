@@ -1507,10 +1507,15 @@
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-4.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-5.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg/manifest.json",
-      "latest_version": "1.2.4",
+      "latest_version": "1.2.5",
       "versions": {
+        "1.2.5": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-5.zip",
+          "changelog": "Fixed search: the /search/ path is Cloudflare-gated, so the browser/HTTP mirror-cycling returned empty after ~30s. Search now goes through FlareSolverr first (solves CF, returns div.story_item results).",
+          "released_at": "2026-06-17T00:00:00Z"
+        },
         "1.0.0": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-0-0.zip",
           "changelog": "Updated",

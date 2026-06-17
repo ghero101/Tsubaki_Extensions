@@ -326,7 +326,25 @@ fn search_series(query, page, auth) {
         path = `${path}?page=${page}`;
     }
 
-    let html = fetch_with_fallback(path);
+    // The /search/ path is Cloudflare-gated on every mirror: the browser/HTTP
+    // tiers in fetch_with_fallback get the challenge page (looks_blocked) and
+    // cycle all 5 mirrors (~30s) before giving up empty. FlareSolverr solves CF
+    // and returns the real results (div.story_item), so try it FIRST and only
+    // fall back to mirror-cycling if FlareSolverr is unavailable.
+    let html = "";
+    if flaresolverr_is_available() {
+        try {
+            let rendered = flaresolverr_get(`${get_mirror()}${path}`, 40000);
+            if rendered != "" && rendered.len() > 500 && !looks_blocked(rendered) {
+                html = rendered;
+            }
+        } catch {
+            // fall through to mirror-cycling
+        }
+    }
+    if html == "" {
+        html = fetch_with_fallback(path);
+    }
 
     if html == "" {
         return #{ series: [], has_more: false, total: 0 };
