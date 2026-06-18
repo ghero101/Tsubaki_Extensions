@@ -47,33 +47,62 @@ fn get_mobile_headers() {
     }
 }
 
-/// Fetch HTML with desktop headers. Tries TLS impersonation first, falls back
-/// to plain reqwest with the same headers. Previous fallback used bare
-/// http_get(url) which threw away the User-Agent + Referer — fanfox's CDN
-/// rejects requests without Referer set.
+/// Detect a Cloudflare error/challenge interstitial rather than real content.
+/// fanfox.net itself is up, but its Cloudflare returns a 520 "origin web server
+/// returned an invalid or incomplete response" (and sometimes a JS challenge /
+/// 1020 block) to datacenter/CGNAT egress IPs. Treating that HTML as a valid
+/// page is why search/series silently broke — we must fall through to a tier
+/// that can clear it (FlareSolverr).
+fn is_cf_block(html) {
+    if html == () || html == "" { return true; }
+    if html.contains("origin web server returned an invalid") { return true; } // 520
+    if html.contains("Web server is returning an unknown error") { return true; } // 520/521
+    if html.contains("Checking your browser") || html.contains("Just a moment") { return true; } // JS challenge
+    if html.contains("Attention Required") && html.contains("Cloudflare") { return true; } // 1020 block
+    if html.contains("cf-error-details") || html.contains("error-1016") || html.contains("error-1020") { return true; }
+    false
+}
+
+/// Fetch HTML with desktop headers. Tiers: TLS-impersonated HTTP → plain reqwest
+/// (fanfox's CDN rejects requests without a Referer) → FlareSolverr. The
+/// FlareSolverr tier renders via headless Chrome (and the configured
+/// residential proxy/VPN) and is the documented remedy when fanfox's Cloudflare
+/// serves a 520 / challenge to the server's datacenter egress IP.
 fn fetch_html(url) {
     try {
         let html = http_get_with_headers(url, get_headers());
-        if html != "" { return html; }
+        if !is_cf_block(html) { return html; }
     } catch {}
     try {
-        return http_get_plain(url, get_headers());
-    } catch {
-        return "";
+        let html = http_get_plain(url, get_headers());
+        if !is_cf_block(html) { return html; }
+    } catch {}
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 40000);
+            if !is_cf_block(html) { return html; }
+        } catch {}
     }
+    ""
 }
 
-/// Fetch HTML with mobile headers. Same fallback shape as fetch_html.
+/// Fetch HTML with mobile headers. Same tiered fallback shape as fetch_html.
 fn fetch_mobile_html(url) {
     try {
         let html = http_get_with_headers(url, get_mobile_headers());
-        if html != "" { return html; }
+        if !is_cf_block(html) { return html; }
     } catch {}
     try {
-        return http_get_plain(url, get_mobile_headers());
-    } catch {
-        return "";
+        let html = http_get_plain(url, get_mobile_headers());
+        if !is_cf_block(html) { return html; }
+    } catch {}
+    if flaresolverr_is_available() {
+        try {
+            let html = flaresolverr_get(url, 40000);
+            if !is_cf_block(html) { return html; }
+        } catch {}
     }
+    ""
 }
 
 /// Extract manga slug from URL

@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "id": "fanfox",
   "name": "FanFox",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "FanFox (MangaFox) - Large manga aggregator with extensive library",
   "author": {
     "name": "Tsubaki Team",
@@ -26,7 +26,7 @@
     ],
     "requires_cookies": false,
     "requires_javascript": false,
-    "cloudflare_protected": false
+    "cloudflare_protected": true
   },
   "features": {
     "search": true,
