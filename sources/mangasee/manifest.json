@@ -4,6 +4,11 @@
   "name": "MangaSee",
   "version": "1.1.1",
   "description": "Scraper for MangaSee (mangasee123.com), featuring high-quality manga scans with official English translations.",
+  "deprecated": {
+    "is_deprecated": true,
+    "reason": "Site is dead: mangasee123.com returns HTTP 410 Gone (permanently shut down). No working mirror.",
+    "sunset_date": "2026-06-18"
+  },
   "author": {
     "name": "Tsubaki Community",
     "url": "https://github.com/tsubaki"

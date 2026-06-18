@@ -709,6 +709,11 @@
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
+      "deprecated": {
+        "is_deprecated": true,
+        "reason": "Site is dead: mangasee123.com returns HTTP 410 Gone (permanently shut down). No working mirror.",
+        "sunset_date": "2026-06-18"
+      },
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee/icon.png",
       "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/mangasee/mangasee_1-1-1.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/mangasee/manifest.json",
