@@ -286,7 +286,10 @@ fn search_series(query, page, auth) {
             }
 
             // Skip chapter links (contain /c followed by digits)
-            if regex_find("/c[0-9]", link_href) != () {
+            // regex_find returns "" (not ()) on no match, so we must exclude
+            // both — otherwise every non-chapter link is wrongly skipped.
+            let _cm = regex_find("/c[0-9]", link_href);
+            if _cm != () && _cm != "" {
                 continue;
             }
 
@@ -372,14 +375,17 @@ fn search_series(query, page, auth) {
         // Pattern: href="/manga/{slug}/" ... title or text
         let manga_links = regex_find_all("href=\"(/manga/[^\"]+)\"[^>]*(?:title=\"([^\"]+)\"|>([^<]+)<)", html);
 
-        for match in manga_links {
-            let link_href = regex_find("/manga/[^\"]+", match);
+        for m in manga_links {
+            let link_href = regex_find("/manga/[^\"]+", m);
             if link_href == () || link_href == "" {
                 continue;
             }
 
             // Skip chapter links
-            if regex_find("/c[0-9]", link_href) != () {
+            // regex_find returns "" (not ()) on no match, so we must exclude
+            // both — otherwise every non-chapter link is wrongly skipped.
+            let _cm = regex_find("/c[0-9]", link_href);
+            if _cm != () && _cm != "" {
                 continue;
             }
 
@@ -390,11 +396,11 @@ fn search_series(query, page, auth) {
             seen[slug] = true;
 
             // Extract title from title attr or inner text
-            let title = regex_find("title=\"([^\"]+)\"", match);
+            let title = regex_find("title=\"([^\"]+)\"", m);
             if title != () && title != "" {
                 title = title.replace("title=\"", "").replace("\"", "").trim();
             } else {
-                title = regex_find(">([^<]+)<", match);
+                title = regex_find(">([^<]+)<", m);
                 if title != () && title != "" {
                     title = title.replace(">", "").replace("<", "").trim();
                 }
@@ -441,7 +447,7 @@ fn search_series(query, page, auth) {
         }
     }
 
-    #{ series: series, has_more: has_more, total: 0 }
+    #{ series: series, has_more: has_more, total: series.len() }
 }
 
 /// Get detailed series information
@@ -1145,7 +1151,10 @@ fn get_latest_updates(page, auth) {
                 continue;
             }
             // Skip chapter links
-            if regex_find("/c[0-9]", href) != () {
+            // regex_find returns "" (not ()) on no match, so we must exclude
+            // both — otherwise every non-chapter link is wrongly skipped.
+            let _cm = regex_find("/c[0-9]", href);
+            if _cm != () && _cm != "" {
                 continue;
             }
             if href.contains("/manga/") {
@@ -1246,7 +1255,10 @@ fn browse(page, filters, auth) {
             if href == () || href == "" {
                 continue;
             }
-            if regex_find("/c[0-9]", href) != () {
+            // regex_find returns "" (not ()) on no match, so we must exclude
+            // both — otherwise every non-chapter link is wrongly skipped.
+            let _cm = regex_find("/c[0-9]", href);
+            if _cm != () && _cm != "" {
                 continue;
             }
             if href.contains("/manga/") {
@@ -1316,12 +1328,15 @@ fn browse(page, filters, auth) {
     // If structured parsing found nothing, try regex fallback
     if series.len() == 0 {
         let manga_matches = regex_find_all("href=\"(/manga/[^\"]+)\"[^>]*(?:title=\"([^\"]+)\"|>)", html);
-        for match in manga_matches {
-            let href = regex_find("/manga/[^\"]+", match);
+        for m in manga_matches {
+            let href = regex_find("/manga/[^\"]+", m);
             if href == () || href == "" {
                 continue;
             }
-            if regex_find("/c[0-9]", href) != () {
+            // regex_find returns "" (not ()) on no match, so we must exclude
+            // both — otherwise every non-chapter link is wrongly skipped.
+            let _cm = regex_find("/c[0-9]", href);
+            if _cm != () && _cm != "" {
                 continue;
             }
             let slug = extract_slug(href);
@@ -1330,7 +1345,7 @@ fn browse(page, filters, auth) {
             }
             seen[slug] = true;
 
-            let title = regex_find("title=\"([^\"]+)\"", match);
+            let title = regex_find("title=\"([^\"]+)\"", m);
             if title != () && title != "" {
                 title = title.replace("title=\"", "").replace("\"", "").trim();
             } else {
