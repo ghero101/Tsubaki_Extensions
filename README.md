@@ -218,6 +218,10 @@ http_post(url, body) -> string
 http_post_form(url, body) -> string              // application/x-www-form-urlencoded
 flaresolverr_get(url, timeout_ms) -> string      // rendered HTML; only if FS service is up
 flaresolverr_is_available() -> bool
+// ^ flaresolverr_* calls route through the server's configured residential proxy
+//   ONLY when your manifest sets capabilities.requires_proxy: true. Use it for
+//   sources that IP-ban datacenter egress (e.g. nhentai, kagane). plain http_*
+//   calls never use the proxy. See docs/EXTENSION_API.md → "Residential proxy".
 
 // HTML parsing
 html_parse(html) -> Document

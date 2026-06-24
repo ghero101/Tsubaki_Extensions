@@ -128,6 +128,60 @@ if flaresolverr_is_available() {
 Use as the last tier in a fallback chain, not the first — it's the slowest
 path and uses a shared resource.
 
+### Residential proxy (`requires_proxy`)
+
+Some sources **IP-ban datacenter / CGNAT / VPN egress** at the Cloudflare/edge
+layer — the symptom is empty results or CF blocks *from the server*, even though
+the site works fine from a home connection (e.g. **nhentai**, **kagane**). To
+get past this, the server can route Cloudflare-bypass traffic through an
+operator-configured upstream proxy (usually a **residential** one).
+
+This is **opt-in per extension**. Set `requires_proxy: true` in your manifest's
+`capabilities` (see [MANIFEST_SCHEMA.md](MANIFEST_SCHEMA.md)):
+
+```json
+"capabilities": {
+  "level": "http_only",
+  "cloudflare_protected": true,
+  "requires_proxy": true
+}
+```
+
+When set, the host injects the configured proxy into this extension's
+`flaresolverr_get` / `flaresolverr_get_cookies` calls. **You don't write any
+proxy code** — it's transparent. Just keep using `flaresolverr_get`. The
+operator configures the actual proxy under **Server Settings → "FlareSolverr
+Proxy"**; it may be an authenticated rotating residential proxy (the server
+strips the credentials and passes them to FlareSolverr), an IP-authenticated
+proxy (no creds), or an internal forwarder/VPN.
+
+Notes for authors:
+- **Only set it if you need it.** Routing through a proxy can *break* CF
+  challenges for sources that work fine from the datacenter IP, and it uses the
+  shared proxy's bandwidth.
+- `http_get_with_headers` / `http_get_plain` (plain HTTP, no FlareSolverr) do
+  **not** use the proxy — only the `flaresolverr_*` host functions do. If your
+  source needs a clean IP, it must fetch via FlareSolverr.
+- **Rotating vs sticky:** the FlareSolverr proxy may rotate IP per request,
+  which is fine for single-request fetches (search/series/chapters). A
+  **multi-step flow that depends on a consistent IP** (e.g. acquiring CF
+  clearance cookies and then reusing them — cookies are IP-bound) needs a
+  *sticky* IP; that's handled separately by the browser-extraction service
+  below, not by `requires_proxy`.
+
+### Browser-based DRM extraction (advanced)
+
+A few sources (currently **kagane**) deliver pages only through a browser-side
+DRM/EME challenge. Those extensions POST to the in-container extraction service
+(`http://tsubaki-browser:3001/extract-pages`) which runs the whole flow in
+headless Chrome. That service routes its FlareSolverr call **and** Chrome itself
+through the `BROWSER_PROXY` env var set on the browser container (a **sticky**
+residential proxy — the multi-step CF→integrity→license→pages flow needs one
+consistent IP). Extension authors don't configure this; it's operator infra.
+The downloaded image URLs are token-authed, so the actual page bytes download
+fine over the server's normal connection — **only the extraction needs the
+proxy.**
+
 ---
 
 ## HTML Parsing API

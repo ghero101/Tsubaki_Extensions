@@ -39,7 +39,8 @@ Complete documentation for the `manifest.json` file format.
     "allowed_domains": ["string"],
     "requires_cookies": "boolean",
     "requires_javascript": "boolean",
-    "cloudflare_protected": "boolean"
+    "cloudflare_protected": "boolean",
+    "requires_proxy": "boolean"
   },
   "features": {
     "search": "boolean",
@@ -159,8 +160,15 @@ The file extension should match the `technology` field.
 | `requires_cookies` | Extension needs to maintain cookies |
 | `requires_javascript` | Site requires JS rendering |
 | `cloudflare_protected` | Site uses Cloudflare protection |
+| `requires_proxy` | **Opt in to the server's configured upstream proxy.** When `true`, the host routes this extension's `flaresolverr_get` / `flaresolverr_get_cookies` calls through the operator-configured proxy (Server Settings → "FlareSolverr Proxy") — typically a **residential** egress for sources that IP-ban datacenter/VPN addresses (e.g. nhentai, kagane). When `false`/omitted, those calls egress from the server's own IP. See *Residential proxy* in [EXTENSION_API.md](EXTENSION_API.md). |
 
 **Important:** Always include CDN domains in `allowed_domains` or cover images won't load!
+
+**When to set `requires_proxy: true`:** only if your source blocks the server's
+datacenter/CGNAT IP at the Cloudflare/edge layer (symptom: empty results or CF
+blocks from the server, but the site works from a home connection). It's opt-in
+because routing through a proxy can *break* CF challenges for sources that are
+fine from the datacenter IP, and it consumes the shared proxy's bandwidth.
 
 ### Features
 
