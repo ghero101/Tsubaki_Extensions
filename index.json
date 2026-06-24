@@ -876,16 +876,16 @@
     {
       "id": "nhentai",
       "name": "nhentai",
-      "version": "1.1.7",
+      "version": "2.0.1",
       "description": "nhentai doujinshi/manga source. Contains EXPLICIT adult content - 18+ only. By using this addon, you confirm you are of legal age.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": true,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/nhentai/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-7.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_2-0-1.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/nhentai/manifest.json",
-      "latest_version": "1.1.7",
+      "latest_version": "2.0.1",
       "versions": {
         "1.1.3": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-3.zip",
@@ -906,6 +906,16 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_1-1-7.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
+        },
+        "2.0.0": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_2-0-0.zip",
+          "changelog": "FlareSolverr-based fetch + requires_proxy (routes via configured proxy)",
+          "released_at": "2026-06-20T00:00:00Z"
+        },
+        "2.0.1": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/nhentai/nhentai_2-0-1.zip",
+          "changelog": "FlareSolverr-based fetch + requires_proxy:true so nhentai egresses through the configured residential proxy (fixes 0-results from datacenter IP ban)",
+          "released_at": "2026-06-24T00:00:00Z"
         }
       },
       "previous_ids": [
