@@ -124,7 +124,9 @@ jobs:
           Run: $RUN_NUMBER
           Triggered by: $EVENT_NAME"
 
-          git push
+          # Push; if the remote moved since checkout (a concurrent run/commit),
+          # rebase onto it and retry once instead of failing the job.
+          git push || { git pull --rebase origin "$(git branch --show-current)" && git push; }
 
       - name: Create build summary
         run: |

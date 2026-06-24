@@ -208,22 +208,31 @@ update_index() {
         fi
     done
 
-    # Bump index version only when something actually changed. Empty bumps
-    # are noise — clients use the version to decide whether to refetch.
-    if [ "$updated_count" -gt 0 ]; then
-        local current_version=$(jq '.version // 0' "$temp_index")
-        local new_version=$((current_version + 1))
+    # Bump .version/.updated_at and write ONLY when the addon content actually
+    # changed. The old code bumped on every run (updated_count counts matched
+    # entries, which is ALL of them every time), so index.json churned on every
+    # CI run — a spurious commit each time, and the no-op commit is what made the
+    # push step fail. Compare ignoring the volatile .version/.updated_at fields.
+    local orig_norm new_norm
+    orig_norm=$(jq -S 'del(.version, .updated_at)' "$INDEX_FILE" 2>/dev/null) || orig_norm=""
+    new_norm=$(jq -S 'del(.version, .updated_at)' "$temp_index" 2>/dev/null) || new_norm=""
+
+    if [ "$orig_norm" != "$new_norm" ]; then
+        local current_version new_version
+        current_version=$(jq '.version // 0' "$temp_index")
+        new_version=$((current_version + 1))
         jq --arg timestamp "$timestamp" \
            --argjson version "$new_version" '
             .version = $version |
             .updated_at = $timestamp
         ' "$temp_index" > "$INDEX_FILE"
         rm "$temp_index"
-        echo -e "${GREEN}  Updated $updated_count extensions in index.json (version $new_version)${NC}"
+        echo -e "${GREEN}  index.json content changed — wrote update (version $new_version)${NC}"
     else
         rm "$temp_index"
-        local current_version=$(jq '.version // 0' "$INDEX_FILE")
-        echo -e "${YELLOW}  No index entries updated (version stays at $current_version)${NC}"
+        local current_version
+        current_version=$(jq '.version // 0' "$INDEX_FILE")
+        echo -e "${YELLOW}  No index changes (version stays at $current_version)${NC}"
     fi
 
     # Consistency check: every built source should have matched an index entry.
