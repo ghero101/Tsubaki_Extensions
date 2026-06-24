@@ -104,21 +104,23 @@ build_extension() {
     # Create extension dist directory
     mkdir -p "$ext_dist_dir"
 
-    # Check if this version already exists
+    # Versioned zips are immutable artifacts — only build when missing. zip
+    # embeds file mtimes, so rebuilding an existing version changes its bytes and
+    # churns git on every run (and bumps the index version for nothing). To
+    # release changes, bump the version in manifest.json (tools/bump-versions.ps1).
+    # `--clean` removes dist/ first, so a forced full rebuild still works.
     if [ -f "$zip_path" ]; then
-        echo -e "${YELLOW}    Version $version already exists, rebuilding...${NC}"
+        echo -e "${YELLOW}    Version $version already built — skipping (bump version to release changes)${NC}"
+    else
+        # -X strips platform extra-fields for a cleaner, more stable archive.
+        (cd "$SOURCES_DIR" && zip -rqX "$zip_path" "$ext_name")
+        local size=$(du -h "$zip_path" | cut -f1)
+        echo -e "    Created: $zip_filename ($size)"
     fi
 
-    # Create the zip file
-    # We need to include the folder structure in the zip
-    (cd "$SOURCES_DIR" && zip -rq "$zip_path" "$ext_name")
-
-    # Create/update latest.zip
-    cp "$zip_path" "$latest_path"
-
-    # Get file size
-    local size=$(du -h "$zip_path" | cut -f1)
-    echo -e "    Created: $zip_filename ($size)"
+    # Mirror the current version into latest.zip (idempotent — identical bytes
+    # overwrite cleanly, so git sees no change when nothing moved).
+    cp -f "$zip_path" "$latest_path"
 
     # Return values for index update (stored in global array). Fields are
     # pipe-separated; manifest fields with embedded pipes will need escaping
@@ -160,7 +162,11 @@ update_index() {
         # Human-readable fields (name/description/addon_type/technology/nsfw) are
         # propagated from the source manifest so the index doesn't drift over time;
         # missing values in the manifest preserve whatever the index already has.
-        local updated=$(jq --arg id "$ext_id" \
+        # NOTE: declare `local` separately from the assignment, otherwise `local`
+        # (which always returns 0) masks jq's exit status and the `$?` check below
+        # is meaningless.
+        local updated
+        updated=$(jq --arg id "$ext_id" \
                           --arg version "$version" \
                           --arg download_url "$download_url" \
                           --arg manifest_url "$manifest_url" \
@@ -192,9 +198,13 @@ update_index() {
             ]
         ' "$temp_index")
 
-        if [ $? -eq 0 ]; then
+        # `updated_count=$((...))` not `((updated_count++))`: the latter returns
+        # exit status 1 when the pre-increment value is 0 (the first match),
+        # which under `set -e` aborted the whole index update before it ever
+        # wrote index.json — the bug that broke this CI on every run.
+        if [ $? -eq 0 ] && [ -n "$updated" ]; then
             echo "$updated" > "$temp_index"
-            ((updated_count++))
+            updated_count=$((updated_count + 1))
         fi
     done
 
