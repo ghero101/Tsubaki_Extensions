@@ -37,6 +37,8 @@ on:
     paths:
       - 'sources/**'
       - 'index.json'
+      - 'build.sh'
+      - '.github/workflows/build-extensions.yml'
 
 jobs:
   build:
@@ -101,15 +103,19 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-          # Get list of updated extensions for commit message
-          UPDATED=$(git diff --cached --name-only | grep -E '^dist/.*\.zip$' | sed 's|dist/||' | sed 's|/.*||' | sort -u | head -10)
-          UPDATED_COUNT=$(echo "$UPDATED" | wc -l)
+          # Get list of updated extensions for the commit message. (Note:
+          # `echo "" | wc -l` is 1, not 0 — use grep -c to count real lines so an
+          # index-only run doesn't produce "Update extensions ()".)
+          UPDATED=$(git diff --cached --name-only | grep -E '^dist/.*\.zip$' | sed 's|dist/||;s|/.*||' | sort -u)
+          UPDATED_COUNT=$(printf '%s' "$UPDATED" | grep -c .)
 
-          if [ $UPDATED_COUNT -gt 5 ]; then
-            COMMIT_MSG="build: Update $UPDATED_COUNT extensions"
+          if [ "$UPDATED_COUNT" -eq 0 ]; then
+            COMMIT_MSG="build: sync index.json"
+          elif [ "$UPDATED_COUNT" -gt 5 ]; then
+            COMMIT_MSG="build: update $UPDATED_COUNT extensions"
           else
-            EXTENSIONS=$(echo "$UPDATED" | tr '\n' ', ' | sed 's/,$//')
-            COMMIT_MSG="build: Update extensions ($EXTENSIONS)"
+            EXTENSIONS=$(printf '%s' "$UPDATED" | paste -sd, -)
+            COMMIT_MSG="build: update extensions ($EXTENSIONS)"
           fi
 
           git commit -m "$COMMIT_MSG
