@@ -676,6 +676,10 @@ fn get_chapters(series_id, auth) {
                     let num = `${ch["chapter_num"]}`;
                     if num == "" || seen[num] != () { continue; }
                     seen[num] = true;
+                    // Skip the site's spam/placeholder chapters (absurd numbers
+                    // like 67676767 that only resolve to a 2-image "not found"
+                    // page). No real manga exceeds a few thousand chapters.
+                    if parse_float(num) > 100000.0 { continue; }
                     let cslug = ch["chapter_slug"];
                     if cslug == () || cslug == "" { cslug = `chapter-${num}`; }
                     let cname = ch["chapter_name"];
@@ -722,6 +726,8 @@ fn get_chapters(series_id, auth) {
         let chapter_num = extract_chapter_number(href, chapter_title);
         if seen[chapter_num] != () { continue; }
         seen[chapter_num] = true;
+        // Skip spam/placeholder chapters (absurd numbers like 67676767).
+        if parse_float(chapter_num) > 100000.0 { continue; }
 
         let chapter_path = `/manga/${slug}/chapter-${chapter_num}`;
         if chapter_title == "" { chapter_title = `Chapter ${chapter_num}`; }
