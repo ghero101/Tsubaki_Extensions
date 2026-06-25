@@ -1,6 +1,6 @@
 {
-  "version": 88,
-  "updated_at": "2026-06-24T14:39:16Z",
+  "version": 89,
+  "updated_at": "2026-06-25T22:46:30Z",
   "addons": [
     {
       "id": "anilist",
@@ -1555,16 +1555,16 @@
     {
       "id": "manganato-gg",
       "name": "MangaNato (Unified)",
-      "version": "1.2.5",
+      "version": "1.2.6",
       "description": "Unified scraper for MangaNato sites including manganato.gg, mangakakalot.gg, nelomanga.net, natomanga.com, and manganato.com. Distributes requests across all mirrors for maximum reliability.",
       "author": "Tsubaki Community",
       "technology": "rhai",
       "addon_type": "scraper",
       "nsfw": false,
       "icon_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg/icon.png",
-      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-5.zip",
+      "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-6.zip",
       "manifest_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/sources/manganato-gg/manifest.json",
-      "latest_version": "1.2.5",
+      "latest_version": "1.2.6",
       "versions": {
         "1.2.5": {
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-5.zip",
@@ -1595,6 +1595,11 @@
           "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-4.zip",
           "changelog": "Updated",
           "released_at": "2026-05-20T12:28:22Z"
+        },
+        "1.2.6": {
+          "download_url": "https://raw.githubusercontent.com/ghero101/Tsubaki_Extensions/master/dist/manganato-gg/manganato-gg_1-2-6.zip",
+          "released_at": "2026-06-25T22:46:30Z",
+          "changelog": "Updated"
         }
       },
       "previous_ids": [
