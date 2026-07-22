@@ -434,9 +434,10 @@ fn get_chapters(series_id, auth) {
             break;
         }
         if response.data == () || response.data.len() == 0 {
-            if offset == 0 {
-                print(`[mangadex-rhai] get_chapters: empty data array at offset=0 series_id=${id} (series exists but no published chapters in lang=${lang})`);
-            }
+            // No chapters at this offset — for offset==0 this just means the
+            // series has no published chapters in the requested language. That's
+            // an expected, non-error condition, so stay silent (it was spamming
+            // the logs with one INFO line per such series on every monitored scan).
             break;
         }
 
