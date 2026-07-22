@@ -1,16 +1,18 @@
 // Kagane Scraper Add-on (Rhai)
 // Hybrid scraper for kagane.to — Yuzuki API + FlareSolverr + Browser rendering
 //
-// NOTE (2026-06): kagane migrated kagane.org → kagane.to (and the API host
-// yuzuki.kagane.org → yuzuki.kagane.to). The old yuzuki.kagane.org now hard-
-// blocks datacenter IPs at Cloudflare (FlareSolverr reports "IP banned"),
-// which silently emptied browse/search. The new yuzuki.kagane.to host serves
-// the same JSON API and responds directly (no Cloudflare challenge).
+// NOTE (2026-07): kagane retired the dedicated API subdomain. The API host went
+// yuzuki.kagane.org → yuzuki.kagane.to → (now) the main domain kagane.to. The
+// old yuzuki.kagane.to no longer resolves (NXDOMAIN), which made every
+// get_series/get_chapters call fail with "DNS resolution failed for
+// yuzuki.kagane.to" and emptied browse/search + failed monitored downloads.
+// The API now lives at https://kagane.to/api/v2/ (behind Cloudflare, served via
+// FlareSolverr — verified 200 with real JSON).
 //
 // Architecture:
-//   - Series metadata & chapters: Direct Yuzuki API (https://yuzuki.kagane.to/api/v2/)
+//   - Series metadata & chapters: Direct API (https://kagane.to/api/v2/)
 //   - Browse/homepage: FlareSolverr renders the Cloudflare-protected page
-//   - Search: Direct Yuzuki API (POST /search/series)
+//   - Search: Direct API (POST /search/series)
 //   - Chapter pages: Browser with Widevine DRM → extract CDN URLs from performance log
 //
 // URL Patterns:
@@ -20,10 +22,10 @@
 //   Search:    /search?q={query}
 //
 // IDs are UUIDs (e.g., 019c4756-d998-787a-bf75-9f095ea56701)
-// Cover images: https://yuzuki.kagane.to/api/v2/image/{UUID}/compressed
+// Cover images: https://kagane.to/api/v2/image/{UUID}/compressed
 
 const BASE_URL = "https://kagane.to";
-const API_BASE = "https://yuzuki.kagane.to/api/v2";
+const API_BASE = "https://kagane.to/api/v2";
 
 // ============================================================================
 // API Helpers
@@ -103,7 +105,7 @@ fn has_real_content(html) {
     html.len() > 60000 && (
         html.contains("data-slot=\"carousel-item\"") ||
         html.contains("/series/019") ||
-        html.contains("yuzuki.kagane.to") ||
+        html.contains("kagane.to/api/v2") ||
         html.contains("font-bold") && html.contains("/series/")
     )
 }
@@ -302,7 +304,7 @@ fn extract_series_list(html) {
     if series.len() == 0 {
         let pairs = regex_find_all("href=\"/series/([0-9a-f-]{36})\"", html);
         let titles = regex_find_all("<h3[^>]*>([^<]+)</h3>", html);
-        let covers = regex_find_all("src=\"(https://yuzuki[^\"]+)\"", html);
+        let covers = regex_find_all("src=\"(https://kagane.to/api/v2/image[^\"]+)\"", html);
 
         let unique_sids = [];
         for p in pairs {
